@@ -1,0 +1,724 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>EcoStitch 旧衣改造(MVP闭环)</title>
+<style>
+:root{--green:#4EA415;--green-core:#48A600;--green-soft:#EAF3E2;--ink:#1C1E18;--ink-2:#6D6D6D;--ink-3:#9DA192;
+--nav-off:#B5B5B5;--card:#FFFFFF;--bg:#F3F3F3;--line:#EDEEE9;--line-2:#E2E4DC;--warn:#B08A2E;--warn-soft:#FBF6E9;
+--red:#C0392B;
+--font:'PingFang SC','Noto Sans CJK SC',-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:#E9EAE5;font-family:var(--font);color:var(--ink);letter-spacing:-.01em;line-height:1.5;
+display:flex;flex-direction:column;align-items:center;padding:30px 16px 60px;-webkit-font-smoothing:antialiased}
+.hint{font-size:12px;color:#8A8E82;text-align:center;margin-bottom:16px;max-width:390px;line-height:1.7}
+.hint b{color:var(--green)}
+.badge{display:inline-block;background:var(--warn-soft);color:var(--warn);font-size:11px;font-weight:600;
+padding:2px 8px;border-radius:8px;margin-left:4px}
+.ph{width:390px;background:var(--card);border-radius:40px;overflow:hidden;position:relative;
+box-shadow:0 20px 50px rgba(28,30,24,.16),0 0 0 10px #14150F,0 0 0 12px #2C2E24;display:flex;flex-direction:column;min-height:844px}
+.sb{height:50px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 30px 8px}
+.sb .t{font-size:16px;font-weight:600}.sb .r{font-size:13px;font-weight:600}
+.bar{display:flex;align-items:center;padding:8px 16px 12px;gap:8px}
+.rbtn{width:40px;height:40px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;
+color:var(--ink);cursor:pointer;font-size:18px;flex-shrink:0}
+.bar .ttl{font-size:18px;font-weight:600;margin-left:4px}
+.steps{display:flex;gap:4px;padding:0 20px 14px}
+.steps div{flex:1;height:4px;border-radius:2px;background:var(--line-2)}
+.steps div.on{background:var(--green)}
+.body{padding:4px 20px 20px;flex:1;overflow-y:auto}
+.sec{font-size:13px;color:var(--ink-2);font-weight:500;margin:18px 0 10px}
+.sec:first-child{margin-top:6px}
+.upbox{border:1.5px dashed var(--line-2);border-radius:16px;height:220px;display:flex;flex-direction:column;
+align-items:center;justify-content:center;gap:8px;color:var(--ink-3);cursor:pointer;overflow:hidden;position:relative}
+.upbox img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.upbox .uptext{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.upbox.has-img .uptext{display:none}
+.bagsel{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bagopt{border:1.5px solid var(--line-2);border-radius:14px;padding:12px;cursor:pointer;transition:all .15s;position:relative}
+.bagopt.on{border:2px solid var(--green);background:var(--green-soft)}
+.bagopt .nm{font-size:14px;font-weight:600;margin-bottom:2px}
+.bagopt .st{font-size:11px;color:var(--ink-3)}
+.bagopt .vf{position:absolute;top:10px;right:10px;font-size:10px;color:var(--green);font-weight:600}
+.bagopt .vf.ref{color:var(--warn)}
+.bagopt .estbadge{position:absolute;bottom:10px;right:10px;font-size:10px;font-weight:600;padding:1px 6px;border-radius:6px}
+.bagopt .estbadge.good{background:var(--green-soft);color:var(--green-core)}
+.bagopt .estbadge.tight{background:var(--warn-soft);color:var(--warn)}
+.btn{background:var(--green);color:#fff;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:600;
+width:100%;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+transition:transform .1s,opacity .1s}
+.btn:active{transform:scale(.98)}
+.btn.sec2{background:var(--bg);color:var(--ink)}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.foot{padding:14px 20px 30px}
+.foot .row2{display:flex;gap:8px}
+.foot .row2 .btn{flex:1}
+.foot .row2 .btn.wide{flex:1.4}
+.small{font-size:11px;color:var(--ink-3);line-height:1.6;margin-top:4px}
+.screen{display:none}
+.screen.on{display:block;animation:fade .3s}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+.spinner{width:52px;height:52px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--green);
+animation:spin 1s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pill{border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.6;display:flex;gap:8px;align-items:flex-start}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.info{background:var(--green-soft);color:var(--green)}
+.pill.ok{background:var(--green-soft);color:var(--green-core)}
+.imgcard{border-radius:16px;overflow:hidden;background:var(--bg);height:280px;display:flex;align-items:center;
+justify-content:center;position:relative}
+.imgcard img{width:100%;height:100%;object-fit:cover}
+.imgcard .placeholder{text-align:center;color:var(--ink-3);padding:20px}
+.imgcard .placeholder .big{font-size:15px;color:var(--ink-2);margin-bottom:6px;font-weight:600}
+/* ==== 新增screen用到的样式 ==== */
+.gsel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.gopt{border:1.5px solid var(--line-2);border-radius:12px;padding:10px;cursor:pointer;text-align:center;font-size:13px;font-weight:500}
+.gopt.on{border:2px solid var(--green);background:var(--green-soft);color:var(--green-core)}
+.tipcard{border:1px solid var(--line-2);border-radius:14px;padding:12px;margin-top:4px}
+.tipcard .tt{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.tipcard ol{margin:0;padding-left:18px;font-size:12.5px;color:var(--ink-2);line-height:1.9}
+.chipwrap{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line-2);border-radius:20px;padding:6px 14px;font-size:12.5px;cursor:pointer;color:var(--ink-2)}
+.chip.on{border-color:var(--green);background:var(--green-soft);color:var(--green-core);font-weight:600}
+.ta{width:100%;border:1.5px solid var(--line-2);border-radius:12px;padding:10px 12px;font-size:13px;font-family:var(--font);
+resize:none;height:60px;color:var(--ink)}
+.ta:focus{outline:none;border-color:var(--green)}
+.sumcard{background:var(--green-soft);border-radius:14px;padding:14px}
+.sumrow{display:flex;gap:10px;margin-bottom:10px;font-size:13.5px;align-items:flex-start}
+.sumrow:last-child{margin-bottom:0}
+.sumrow .ic{font-size:15px;flex-shrink:0}
+.sumrow b{color:var(--green-core)}
+.numin{width:100%;border:1.5px solid var(--line-2);border-radius:12px;padding:10px 12px;font-size:15px;font-family:var(--font);color:var(--ink)}
+.numin:focus{outline:none;border-color:var(--green)}
+.altcard{border:1.5px solid var(--line-2);border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer}
+.altcard:hover{border-color:var(--green)}
+.altcard .nm{font-size:13.5px;font-weight:600}
+.altcard .st{font-size:11px;color:var(--ink-3);margin-top:1px}
+.altcard .need{font-size:11px;color:var(--green-core);font-weight:600;margin-left:auto;text-align:right;white-space:nowrap}
+/* ==== 屏4: 按旧衣类型给的量边示意图 + 用户自己的照片(不叠线) ==== */
+.diagramcard{border:1px solid var(--line-2);border-radius:16px;padding:8px;background:var(--bg);
+display:flex;align-items:center;justify-content:center}
+.diagramcard svg{width:100%;height:auto;max-height:200px}
+.photopreview{border-radius:16px;overflow:hidden;background:var(--bg);height:150px}
+.photopreview img{width:100%;height:100%;object-fit:cover;display:block}
+.edgerow{display:flex;gap:10px;margin-top:12px}
+.edgerow .col{flex:1}
+.edgerow .col .lb{font-size:11px;color:var(--ink-2);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.edgerow .col .lb .dot{width:14px;height:14px;border-radius:50%;background:var(--red);color:#fff;font-size:9px;
+font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+</style></head>
+<body>
+<div class="hint">EcoStitch 旧衣改造 · 核心链路最小闭环<b>MVP</b>验证 · 上传→拆解→裁开→量布→选方向→确认→生成→真实纸样<span class="badge">测试用</span></div>
+
+<div class="ph">
+  <div class="sb"><span class="t">9:41</span><span class="r">85</span></div>
+  <div class="bar">
+    <div class="rbtn" onclick="prevScreen()">‹</div>
+    <span class="ttl" id="screenTitle">上传旧衣</span>
+  </div>
+  <div class="steps" id="stepsBar"></div>
+  <div class="body">
+
+    <!-- 屏1: 上传旧衣（完整状态，仅作为流程起点/参考，不再是生成效果图的底图——生成效果图改用屏3拍的裁开后布料照片，更贴近实际能做出来的样子） -->
+    <div class="screen on" id="screen1">
+      <div class="sec">拍一张你想改造的旧衣（完整状态）</div>
+      <div class="upbox" id="upbox" onclick="document.getElementById('fileInput').click()">
+        <img id="upPreview" style="display:none">
+        <div class="uptext">
+          <span style="font-size:26px">📷</span>
+          <span style="font-size:14px;font-weight:500">点击拍照 / 从相册上传</span>
+          <span style="font-size:11px;color:var(--ink-3)">单件平铺、背景干净，效果更好</span>
+        </div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" style="display:none">
+      <div class="small" style="margin-top:12px">这一步只做真实的图片选取/预览，AI 材质识别这次没有接入。这张照片主要作为起点参考——拆开之后会在后面单独再拍一张裁开摊平的照片，效果图是根据那张真实裁开后的布料生成的。</div>
+    </div>
+
+    <!-- 屏2: 拆解旧衣引导 -->
+    <div class="screen" id="screen2">
+      <div class="sec">这件旧衣现在是什么状态</div>
+      <div class="pill info" style="margin-bottom:10px">
+        <span>ℹ️</span>
+        <span>正式版会由 AI 识别旧衣类型自动匹配拆解方案；这次没接入真实识别，先手动选一种，下面的拆解提示是真实的通用缝纫知识，不是编的。</span>
+      </div>
+      <div class="pill warn" style="margin-bottom:10px">
+        <span>✂️</span>
+        <span>旧衣一旦剪开就回不去了——建议先把下面对应的拆解提示看一遍，再动剪刀。</span>
+      </div>
+      <div class="gsel" id="gsel"></div>
+      <div id="tipArea"></div>
+    </div>
+
+    <!-- 屏3: 拍摄裁开后的平面图上传（新，衣物已经在②的引导下真实裁开摊平） -->
+    <div class="screen" id="screen3">
+      <div class="sec">拍一张裁开摊平后的布料</div>
+      <div class="upbox" id="upbox2" onclick="document.getElementById('fileInput2').click()">
+        <img id="upPreview2" style="display:none">
+        <div class="uptext">
+          <span style="font-size:26px">📐</span>
+          <span style="font-size:14px;font-weight:500">点击拍照 / 从相册上传</span>
+          <span style="font-size:11px;color:var(--ink-3)">尽量摊平、拍正面，方便下一步量边</span>
+        </div>
+      </div>
+      <input type="file" id="fileInput2" accept="image/*" style="display:none">
+      <div class="small" style="margin-top:12px">这张照片接下来会用来生成改造后的效果图，也会在下一步用来帮你确认要量哪两条边。</div>
+    </div>
+
+    <!-- 屏4: 按旧衣类型给量边示意图 + 输入实测长度（新） -->
+    <div class="screen" id="screen4">
+      <div class="sec">量两条边，算算这块布够不够用</div>
+      <div class="diagramcard" id="diagramArea"></div>
+      <div class="small" style="margin-top:8px" id="diagramCaption"></div>
+      <div class="sec">你上传的这张照片（仅供你自己核对，图上不画线）</div>
+      <div class="photopreview"><img id="measPhotoPreview"></div>
+      <div class="edgerow">
+        <div class="col">
+          <div class="lb"><span class="dot">①</span><span id="edge1Label">长边（cm）</span></div>
+          <input type="number" class="numin" id="edge1Input" placeholder="比如 60" inputmode="decimal">
+        </div>
+        <div class="col">
+          <div class="lb"><span class="dot">②</span><span id="edge2Label">宽边（cm）</span></div>
+          <input type="number" class="numin" id="edge2Input" placeholder="比如 45" inputmode="decimal">
+        </div>
+      </div>
+      <div id="edgeFeedback" style="margin-top:10px"></div>
+    </div>
+
+    <!-- 屏5: 选包型 + 改造方向（移到量完布料之后；每个包型按真实测量的布料算"够用/不够用"） -->
+    <div class="screen" id="screen5">
+      <div class="sec">① 这件衣服想改造成哪种包</div>
+      <div class="pill info" style="margin-bottom:12px">
+        <span>ℹ️</span>
+        <span>正式版会由 AI 结合旧衣裁片大小自动推荐最合适的包型；这次 MVP 里这一步的 AI 判断没有真实接入，先手动选一个（下方13个包型均来自纸样计算器已接入的真实模板库；绿色"够用"/黄色"不够用"是按你上一步实测的两条边算出来的真实核对，不是拍脑袋的预估）。</span>
+      </div>
+      <div class="bagsel" id="bagsel"></div>
+      <div id="bagWarnArea" style="margin-top:10px"></div>
+      <div class="sec">② 想要什么风格（可选）</div>
+      <div class="chipwrap" id="styleChips"></div>
+      <div class="sec">③ 还想要什么效果（可选）</div>
+      <textarea class="ta" id="freeform" placeholder="&quot;加个外贴袋&quot;&quot;做旧感觉&quot;…"></textarea>
+    </div>
+
+    <!-- 屏6: 确认理解 -->
+    <div class="screen" id="screen6">
+      <div class="sec">我理解你想要的是——</div>
+      <div class="sumcard" id="sumCard"></div>
+      <div class="small" style="margin-top:10px">确认无误后开始生成效果图；如果哪里不对，可以回上一步改。</div>
+    </div>
+
+    <!-- 屏7: 生成中 -->
+    <div class="screen" id="screen7">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:60px 0 20px">
+        <div class="spinner"></div>
+        <div style="text-align:center">
+          <div style="font-size:14px;font-weight:500;margin-bottom:4px" id="loadingText">正在为你生成效果图…</div>
+          <div style="font-size:12px;color:var(--ink-3)">结合你裁开摊平后的布料照片和选中的包型</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 屏8: 效果图方案 -->
+    <div class="screen" id="screen8">
+      <div class="sec">改造效果图</div>
+      <div class="imgcard" id="resultImgCard"></div>
+      <div class="pill warn" id="fallbackNote" style="margin-top:12px;display:none">
+        <span>⚠️</span>
+        <span id="fallbackText"></span>
+      </div>
+      <div class="small" style="margin-top:10px" id="pieceNote"></div>
+    </div>
+
+  </div>
+  <div class="foot" id="footArea">
+    <button class="btn" id="mainBtn" onclick="nextScreen()" disabled>下一步</button>
+  </div>
+</div>
+
+<script>
+// ====== 包型库（和纸样计算器 src/app.js 里的 STD 保持一致，UI 已开放的13个包型全部同步）======
+const BAGS=[
+  {bag:'boxtote',nm:'方底托特包',st:'有侧片·立体方包',vf:'✓已验证',ref:false},
+  {bag:'jointote',nm:'拼接底托特包',st:'上下拼色+夹缝背带',vf:'模板库',ref:true},
+  {bag:'beartote',nm:'三段拼接托特包',st:'沿布+印花+底三段',vf:'模板库',ref:true},
+  {bag:'cardwallet',nm:'多卡位卡包',st:'风琴折叠卡槽',vf:'模板库',ref:true},
+  {bag:'foldtote',nm:'可折叠托特包',st:'自收纳轻便款',vf:'模板库',ref:true},
+  {bag:'bucket',nm:'抽绳水桶包',st:'圆底柱体（周长联动）',vf:'模板库',ref:true},
+  {bag:'crescent',nm:'月牙单肩包',st:'前后片弧形+侧片+背带',vf:'✓曲线复刻',ref:false},
+  {bag:'trianglepouch',nm:'三角笔袋',st:'六边形单片·斜角折三角截面',vf:'✓曲线复刻',ref:false},
+  {bag:'jiaozi',nm:'饺子拉链小包',st:'一片式拉链斜背包',vf:'模板库',ref:true},
+  {bag:'saddle',nm:'斜背马鞍包',st:'前片+侧片+包盖+背带，6片拼接',vf:'模板库',ref:true},
+  {bag:'roundbp',nm:'立体圆饼双肩背包',st:'正圆主体+扇形贴袋+双肩带',vf:'模板库',ref:true},
+  {bag:'zipbp',nm:'经典拉链立体双肩背包',st:'前兜+兜盖+主拉链舱，13类裁片',vf:'模板库',ref:true},
+  {bag:'boston',nm:'波士顿枕头包',st:'皮革五金拼接，高阶⭐⭐⭐⭐☆',vf:'模板库',ref:true},
+];
+// ====== 各包型真实用料需求(cm²/cm)======
+// 不是拍脑袋编的数——直接来自纸样计算器 src/app.js 里 calculate() 每个包型的真实裁片清单
+// (每片的宽×高×数量，数量按裁片说明文字里"表布×2 里布×2"这类真实标注解析累加)：
+// total = 全部裁片总面积(cm²，按各自数量累加，6个矩形参数化包型代入标准成品尺寸STD+默认1cm缝份算出，
+//         其余7个曲线/模板库包型直接用源数据里写死的裁片尺寸)；
+// maxW/maxH = 全部裁片里"单片面积最大"的那一片的宽高(这一片必须能在布料上一次性放下，无法拼接)。
+// 这两个数字和纸样计算器"预估用料"卡片(app.js calculate() 里 estMaxW/estMaxH/estTotalArea)用的是同一套
+// 真实计算逻辑，这里只是把13个包型的结果预先算好、原样搬过来，没有另外编一套数据。
+// 30%排布损耗同样沿用计算器自己的口径(estSide=ceil(sqrt(total*1.3)))，不是这次新加的假设。
+const REQUIRED={
+  boxtote:{total:4983.5, maxW:23.0, maxH:29.0, maxName:'前后片'},
+  jointote:{total:8071.2, maxW:44.0, maxH:68.0, maxName:'包身里布'},
+  beartote:{total:4609.0, maxW:38.0, maxH:54.0, maxName:'连体里布'},
+  cardwallet:{total:810.0, maxW:14.0, maxH:21.0, maxName:'里布(风琴折叠)'},
+  foldtote:{total:4800.0, maxW:40.0, maxH:92.0, maxName:'包身主布'},
+  bucket:{total:5156.1, maxW:49.1, maxH:19.0, maxName:'桶身里布'},
+  crescent:{total:6013.9, maxW:11.5, maxH:73.3, maxName:'侧片'},
+  trianglepouch:{total:1236.4, maxW:28.1, maxH:11.0, maxName:'笔袋主体'},
+  jiaozi:{total:1584.0, maxW:16.0, maxH:24.0, maxName:'饺子包主体'},
+  saddle:{total:6283.4, maxW:30.5, maxH:29.2, maxName:'后下片'},
+  roundbp:{total:5988.9, maxW:27.0, maxH:27.0, maxName:'前后片(主体)'},
+  zipbp:{total:11450.3, maxW:23.3, maxH:28.2, maxName:'表布主片(前片)'},
+  boston:{total:1941.5, maxW:16.0, maxH:20.8, maxName:'前后身布料'},
+};
+// 用测到的两条边(e1/e2，谁长谁短不限，允许换向摆放)核对某个包型够不够用——
+// 和纸样计算器"预估用料"卡片一样，分两条真实标准：①能不能放下最大的那片裁片 ②总面积(含30%排布损耗)够不够，
+// 两条都过才算"够用"；没考虑布纹方向/多块拼接，是轻量判断，不是精确排料。
+function sufficiencyFor(bag, e1, e2){
+  const req=REQUIRED[bag];
+  if(!req || !(e1>0) || !(e2>0)) return null;
+  const measured=[Math.min(e1,e2), Math.max(e1,e2)];
+  const needPiece=[Math.min(req.maxW,req.maxH), Math.max(req.maxW,req.maxH)];
+  const fitsPiece = measured[0]>=needPiece[0] && measured[1]>=needPiece[1];
+  const measuredArea = e1*e2;
+  const needArea = req.total*1.3;
+  const fitsArea = measuredArea >= needArea;
+  return {sufficient: fitsPiece && fitsArea, fitsPiece, fitsArea, measuredArea, needArea, needPiece, maxName:req.maxName};
+}
+// ====== 拆解旧衣：按旧衣类型给的通用拆解提示（真实缝纫常识，不是AI识别结果）======
+const GARMENT_TYPES=[
+  {id:'pants',nm:'长裤/牛仔裤',tips:[
+    '先拆下拉链、纽扣、铆钉等五金，留着改造时复用',
+    '用拆线器挑开裤腿外侧缝的线迹，再沿缝线剪开摊平',
+    '裤裆弧线附近布料窄，量边时避开这一段',
+    '两条裤腿可以分开摊平，各自量一段最大可用宽度',
+  ]},
+  {id:'shirt',nm:'衬衫/T恤',tips:[
+    '先拆袖子（沿袖窿缝线），再拆两侧身缝',
+    '前门襟纽扣先拆下留用，扣眼位置的布不建议用在显眼的主片上',
+    '后背通常是最大一整块平整布料，优先量这里',
+    '带图案/印花的部分可以留出来做外袋等装饰片',
+  ]},
+  {id:'skirt',nm:'裙装',tips:[
+    '先拆开侧缝或后中缝（裙子通常只有一条主缝）',
+    '拉链先拆下留用，裙腰部分布料较厚可以单独裁小片',
+    '摊平后裙摆弧度较大，量边时取中间平直的一段',
+  ]},
+  {id:'jacket',nm:'外套/夹克',tips:[
+    '先拆下拉链、纽扣、五金配件，外套辅料通常质量更好，留用价值高',
+    '拆开袖子和身片的连接缝，衬里和面料可能需要分开处理',
+    '面料通常较厚挺，适合做需要立体支撑的包型（水桶包、托特包等）',
+    '口袋、内衬等部位布料较小，可以留作提手、补丁等小裁片',
+  ]},
+  {id:'flat',nm:'已经是平整布料',tips:[
+    '这种情况不用拆解，直接摊平量边就好',
+    '注意先确认布料没有明显破损、污渍集中在要用的这一块区域',
+  ]},
+];
+
+// ====== 屏4量边示意图：按旧衣类型给的真实简笔示意图，不是从用户照片里自动识别出来的 ======
+// Bedi 2026-08-30 指出：红线必须是"裁剪开的衣物实际具有代表性的两条边"，不能是固定位置的装饰线——
+// 但这个环境里没有真实的图像识别/关键点检测能力，没法在用户上传的任意照片上准确画出这两条边。
+// 诚实的折中做法：改成按②选的旧衣类型，画一张真实对应该类衣物结构的简笔示意图(不是照片，是示意图，
+// 每种类型的红线位置都对应这类衣物实际拆开摊平后真正有代表性的两条边)，用户自己上传的照片仍然完整展示、
+// 但不在上面画线，避免让人误以为是"系统从这张照片里量出来的"。
+const GARMENT_DIAGRAMS={
+  pants:{
+    edge1:'裆部下方一圈的最大宽度', edge2:'裤腿方向能用的最长一段',
+    svg:'<svg viewBox="0 0 200 190" xmlns="http://www.w3.org/2000/svg">'
+      +'<rect x="55" y="14" width="90" height="16" rx="3" fill="none" stroke="#9DA192" stroke-width="2"/>'
+      +'<rect x="58" y="30" width="40" height="138" rx="3" fill="none" stroke="#9DA192" stroke-width="2"/>'
+      +'<rect x="102" y="30" width="40" height="138" rx="3" fill="none" stroke="#9DA192" stroke-width="2"/>'
+      +'<line x1="50" y1="46" x2="150" y2="46" stroke="#C0392B" stroke-width="2.5"/>'
+      +'<circle cx="150" cy="46" r="9" fill="#C0392B"/><text x="150" y="50" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">①</text>'
+      +'<line x1="78" y1="48" x2="78" y2="164" stroke="#C0392B" stroke-width="2.5"/>'
+      +'<circle cx="78" cy="164" r="9" fill="#C0392B"/><text x="78" y="168" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">②</text>'
+      +'</svg>',
+  },
+  shirt:{
+    edge1:'后背最宽处的宽度', edge2:'后背方向的衣长',
+    svg:'<svg viewBox="0 0 200 190" xmlns="http://www.w3.org/2000/svg">'
+      +'<rect x="65" y="35" width="70" height="130" rx="4" fill="none" stroke="#9DA192" stroke-width="2"/>'
+      +'<rect x="35" y="35" width="30" height="50" rx="4" fill="none" stroke="#9DA192" stroke-width="2"/>'
+      +'<rect x="135" y="35" width="30" height="50" rx="4" fill="none" stroke="#9DA192" stroke-width="2"/>'
+      +'<line x1="65" y1="50" x2="135" y2="50" stroke="#C0392B" stroke-width="2.5"/>'
+      +'<circle cx="135" cy="50" r="9" fill="#C0392B"/><text x="135" y="54" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">①</text>'
+      +'<line x1="100" y1="37" x2="100" y2="163" stroke="#C0392B" stroke-width="2.5"/>'
+      +'<circle cx="100" cy="163" r="9" fill="#C0392B"/><text x="100" y="167" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">②</text>'
+      +'</svg>',
+  },
+  skirt:{
+    edge1:'裙摆展开后的最大宽度', edge2:'裙腰到裙摆的裙长',
+    svg:'<svg viewBox="0 0 200 190" xmlns="http://www.w3.org/2000/svg">'
+      +'<polygon points="85,20 115,20 150,165 50,165" fill="none" stroke="#9DA192" stroke-width="2"/>'
+      +'<line x1="58" y1="150" x2="142" y2="150" stroke="#C0392B" stroke-width="2.5"/>'
+      +'<circle cx="142" cy="150" r="9" fill="#C0392B"/><text x="142" y="154" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">①</text>'
+      +'<line x1="100" y1="22" x2="100" y2="148" stroke="#C0392B" stroke-width="2.5"/>'
+      +'<circle cx="100" cy="148" r="9" fill="#C0392B"/><text x="100" y="152" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">②</text>'
+      +'</svg>',
+  },
+  jacket:{
+    edge1:'后背整片最宽处的宽度', edge2:'后背方向的衣长',
+    svg:'<svg viewBox="0 0 200 190" xmlns="http://www.w3.org/2000/svg">'
+      +'<rect x="62" y="30" width="76" height="140" rx="4" fill="none" stroke="#9DA192" stroke-width="2"/>'
+      +'<rect x="28" y="30" width="34" height="70" rx="4" fill="none" stroke="#9DA192" stroke-width="2"/>'
+      +'<rect x="138" y="30" width="34" height="70" rx="4" fill="none" stroke="#9DA192" stroke-width="2"/>'
+      +'<line x1="62" y1="46" x2="138" y2="46" stroke="#C0392B" stroke-width="2.5"/>'
+      +'<circle cx="138" cy="46" r="9" fill="#C0392B"/><text x="138" y="50" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">①</text>'
+      +'<line x1="100" y1="32" x2="100" y2="168" stroke="#C0392B" stroke-width="2.5"/>'
+      +'<circle cx="100" cy="168" r="9" fill="#C0392B"/><text x="100" y="172" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">②</text>'
+      +'</svg>',
+  },
+  flat:{
+    edge1:'这块布最长的一边', edge2:'与长边垂直方向能用的最大宽度',
+    svg:'<svg viewBox="0 0 200 190" xmlns="http://www.w3.org/2000/svg">'
+      +'<rect x="40" y="35" width="120" height="130" rx="4" fill="none" stroke="#9DA192" stroke-width="2"/>'
+      +'<line x1="40" y1="50" x2="160" y2="50" stroke="#C0392B" stroke-width="2.5"/>'
+      +'<circle cx="160" cy="50" r="9" fill="#C0392B"/><text x="160" y="54" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">①</text>'
+      +'<line x1="60" y1="37" x2="60" y2="163" stroke="#C0392B" stroke-width="2.5"/>'
+      +'<circle cx="60" cy="163" r="9" fill="#C0392B"/><text x="60" y="167" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">②</text>'
+      +'</svg>',
+  },
+};
+
+// state 声明放在这里(所有引用它的构造代码/事件处理函数之前)，避免顶层赋值在 const state 真正
+// 执行到之前就访问它触发暂时性死区(TDZ)报错——之前版本踩过这个坑，见交接文档。
+const state={photoDataUrl:null, photo2DataUrl:null, garmentType:null, edge1:null, edge2:null,
+  bag:null, bagName:null, style:null, freeform:'', creativeImgUrl:null, usedFallback:false};
+let cur=1;
+
+const bagselEl=document.getElementById('bagsel');
+BAGS.forEach(b=>{
+  const d=document.createElement('div');
+  d.className='bagopt';
+  d.dataset.bag=b.bag;
+  d.innerHTML='<div class="nm">'+b.nm+'</div><div class="st">'+b.st+'</div><span class="vf'+(b.ref?' ref':'')+'">'+b.vf+'</span><span class="estbadge" id="estbadge-'+b.bag+'"></span>';
+  d.addEventListener('click',()=>{
+    document.querySelectorAll('.bagopt').forEach(x=>x.classList.remove('on'));
+    d.classList.add('on');
+    state.bag=b.bag; state.bagName=b.nm;
+    renderBagWarning();
+    updateMainBtn();
+  });
+  bagselEl.appendChild(d);
+});
+
+// 风格选项（纯前端展示用，影响效果图 prompt 文案，不接入真实风格判断）
+const STYLES=['文艺','辣妹','机能','复古','简约','工装'];
+const styleChipsEl=document.getElementById('styleChips');
+STYLES.forEach((s,i)=>{
+  const c=document.createElement('span');
+  c.className='chip'+(i===0?' on':'');
+  c.textContent=s;
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('#styleChips .chip').forEach(x=>x.classList.remove('on'));
+    c.classList.add('on');
+    state.style=s;
+  });
+  styleChipsEl.appendChild(c);
+});
+state.style=STYLES[0];
+
+// 拆解引导选项
+const gselEl=document.getElementById('gsel');
+GARMENT_TYPES.forEach(g=>{
+  const d=document.createElement('div');
+  d.className='gopt';
+  d.dataset.g=g.id;
+  d.textContent=g.nm;
+  d.addEventListener('click',()=>{
+    document.querySelectorAll('.gopt').forEach(x=>x.classList.remove('on'));
+    d.classList.add('on');
+    state.garmentType=g.id;
+    renderTips(g);
+    updateMainBtn();
+  });
+  gselEl.appendChild(d);
+});
+function renderTips(g){
+  document.getElementById('tipArea').innerHTML =
+    '<div class="tipcard"><div class="tt">🧵 '+g.nm+' 的拆解建议</div><ol>'
+    + g.tips.map(t=>'<li>'+t+'</li>').join('')
+    + '</ol></div>';
+}
+
+const SCREEN_ORDER=[1,2,3,4,5,6,7,8]; // 现在是纯线性流程，布料够不够在⑤选包型时就实时核对，不再需要单独的分支屏
+const titles={1:'上传旧衣',2:'拆解旧衣',3:'裁开后布料',4:'量两条边',5:'选方向',6:'确认理解',7:'生成中',8:'效果图'};
+
+function buildStepsBar(){
+  const bar=document.getElementById('stepsBar');
+  bar.innerHTML='';
+  SCREEN_ORDER.forEach(()=>{ const d=document.createElement('div'); bar.appendChild(d); });
+}
+buildStepsBar();
+
+function updateMainBtn(){
+  if(cur===1){
+    resetFoot();
+    const btn=document.getElementById('mainBtn');
+    btn.textContent='下一步'; btn.disabled=!state.photoDataUrl;
+  }
+  else if(cur===2){
+    resetFootDual('已是平整布料，跳过','拆好了，下一步', ()=>{ state.garmentType='flat'; showScreen(3); }, ()=>{ if(state.garmentType) showScreen(3); });
+  }
+  else if(cur===3){
+    resetFoot();
+    const btn=document.getElementById('mainBtn');
+    btn.textContent='下一步'; btn.disabled=!state.photo2DataUrl;
+  }
+  else if(cur===4){
+    resetFoot();
+    const btn=document.getElementById('mainBtn');
+    btn.textContent='下一步：选包型'; btn.disabled=!(state.edge1>0 && state.edge2>0);
+  }
+  else if(cur===5){
+    resetFoot();
+    const btn=document.getElementById('mainBtn');
+    btn.textContent='确认改造方向'; btn.disabled=!state.bag;
+  }
+  else if(cur===6){
+    resetFootDual('改一下','就这样生成', ()=>showScreen(5), ()=>{ showScreen(7); startGenerate(); });
+  }
+  else if(cur===7){ document.getElementById('footArea').innerHTML=''; }
+  else if(cur===8){
+    resetFootDual('重新生成一次','开始制作 → 生成纸样', ()=>{ showScreen(7); startGenerate(); }, ()=>goToCalculator());
+  }
+}
+
+function resetFoot(){
+  const foot=document.getElementById('footArea');
+  foot.innerHTML='<button class="btn" id="mainBtn" onclick="nextScreen()">下一步</button>';
+}
+function resetFootDual(leftText,rightText,leftFn,rightFn){
+  const foot=document.getElementById('footArea');
+  foot.innerHTML='<div class="row2"><button class="btn sec2" id="leftBtn">'+leftText+'</button>'
+    +'<button class="btn wide" id="rightBtn">'+rightText+'</button></div>';
+  document.getElementById('leftBtn').addEventListener('click',leftFn);
+  document.getElementById('rightBtn').addEventListener('click',rightFn);
+  // screen2的"拆好了"按钮要在未选类型时禁用
+  if(cur===2){
+    document.getElementById('rightBtn').disabled=!state.garmentType;
+    document.getElementById('rightBtn').style.opacity=state.garmentType?1:.4;
+    document.getElementById('rightBtn').style.pointerEvents=state.garmentType?'auto':'none';
+  }
+}
+
+function showScreen(n){
+  cur=n;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  document.getElementById('screen'+n).classList.add('on');
+  document.getElementById('screenTitle').textContent=titles[n];
+  const idx=SCREEN_ORDER.indexOf(n);
+  document.querySelectorAll('#stepsBar div').forEach((d,i)=>d.classList.toggle('on', idx>=0 && i<=idx));
+  if(n===4){ renderDiagram(); }
+  if(n===5){ refreshBagBadges(); renderBagWarning(); }
+  updateMainBtn();
+}
+
+function prevScreen(){
+  if(cur===1) return;
+  if(cur===7) return; // 生成中不可返回
+  const idx=SCREEN_ORDER.indexOf(cur);
+  if(idx>0) showScreen(SCREEN_ORDER[idx-1]);
+}
+
+document.getElementById('fileInput').addEventListener('change', e=>{
+  const f=e.target.files[0];
+  if(!f) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    state.photoDataUrl=ev.target.result;
+    const img=document.getElementById('upPreview');
+    img.src=state.photoDataUrl;
+    img.style.display='block';
+    document.getElementById('upbox').classList.add('has-img');
+    updateMainBtn();
+  };
+  reader.readAsDataURL(f);
+});
+
+document.getElementById('fileInput2').addEventListener('change', e=>{
+  const f=e.target.files[0];
+  if(!f) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    state.photo2DataUrl=ev.target.result;
+    const img=document.getElementById('upPreview2');
+    img.src=state.photo2DataUrl;
+    img.style.display='block';
+    document.getElementById('upbox2').classList.add('has-img');
+    // 屏4会原样再展示一次这张照片(不叠线，仅供用户自己核对参考)
+    document.getElementById('measPhotoPreview').src=state.photo2DataUrl;
+    updateMainBtn();
+  };
+  reader.readAsDataURL(f);
+});
+
+// ====== 屏4：按旧衣类型渲染量边示意图 + 量两条边 ======
+function renderDiagram(){
+  const g=GARMENT_DIAGRAMS[state.garmentType] || GARMENT_DIAGRAMS.flat;
+  document.getElementById('diagramArea').innerHTML=g.svg;
+  document.getElementById('diagramCaption').textContent=
+    '这是"'+(GARMENT_TYPES.find(x=>x.id===state.garmentType)||{nm:'平整布料'}).nm+'"这类衣物拆开摊平后通常量的两条边示意图（不是从你的照片里识别出来的，是按这类衣物的真实结构画的参考图）——请对照你自己摊平的这块布料，量出对应的两条边：①'+g.edge1+'，②'+g.edge2+'，填在下面。';
+  document.getElementById('edge1Label').textContent=g.edge1+'（cm）';
+  document.getElementById('edge2Label').textContent=g.edge2+'（cm）';
+}
+
+function readEdges(){
+  state.edge1=parseFloat(document.getElementById('edge1Input').value)||null;
+  state.edge2=parseFloat(document.getElementById('edge2Input').value)||null;
+  const fb=document.getElementById('edgeFeedback');
+  if(state.edge1>0 && state.edge2>0){
+    const area=Math.round(state.edge1*state.edge2);
+    const okCount=BAGS.filter(b=>{ const c=sufficiencyFor(b.bag,state.edge1,state.edge2); return c&&c.sufficient; }).length;
+    fb.innerHTML='<div class="pill '+(okCount>0?'ok':'warn')+'"><span>'+(okCount>0?'✅':'⚠️')+'</span>'
+      +'<span>这块布料大约 '+area+' cm²，13个包型里有 <b>'+okCount+'</b> 个够用（下一步选包型时每个都会标出来）。</span></div>';
+  }else{
+    fb.innerHTML='';
+  }
+  updateMainBtn();
+}
+document.getElementById('edge1Input').addEventListener('input', readEdges);
+document.getElementById('edge2Input').addEventListener('input', readEdges);
+
+// 给屏5的包型卡片按真实测量的两条边标"够用/不够用"——这是真实核对（用sufficiencyFor两条真实标准算出），
+// 不是预估，所以不用"预估"这两个字
+function refreshBagBadges(){
+  BAGS.forEach(b=>{
+    const badge=document.getElementById('estbadge-'+b.bag);
+    if(!badge) return;
+    const chk=sufficiencyFor(b.bag, state.edge1, state.edge2);
+    if(!chk){ badge.textContent=''; badge.className='estbadge'; return; }
+    if(chk.sufficient){ badge.textContent='够用'; badge.className='estbadge good'; }
+    else{ badge.textContent='不够用'; badge.className='estbadge tight'; }
+  });
+}
+
+// 选中的包型如果布料不够，在网格下面显示具体原因 + 最多3个够用的替代包型（可以直接点着换选）
+function renderBagWarning(){
+  const el=document.getElementById('bagWarnArea');
+  if(!state.bag){ el.innerHTML=''; return; }
+  const chk=sufficiencyFor(state.bag, state.edge1, state.edge2);
+  if(!chk || chk.sufficient){ el.innerHTML=''; return; }
+  let reason;
+  if(!chk.fitsPiece){
+    reason='「'+state.bagName+'」最大的一块裁片（'+chk.maxName+'）需要 '+chk.needPiece[1].toFixed(1)+'×'+chk.needPiece[0].toFixed(1)+'cm 才能放下，你量到的两条边是 '+state.edge1+'×'+state.edge2+'cm，换个方向摆也放不下这块裁片。';
+  }else{
+    reason='「'+state.bagName+'」全部裁片加起来大概需要 '+Math.round(chk.needArea)+'cm²左右的总用料（已包含约30%排布损耗），你这块布大约 '+Math.round(chk.measuredArea)+'cm²，差了点。';
+  }
+  const alts=BAGS
+    .filter(b=>b.bag!==state.bag)
+    .map(b=>({b, c:sufficiencyFor(b.bag, state.edge1, state.edge2)}))
+    .filter(x=>x.c && x.c.sufficient)
+    .sort((x,y)=>REQUIRED[y.b.bag].total-REQUIRED[x.b.bag].total) // 从"最接近够用"到"最省布"
+    .slice(0,3);
+  let html='<div class="pill warn"><span>⚠️</span><span>'+reason+' 也可以不换，就按这个选——只是实际裁的时候会更紧张。</span></div>';
+  if(alts.length>0){
+    html+='<div class="sec" style="margin-top:12px">这些包型你这块布够用 ↓</div><div id="altListInline"></div>';
+  }
+  el.innerHTML=html;
+  if(alts.length>0){
+    const listEl=document.getElementById('altListInline');
+    alts.forEach(({b})=>{
+      const d=document.createElement('div');
+      d.className='altcard';
+      d.innerHTML='<div><div class="nm">'+b.nm+'</div><div class="st">'+b.st+'</div></div>'
+        +'<div class="need">总用料约<br>'+Math.round(REQUIRED[b.bag].total*1.3)+'cm²</div>';
+      d.addEventListener('click',()=>{
+        state.bag=b.bag; state.bagName=b.nm;
+        document.querySelectorAll('.bagopt').forEach(x=>x.classList.toggle('on', x.dataset.bag===b.bag));
+        renderBagWarning();
+        updateMainBtn();
+      });
+      listEl.appendChild(d);
+    });
+  }
+}
+
+function nextScreen(){
+  if(cur===1){ showScreen(2); }
+  else if(cur===3){ showScreen(4); }
+  else if(cur===4){ showScreen(5); }
+  else if(cur===5){
+    state.freeform=document.getElementById('freeform').value.trim();
+    renderSummary();
+    showScreen(6);
+  }
+}
+
+// ====== 屏6：确认理解 ======
+function renderSummary(){
+  const detailLine = state.freeform ? state.freeform : '（未填写，按包型默认结构生成）';
+  document.getElementById('sumCard').innerHTML =
+    '<div class="sumrow"><span class="ic">🧺</span><span>结构：<b>'+state.bagName+'</b></span></div>'
+    +'<div class="sumrow"><span class="ic">🎨</span><span>风格：<b>'+state.style+'</b></span></div>'
+    +'<div class="sumrow"><span class="ic">✨</span><span>细节：'+detailLine+'</span></div>';
+}
+
+// ====== 屏7：生成效果图 ======
+const CREATIVE_IMAGE_ENDPOINT = '/api/generate-creative-image'; // 部署时换成真实中转函数地址
+
+async function callCreativeImageAPI(photoDataUrl, bagName, style, freeform){
+  const resp = await fetch(CREATIVE_IMAGE_ENDPOINT, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      photoDataUrl: photoDataUrl,
+      bagName: bagName,
+      // 关键约束：提示词里必须明确限定"只能是这个已知包型的结构"，不能让模型自由发挥形状——
+      // 这样生成的效果图才能直接对应模板库里已验证的真实纸样。这次改用裁开摊平后的真实布料照片
+      // (state.photo2DataUrl)作为生成底图，而不是完整旧衣的照片，效果图里的面料/颜色/纹理更贴近
+      // 实际能做出来的样子。风格/细节是真实用户输入，一起拼进prompt。
+      prompt: '将这块摊平的旧衣布料改造成一个'+bagName+'，保持这个包型本身已知的结构比例不变，面料/颜色/纹理就是这块布料本身的样子，整体风格：'+style+'。'
+        + (freeform ? ('额外要求：'+freeform+'。') : '')
+        + '产品摄影风格，白底。',
+    }),
+  });
+  if(!resp.ok) throw new Error('HTTP '+resp.status);
+  const data = await resp.json();
+  return data.imageDataUrl; // 中转函数返回 base64 图片
+}
+
+async function startGenerate(){
+  document.getElementById('loadingText').textContent='正在为你生成效果图…';
+  try{
+    const url = await callCreativeImageAPI(state.photo2DataUrl, state.bagName, state.style, state.freeform);
+    state.creativeImgUrl = url;
+    state.usedFallback = false;
+  }catch(err){
+    await new Promise(r=>setTimeout(r,900));
+    state.creativeImgUrl = null;
+    state.usedFallback = true;
+  }
+  renderResult();
+  showScreen(8);
+}
+
+function renderResult(){
+  const card=document.getElementById('resultImgCard');
+  const note=document.getElementById('fallbackNote');
+  const noteText=document.getElementById('fallbackText');
+  if(state.creativeImgUrl){
+    card.innerHTML='<img src="'+state.creativeImgUrl+'">';
+    note.style.display='none';
+  }else{
+    card.innerHTML='<div class="placeholder"><div class="big">🧵 '+state.bagName+'</div>'
+      +'<div>效果图占位 · 真实 AI 生成图将显示在这里</div></div>';
+    note.style.display='flex';
+    noteText.textContent='这一步需要一个真实的后端中转服务来调用 Gemini 生成图片（key 出于安全考虑不能放进这份前端文件，只能放在服务端）——这份 MVP 演示文件本身没有部署那个后端，所以这里用占位图代替，不是没写完。正式部署、服务端配好中转服务后，这一步会显示真实生成的效果图。';
+  }
+  document.getElementById('pieceNote').textContent='布料够不够裁「'+state.bagName+'」在选包型那一步已经按你实测的两条边核对过了，这里满意的话就可以直接开始制作——跳转到已验证的纸样计算器，直接预选好这个包型，拿到真实、可1:1打印裁剪的纸样。';
+}
+
+function goToCalculator(){
+  // 同目录、纯英文文件名的计算器副本，不依赖任何中文路径能否被正确解压/识别
+  location.href = 'calculator.html?bag=' + encodeURIComponent(state.bag);
+}
+
+// 初始化：显式走一遍 showScreen(1)，保证步骤条高亮、footer按钮状态和屏幕标题从一开始就正确，
+// 不依赖静态HTML里"screen1 on"这个初始class巧合对上。
+showScreen(1);
+</script>
+</body></html>

@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/generate-creative-image.js": {
+      "maxDuration": 30
+    }
+  }
+}
