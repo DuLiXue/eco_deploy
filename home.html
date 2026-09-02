@@ -13,61 +13,110 @@ display:flex;flex-direction:column;align-items:center;padding:30px 16px 60px;-we
 .hint b{color:var(--green)}
 .ph{width:390px;background:var(--card);border-radius:40px;overflow:hidden;position:relative;
 box-shadow:0 20px 50px rgba(28,30,24,.16),0 0 0 10px #14150F,0 0 0 12px #2C2E24;display:flex;flex-direction:column;height:844px}
-.sb{height:50px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 30px 8px;flex-shrink:0}
-.sb .t{font-size:16px;font-weight:600}.sb .r{font-size:13px;font-weight:600}
-.bar{display:flex;align-items:center;padding:8px 20px 12px;flex-shrink:0}
-.bar .ttl{font-size:18px;font-weight:600}
-.body{padding:4px 20px 20px;flex:1;overflow-y:auto}
+.sb{height:40px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 4px;flex-shrink:0}
+.sb .t{font-size:15px;font-weight:600}
+/* ===== 全局顶部：根级tab(首页/我的)用图标行；子页面(我的改造/搜索/怎么做同款)用返回箭头 ===== */
+.gnav{display:flex;align-items:center;justify-content:flex-end;gap:14px;padding:6px 18px 2px;flex-shrink:0}
+.gnav .gi{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ink);cursor:pointer}
+.gnav .badge{font-size:13px;font-weight:600;color:var(--ink)}
+.pushhead{display:none;align-items:center;padding:8px 16px 6px;gap:10px;flex-shrink:0}
+.pushhead.on{display:flex}
+.pushhead .back{width:32px;height:32px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;flex-shrink:0}
+.pushhead .ttl{font-size:16px;font-weight:600}
+.hometabs{display:flex;align-items:center;padding:2px 16px 10px;gap:18px;flex-shrink:0}
+.hometabs .plus{font-size:19px;color:var(--ink);cursor:pointer;margin-right:2px}
+.hometabs .t{font-size:15.5px;color:var(--ink-3);cursor:pointer;font-weight:500}
+.hometabs .t.on{color:var(--green-core);font-weight:700}
+.methead{display:flex;align-items:center;padding:2px 18px 10px;flex-shrink:0}
+.methead .ttl{font-size:17px;font-weight:700}
+.body{padding:0 18px 18px;flex:1;overflow-y:auto;position:relative}
 .sec{font-size:13px;color:var(--ink-2);font-weight:500;margin:18px 0 10px}
-.sec:first-child{margin-top:6px}
+.sec:first-child{margin-top:4px}
 .small{font-size:11px;color:var(--ink-3);line-height:1.6;margin-top:4px}
 .tabpane{display:none}
 .tabpane.on{display:block;animation:fade .25s}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
 .pill{border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.6;display:flex;gap:8px;align-items:flex-start;margin-bottom:12px}
 .pill.info{background:var(--green-soft);color:var(--green-core)}
-/* 首页：参考款式卡片(复用选包型屏同一套视觉，但这里是静态参考库，不是"选择") */
-.bagsel{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.bagopt{border:1.5px solid var(--line-2);border-radius:14px;padding:12px;cursor:pointer;transition:all .15s;position:relative}
-.bagopt:active{border-color:var(--green);background:var(--green-soft)}
-.bagopt .nm{font-size:14px;font-weight:600;margin-bottom:2px}
-.bagopt .st{font-size:11px;color:var(--ink-3)}
-.bagopt .vf{position:absolute;top:10px;right:10px;font-size:10px;color:var(--green);font-weight:600}
-.bagopt .vf.ref{color:var(--warn)}
-.bagopt .go{font-size:10.5px;color:var(--green-core);font-weight:600;margin-top:6px}
-/* 我的改造：项目卡片 */
-.chipwrap{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
-.chip{border:1.5px solid var(--line-2);border-radius:20px;padding:6px 14px;font-size:12.5px;cursor:pointer;color:var(--ink-2)}
-.chip.on{border-color:var(--green);background:var(--green-soft);color:var(--green-core);font-weight:600}
+.ctabtn{display:block;width:100%;text-align:center;background:var(--green);color:#fff;font-size:14.5px;font-weight:700;
+border:none;border-radius:14px;padding:13px;cursor:pointer;font-family:var(--font)}
+/* ===== 首页 Feed：信息流卡片(照搬设计稿"社区流"视觉——示例帖+13个真实模板款式，用同一套卡片语言) ===== */
+.feedcard{border-bottom:8px solid var(--bg);margin:0 -18px 14px;padding:0 18px 14px}
+.feedcard:last-child{border-bottom:none}
+.feedcard .imgwrap{position:relative;border-radius:16px;overflow:hidden;background:#EFEFEC;margin-bottom:10px}
+.feedcard .imgwrap img{width:100%;display:block;aspect-ratio:1/1.05;object-fit:cover}
+.feedcard .imgwrap .tile{width:100%;aspect-ratio:1/1.05;display:flex;align-items:center;justify-content:center;font-size:64px;
+background:linear-gradient(135deg,var(--green-soft),#F5F7F1)}
+.feedcard .pill-tag{position:absolute;top:12px;left:12px;background:rgba(28,30,24,.62);color:#fff;font-size:11px;font-weight:600;padding:6px 12px;border-radius:20px}
+.feedcard .pill-buy{position:absolute;top:12px;right:12px;background:#fff;color:var(--ink);font-size:11px;font-weight:600;padding:6px 12px 6px 8px;border-radius:20px;display:flex;align-items:center;gap:4px;cursor:pointer}
+.feedcard .userrow{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.feedcard .av{width:34px;height:34px;border-radius:50%;background:var(--green-soft);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.feedcard .uinfo{flex:1;min-width:0}
+.feedcard .uname{font-size:14px;font-weight:700}
+.feedcard .usub{font-size:11px;color:var(--ink-3)}
+.feedcard .followbtn{font-size:12px;font-weight:700;color:var(--green-core);border:1.5px solid var(--green-core);border-radius:16px;padding:5px 14px;cursor:pointer}
+.feedcard .followbtn.on{color:var(--ink-3);border-color:var(--line-2)}
+.feedcard .cap{font-size:13.5px;line-height:1.6;margin-bottom:8px}
+.feedcard .tagchip{display:inline-flex;align-items:center;gap:4px;background:var(--bg);color:var(--green-core);font-size:12px;font-weight:600;
+padding:6px 12px;border-radius:14px;margin-bottom:12px;cursor:pointer}
+.feedcard .actrow{display:flex;align-items:center;gap:20px;padding:8px 0 12px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.feedcard .actrow .a{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink-2);cursor:pointer}
+.feedcard .actrow .a.liked{color:var(--red)}
+.feedcard .actrow .a.saved{color:var(--green-core)}
+/* ===== 搜索/发现 & 怎么做同款：覆盖层(pushed screen) ===== */
+.overlay{position:absolute;inset:0;background:var(--card);z-index:55;display:none;flex-direction:column}
+.overlay.on{display:flex}
+.overlay .obody{padding:16px 18px;flex:1;overflow-y:auto}
+.searchbox{background:var(--bg);border-radius:12px;padding:11px 14px;font-size:13.5px;color:var(--ink-3);display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.searchbox input{border:none;background:none;outline:none;flex:1;font-size:13.5px;font-family:var(--font);color:var(--ink)}
+.filchips{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:20px}
+.filchip{border:1.5px solid var(--line-2);border-radius:20px;padding:8px 16px;font-size:13px;color:var(--ink-2);cursor:pointer}
+.filchip.on{border-color:var(--green-core);background:var(--green-soft);color:var(--green-core);font-weight:700}
+.filchip.mut{opacity:.55}
+.typegrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.typegrid .tt{aspect-ratio:1/1;border-radius:14px;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:6px}
+.typegrid .tt .ic{font-size:26px}
+.typegrid .tt .nm{font-size:10.5px;color:var(--ink-2);text-align:center;line-height:1.3}
+.howtocard{border:1.5px solid var(--line-2);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer}
+.howtocard.rec{border-color:var(--green-core);background:var(--green-soft)}
+.howtocard .hd{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.howtocard .hd .ic{font-size:16px}
+.howtocard .hd .tt{font-size:15px;font-weight:700;flex:1}
+.howtocard .hd .tag{background:var(--green-core);color:#fff;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:10px}
+.howtocard .ds{font-size:12.5px;color:var(--ink-2);line-height:1.6}
+/* ===== 我的改造(pushed列表，视觉照搬设计稿的扁平tab+列表) ===== */
+.flattabs{display:flex;gap:20px;padding:2px 0 14px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.flattabs .ft{font-size:13.5px;color:var(--ink-3);cursor:pointer;padding-bottom:10px;margin-bottom:-1px}
+.flattabs .ft.on{color:var(--green-core);font-weight:700;border-bottom:2px solid var(--green-core)}
 .pjcard{border:1px solid var(--line-2);border-radius:14px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
-.pjcard .thumb{width:52px;height:52px;border-radius:10px;background:var(--bg);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--ink-3)}
+.pjcard .thumb{width:48px;height:48px;border-radius:10px;background:var(--bg);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--ink-3)}
 .pjcard .thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .pjcard .info{flex:1;min-width:0}
-.pjcard .ttl{font-size:14px;font-weight:600;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pjcard .ttl{font-size:14px;font-weight:700;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pjcard .meta{font-size:11px;color:var(--ink-3);display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pjcard .meta .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--nav-off)}
 .pjcard .meta .dot.in_progress{background:var(--green)}
 .pjcard .meta .dot.done{background:#3A7BD5}
 .pjcard .meta .dot.archived{background:var(--nav-off)}
-.pjcard .acts{display:flex;flex-direction:column;gap:7px;flex-shrink:0;align-items:flex-end}
-.pjcard .actbtn{font-size:11px;color:var(--green-core);font-weight:600;cursor:pointer;white-space:nowrap}
-.pjcard .actbtn.del{color:var(--red)}
-.pjcard .actbtn.mut{color:var(--ink-3)}
+.pjcard .acts{display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end}
+.pjcard .actbtn{font-size:12.5px;color:var(--green-core);font-weight:700;cursor:pointer;white-space:nowrap}
+.pjcard .actbtn2{font-size:10.5px;color:var(--ink-3);cursor:pointer;white-space:nowrap}
 .emptytip{text-align:center;color:var(--ink-3);font-size:12.5px;padding:50px 20px;line-height:1.9}
-/* 我的 */
-.mehead{display:flex;align-items:center;gap:12px;padding:6px 0 18px}
-.mehead .av{width:56px;height:56px;border-radius:50%;background:var(--green-soft);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
-.mehead .nm{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
-.mehead .nm .edit{font-size:11px;color:var(--ink-3);font-weight:400;cursor:pointer}
-.statrow{display:flex;gap:10px;margin-bottom:16px}
-.statcard{flex:1;border:1px solid var(--line-2);border-radius:12px;padding:12px 8px;text-align:center}
-.statcard .num{font-size:20px;font-weight:700;color:var(--green-core)}
-.statcard .lb{font-size:11px;color:var(--ink-2);margin-top:2px}
-.melink{border:1px solid var(--line-2);border-radius:14px;padding:14px;display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:10px}
-.melink .ic{font-size:18px}
-.melink .tx{flex:1;font-size:13.5px;font-weight:500}
-.melink .arrow{color:var(--ink-3)}
-/* 底部导航(5个位置，商城/消息这个版本还没做，灰置但保留位置——如实标注，不是假装不存在) */
+/* ===== 我的(root tab，照搬设计稿头像+统计卡片+作品宫格) ===== */
+.mehead{display:flex;align-items:center;gap:14px;padding:6px 0 16px}
+.mehead .av{width:60px;height:60px;border-radius:50%;background:var(--green-soft);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.mehead .nm{font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
+.mehead .nm .edit{font-size:11px;color:var(--ink-3);font-weight:400;cursor:pointer;border:1px solid var(--line-2);border-radius:10px;padding:2px 8px}
+.mehead .sub{font-size:12px;color:var(--ink-3);margin-top:3px}
+.metiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
+.metiles .mt{border:1px solid var(--line-2);border-radius:14px;padding:14px 6px;text-align:center;cursor:pointer}
+.metiles .mt .ic{font-size:19px;margin-bottom:6px}
+.metiles .mt .tx{font-size:12px;font-weight:600}
+.flattabs.sm .ft{font-size:13px}
+.worksgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.worksgrid .wt{aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--ink-3);cursor:pointer}
+.worksgrid .wt img{width:100%;height:100%;object-fit:cover;display:block}
+/* ===== 底部导航(5个位置，商城/消息这个版本还没做，灰置但保留位置——如实标注，不是假装不存在) ===== */
 .botnav{display:flex;border-top:1px solid var(--line);flex-shrink:0}
 .botnav .item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--nav-off);cursor:pointer;padding:8px 0 10px}
 .botnav .item.on{color:var(--green-core);font-weight:600}
@@ -78,23 +127,29 @@ box-shadow:0 20px 50px rgba(28,30,24,.16),0 0 0 10px #14150F,0 0 0 12px #2C2E24;
 .toast{position:absolute;left:50%;bottom:100px;transform:translateX(-50%);background:rgba(28,30,24,.88);color:#fff;
 font-size:12px;padding:9px 16px;border-radius:20px;white-space:nowrap;z-index:80;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
-/* ====== 改造小助手(浮动入口+聊天) ====== */
+/* ====== 改造小助手(浮动入口+提示气泡+聊天，照搬设计稿) ====== */
+.aiw-tip{position:absolute;right:16px;bottom:154px;background:#fff;color:var(--ink);font-size:12.5px;font-weight:500;
+padding:9px 14px;border-radius:18px 18px 4px 18px;box-shadow:0 6px 18px rgba(28,30,24,.16);z-index:49;white-space:nowrap;
+opacity:0;transform:translateY(6px);pointer-events:none;transition:all .25s}
+.aiw-tip.on{opacity:1;transform:translateY(0);pointer-events:auto;cursor:pointer}
 .aiw-fab{position:absolute;right:16px;bottom:96px;width:52px;height:52px;border-radius:50%;background:var(--green);
 color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;
 box-shadow:0 10px 24px rgba(78,164,21,.35);z-index:50}
 .aiw-panel{position:absolute;inset:0;background:var(--card);z-index:60;display:none;flex-direction:column}
 .aiw-panel.on{display:flex}
 .aiw-head{padding:16px 16px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+.aiw-head .back{width:32px;height:32px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 .aiw-head .ic{width:36px;height:36px;border-radius:50%;background:var(--green-soft);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
-.aiw-head .nm{font-size:14px;font-weight:600}
+.aiw-head .nm{font-size:14px;font-weight:700}
 .aiw-head .st{font-size:11px;color:var(--green-core);display:flex;align-items:center;gap:4px}
 .aiw-head .st .dot{width:6px;height:6px;border-radius:50%;background:var(--green-core)}
-.aiw-head .x{margin-left:auto;width:32px;height:32px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 .aiw-msgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .aiw-bub{max-width:80%;padding:10px 13px;border-radius:14px;font-size:13px;line-height:1.6;white-space:pre-wrap}
 .aiw-bub.bot{background:var(--bg);color:var(--ink);align-self:flex-start;border-bottom-left-radius:4px}
 .aiw-bub.me{background:var(--green);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
 .aiw-bub.err{background:var(--warn-soft);color:var(--warn)}
+.aiw-quickrow{display:flex;gap:8px;flex-wrap:wrap;align-self:flex-start;max-width:86%}
+.aiw-quickchip{border:1.5px solid var(--line-2);border-radius:16px;padding:7px 13px;font-size:12px;color:var(--ink-2);cursor:pointer;white-space:nowrap}
 .aiw-inputrow{padding:10px 12px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center}
 .aiw-inputrow input{flex:1;border:1.5px solid var(--line-2);border-radius:20px;padding:9px 14px;font-size:13px;font-family:var(--font)}
 .aiw-inputrow input:focus{outline:none;border-color:var(--green)}
@@ -103,53 +158,120 @@ align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shr
 .aiw-sendbtn[disabled]{opacity:.4;pointer-events:none}
 </style></head>
 <body>
-<div class="hint">EcoStitch 首页 · <b>MVP</b>验证 · 社区/商城这些板块目前只有首页/我的改造/我的三个能用真实本地数据跑起来的部分<span class="small"></span></div>
+<div class="hint">EcoStitch 首页 · <b>MVP</b>验证 · 界面视觉照搬29屏高保真设计稿，功能上"我的改造/我的/改造小助手/照着做"是真实可用的本地功能，"商城/消息/评论/关注"等需要真实多用户后端的部分保留入口但如实提示未做<span class="small"></span></div>
 
 <div class="ph">
-  <div class="sb"><span class="t">9:41</span><span class="r">85</span></div>
-  <div class="bar"><span class="ttl" id="pageTitle">首页 · 改造灵感</span></div>
+  <div class="sb"><span class="t" id="clockTxt">9:41</span></div>
+
+  <!-- 根级(首页/我的)顶部：仿设计稿的 🏠/🔍/角标 -->
+  <div class="gnav" id="gnav">
+    <span class="gi" onclick="applyView('home')">🏠</span>
+    <span class="gi" onclick="applyView('search')">🔍</span>
+    <span class="badge" title="灵感值·示例展示数据">85</span>
+  </div>
+  <!-- 子页面(我的改造/搜索/怎么做同款/聊天)顶部：返回箭头，仿设计稿的 pushed 页面 -->
+  <div class="pushhead" id="pushhead">
+    <span class="back" onclick="goBackPush()">‹</span>
+    <span class="ttl" id="pushTitle"></span>
+  </div>
+
+  <!-- 首页 tab 行：推荐/关注/最新，仿设计稿 -->
+  <div class="hometabs" id="hometabs">
+    <span class="plus" onclick="notReady('发布')">＋</span>
+    <span class="t on" data-ht="rec" onclick="setHomeTab('rec')">推荐</span>
+    <span class="t" data-ht="follow" onclick="setHomeTab('follow')">关注</span>
+    <span class="t" data-ht="new" onclick="setHomeTab('new')">最新</span>
+  </div>
+  <!-- 我的 tab 顶部标题 -->
+  <div class="methead" id="methead"><span class="ttl">我的</span></div>
+
   <div class="body">
 
-    <!-- 首页：13个已验证包型参考库(不是别人发的帖子——项目目前没有真实多用户社区系统，这里如实标注) -->
+    <!-- 首页：示例帖(照搬设计稿) + 13个真实模板库款式，同一套信息流卡片视觉 -->
     <div class="tabpane on" id="tab-home">
-      <div class="pill info"><span>💡</span><span>下面是项目模板库里已经验证过、能直接生成真实纸样的包型参考款式，不是其他用户发的作品(这个版本还没有真实的多用户社区)。点一个喜欢的，直接照着做。</span></div>
-      <div class="sec">参考款式库(13)</div>
-      <div class="bagsel" id="bagRef"></div>
+      <div id="feedList"></div>
     </div>
 
-    <!-- 我的改造：本地记录，真实数据(存在这台设备浏览器里，不是服务器) -->
+    <!-- 我的改造：pushed列表，本地真实记录 -->
     <div class="tabpane" id="tab-projects">
-      <div class="chipwrap" id="pjFilter"></div>
+      <div class="flattabs" id="pjFilter"></div>
       <div id="pjList"></div>
     </div>
 
-    <!-- 我的：本地统计+入口，没有真实账号系统，不展示粉丝/关注这类需要真实多用户后端才有意义的数据 -->
+    <!-- 我的：root tab，头像+统计卡片+作品/收藏宫格 -->
     <div class="tabpane" id="tab-me">
       <div class="mehead">
         <div class="av">🧵</div>
         <div>
           <div class="nm" id="meNickname">改造达人 <span class="edit" onclick="editNickname()">改称呼</span></div>
-          <div class="small">仅保存在这台设备本地</div>
+          <div class="sub" id="meSub"></div>
         </div>
       </div>
-      <div class="statrow" id="meStats"></div>
-      <div class="melink" onclick="showTab('projects')"><span class="ic">✂️</span><span class="tx">我的改造</span><span class="arrow">›</span></div>
-      <div class="pill info"><span>ℹ️</span><span>以上记录只保存在这台设备的浏览器里，换设备或清除浏览器数据会丢失——这个版本没有账号系统，所以也看不到粉丝/关注这些需要真实多用户后端才有意义的数据，如实说明，不是漏做了。</span></div>
+      <div class="metiles">
+        <div class="mt" onclick="showTab('projects')"><div class="ic">✂️</div><div class="tx">我的改造</div></div>
+        <div class="mt" onclick="notReady('商城/订单')"><div class="ic">🧾</div><div class="tx">我的订单</div></div>
+        <div class="mt" onclick="notReady('商城/在售')"><div class="ic">🏷️</div><div class="tx">我的在售</div></div>
+      </div>
+      <div class="flattabs sm" id="meWorksTab">
+        <div class="ft on" data-mt="works" onclick="setMeWorksTab('works')">作品</div>
+        <div class="ft" data-mt="fav" onclick="setMeWorksTab('fav')">收藏</div>
+      </div>
+      <div class="worksgrid" id="meWorksGrid"></div>
+      <div class="pill info" style="margin-top:16px"><span>ℹ️</span><span>以上"改造/作品"数据真实存在这台设备的浏览器本地(换设备或清缓存会丢失，没有账号系统)；粉丝数是仿照设计稿展示效果的示例数字，不是真实用户数据。</span></div>
+    </div>
+
+    <!-- 搜索/发现：pushed 覆盖层 -->
+    <div class="overlay" id="ov-search">
+      <div class="obody">
+        <div class="searchbox"><span>🔍</span><input id="searchInput" placeholder="搜灵感、款式、面料" oninput="doSearch()"></div>
+        <div class="sec" style="margin-top:0">按原衣物面料</div>
+        <div class="filchips">
+          <div class="filchip mut" onclick="notReady('按面料筛选')">牛仔</div>
+          <div class="filchip mut" onclick="notReady('按面料筛选')">针织</div>
+          <div class="filchip mut" onclick="notReady('按面料筛选')">衬衫布</div>
+          <div class="filchip mut" onclick="notReady('按面料筛选')">帆布</div>
+        </div>
+        <div class="sec">按难度</div>
+        <div class="filchips">
+          <div class="filchip mut" onclick="notReady('按难度筛选')">新手友好</div>
+          <div class="filchip mut" onclick="notReady('按难度筛选')">1-2小时</div>
+          <div class="filchip mut" onclick="notReady('按难度筛选')">免缝纫</div>
+        </div>
+        <div class="sec">按包的类型(13个模板库真实款式，可直接点)</div>
+        <div class="typegrid" id="typeGrid"></div>
+      </div>
+    </div>
+
+    <!-- 怎么做同款：pushed 覆盖层 -->
+    <div class="overlay" id="ov-howto">
+      <div class="obody">
+        <div style="font-size:19px;font-weight:700;margin-bottom:8px">怎么做同款</div>
+        <div style="font-size:12.5px;color:var(--ink-2);margin-bottom:18px">你的旧衣尺寸和模板库多半不同，选一种方式：</div>
+        <div class="howtocard rec" onclick="howtoGo('fit')">
+          <div class="hd"><span class="ic">✨</span><span class="tt">适配我的旧衣</span><span class="tag">推荐</span></div>
+          <div class="ds">按你自己实测的旧衣尺寸重新算纸样，保证用你手上这块布做得出来</div>
+        </div>
+        <div class="howtocard" onclick="howtoGo('raw')">
+          <div class="hd"><span class="ic">⬇️</span><span class="tt">直接用模板纸样</span></div>
+          <div class="ds">跳过拍照测量，直接用模板库这个款式的标准尺寸生纸样，布料是否够用需要你自己对照</div>
+        </div>
+      </div>
     </div>
 
   </div>
 
   <div class="toast" id="toast"></div>
 
+  <div class="aiw-tip" id="aiwTip" onclick="aiwOpen()">卡住了？问问我 👋</div>
   <div class="aiw-fab" id="aiwFab" onclick="aiwOpen()">💬</div>
   <div class="aiw-panel" id="aiwPanel">
     <div class="aiw-head">
+      <div class="back" onclick="aiwClose()">‹</div>
       <div class="ic">💬</div>
       <div>
         <div class="nm">改造小助手</div>
         <div class="st"><span class="dot"></span>在线</div>
       </div>
-      <div class="x" onclick="aiwClose()">✕</div>
     </div>
     <div class="aiw-msgs" id="aiwMsgs"></div>
     <div class="aiw-inputrow">
@@ -204,32 +326,116 @@ async function dbDelete(id){
   });
 }
 
-// ====== 首页：13个已验证包型参考库(和 MVP流程/index.html 里的 BAGS 数据一致，独立维护的拷贝) ======
+// ====== 收藏(本地真实功能，localStorage) ======
+function getFavs(){ try{ return JSON.parse(localStorage.getItem('ecostitch_favs')||'[]'); }catch(e){ return []; } }
+function isFav(bag){ return getFavs().includes(bag); }
+function toggleFav(bag){
+  let f = getFavs();
+  if(f.includes(bag)){ f = f.filter(x=>x!==bag); showToast('已取消收藏'); }
+  else { f.push(bag); showToast('已收藏'); }
+  try{ localStorage.setItem('ecostitch_favs', JSON.stringify(f)); }catch(e){}
+  renderFeed(); if(currentView==='me' && meWorksTab==='fav') renderMeWorks();
+}
+
+// ====== 首页 Feed：13个已验证包型(和 MVP流程/index.html 里的 BAGS 数据一致，独立维护的拷贝) ======
 const BAGS=[
-  {bag:'boxtote',nm:'方底托特包',st:'有侧片·立体方包',vf:'✓已验证',ref:false},
-  {bag:'jointote',nm:'拼接底托特包',st:'上下拼色+夹缝背带',vf:'模板库',ref:true},
-  {bag:'beartote',nm:'三段拼接托特包',st:'沿布+印花+底三段',vf:'模板库',ref:true},
-  {bag:'cardwallet',nm:'多卡位卡包',st:'风琴折叠卡槽',vf:'模板库',ref:true},
-  {bag:'foldtote',nm:'可折叠托特包',st:'自收纳轻便款',vf:'模板库',ref:true},
-  {bag:'bucket',nm:'抽绳水桶包',st:'圆底柱体（周长联动）',vf:'模板库',ref:true},
-  {bag:'crescent',nm:'月牙单肩包',st:'前后片弧形+侧片+背带',vf:'✓曲线复刻',ref:false},
-  {bag:'trianglepouch',nm:'三角笔袋',st:'六边形单片·斜角折三角截面',vf:'✓曲线复刻',ref:false},
-  {bag:'jiaozi',nm:'饺子拉链小包',st:'一片式拉链斜背包',vf:'模板库',ref:true},
-  {bag:'saddle',nm:'斜背马鞍包',st:'前片+侧片+包盖+背带，6片拼接',vf:'模板库',ref:true},
-  {bag:'roundbp',nm:'立体圆饼双肩背包',st:'正圆主体+扇形贴袋+双肩带',vf:'模板库',ref:true},
-  {bag:'zipbp',nm:'经典拉链立体双肩背包',st:'前兜+兜盖+主拉链舱，13类裁片',vf:'模板库',ref:true},
-  {bag:'boston',nm:'波士顿枕头包',st:'皮革五金拼接，高阶⭐⭐⭐⭐☆',vf:'模板库',ref:true},
+  {bag:'boxtote',nm:'方底托特包',st:'有侧片·立体方包',vf:'✓已验证',ref:false,ic:'👜'},
+  {bag:'jointote',nm:'拼接底托特包',st:'上下拼色+夹缝背带',vf:'模板库',ref:true,ic:'👛'},
+  {bag:'beartote',nm:'三段拼接托特包',st:'沿布+印花+底三段',vf:'模板库',ref:true,ic:'🧺'},
+  {bag:'cardwallet',nm:'多卡位卡包',st:'风琴折叠卡槽',vf:'模板库',ref:true,ic:'💳'},
+  {bag:'foldtote',nm:'可折叠托特包',st:'自收纳轻便款',vf:'模板库',ref:true,ic:'🛍️'},
+  {bag:'bucket',nm:'抽绳水桶包',st:'圆底柱体（周长联动）',vf:'模板库',ref:true,ic:'🪣'},
+  {bag:'crescent',nm:'月牙单肩包',st:'前后片弧形+侧片+背带',vf:'✓曲线复刻',ref:false,ic:'🌙'},
+  {bag:'trianglepouch',nm:'三角笔袋',st:'六边形单片·斜角折三角截面',vf:'✓曲线复刻',ref:false,ic:'✏️'},
+  {bag:'jiaozi',nm:'饺子拉链小包',st:'一片式拉链斜背包',vf:'模板库',ref:true,ic:'🥟'},
+  {bag:'saddle',nm:'斜背马鞍包',st:'前片+侧片+包盖+背带，6片拼接',vf:'模板库',ref:true,ic:'🐴'},
+  {bag:'roundbp',nm:'立体圆饼双肩背包',st:'正圆主体+扇形贴袋+双肩带',vf:'模板库',ref:true,ic:'🎒'},
+  {bag:'zipbp',nm:'经典拉链立体双肩背包',st:'前兜+兜盖+主拉链舱，13类裁片',vf:'模板库',ref:true,ic:'🎒'},
+  {bag:'boston',nm:'波士顿枕头包',st:'皮革五金拼接，高阶⭐⭐⭐⭐☆',vf:'模板库',ref:true,ic:'👝'},
 ];
-(function renderBagRef(){
-  const el = document.getElementById('bagRef');
-  el.innerHTML = BAGS.map(b=>
-    '<div class="bagopt" onclick="goStartWithBag(\''+b.bag+'\')">'
-    + '<div class="nm">'+b.nm+'</div><div class="st">'+b.st+'</div>'
-    + '<span class="vf'+(b.ref?' ref':'')+'">'+b.vf+'</span>'
-    + '<div class="go">照着做 →</div></div>'
+// 示例数据(仅供视觉展示丰富度，不是真实统计——按 bag 索引固定生成，保证每次打开数字一致)
+function demoNums(i){ return { like: 36+i*9, cmt: 4+i*2, col: 3+i }; }
+
+function bagById(bag){ return BAGS.find(b=>b.bag===bag); }
+
+function renderFeed(){
+  const el = document.getElementById('feedList');
+  let html = '';
+  // 示例帖(照搬设计稿"社区流"那张真实截图，映射到真实的水桶包)
+  const followed = localStorage.getItem('ecostitch_demo_follow')==='1';
+  html += '<div class="feedcard">'
+    + '<div class="imgwrap"><img src="assets/demo-post-bag.jpg" alt="旧牛仔裤改的水桶包"></div>'
+    + '<div class="userrow"><div class="av">👖</div><div class="uinfo"><div class="uname">改造达人_Lin</div><div class="usub">340 粉丝 · 示例展示</div></div>'
+    + '<div class="followbtn'+(followed?' on':'')+'" onclick="toggleDemoFollow(this)">'+(followed?'已关注':'关注')+'</div></div>'
+    + '<div class="cap">旧牛仔裤改的水桶包，通勤刚好装下电脑～ 用了原来的后袋做装饰，超有味道</div>'
+    + '<div class="tagchip" onclick="openHowto(\'bucket\')">牛仔裤 → 水桶包</div>'
+    + '<div class="actrow">'
+      + '<span class="a'+(demoLiked?' liked':'')+'" onclick="toggleDemoLike(this)">❤️ <span id="demoLikeNum">'+demoLikeCount+'</span></span>'
+      + '<span class="a" onclick="notReady(\'评论\')">💬 24</span>'
+      + '<span class="a'+(isFav('bucket')?' saved':'')+'" onclick="toggleFav(\'bucket\')">🔖 <span>'+(isFav('bucket')?16:15)+'</span></span>'
+      + '<span class="a" onclick="notReady(\'分享\')" style="margin-left:auto">➤ 分享</span>'
+    + '</div>'
+    + '<button class="ctabtn" onclick="openHowto(\'bucket\')">照着做同款</button>'
+    + '</div>';
+  // 13个真实模板库款式，同一套卡片视觉
+  BAGS.forEach((b,i)=>{
+    const n = demoNums(i);
+    const fav = isFav(b.bag);
+    html += '<div class="feedcard">'
+      + '<div class="imgwrap"><div class="pill-tag">模板库参考</div><div class="tile">'+b.ic+'</div></div>'
+      + '<div class="userrow"><div class="av">🧵</div><div class="uinfo"><div class="uname">EcoStitch 模板库</div><div class="usub">'+b.vf+' · 项目结构数据库</div></div></div>'
+      + '<div class="cap">'+b.nm+'：'+b.st+'</div>'
+      + '<div class="tagchip" onclick="openHowto(\''+b.bag+'\')">旧衣 → '+b.nm+'</div>'
+      + '<div class="actrow">'
+        + '<span class="a">❤️ '+n.like+'</span>'
+        + '<span class="a" onclick="notReady(\'评论\')">💬 '+n.cmt+'</span>'
+        + '<span class="a'+(fav?' saved':'')+'" onclick="toggleFav(\''+b.bag+'\')">🔖 '+(n.col+(fav?1:0))+'</span>'
+        + '<span class="a" onclick="notReady(\'分享\')" style="margin-left:auto">➤ 分享</span>'
+      + '</div>'
+      + '<button class="ctabtn" onclick="openHowto(\''+b.bag+'\')">照着做同款</button>'
+      + '</div>';
+  });
+  el.innerHTML = html;
+}
+function toggleDemoFollow(elBtn){
+  const on = localStorage.getItem('ecostitch_demo_follow')==='1';
+  try{ localStorage.setItem('ecostitch_demo_follow', on?'0':'1'); }catch(e){}
+  renderFeed();
+}
+let demoLiked = false, demoLikeCount = 128;
+function toggleDemoLike(elA){
+  demoLiked = !demoLiked; demoLikeCount += demoLiked?1:-1;
+  elA.classList.toggle('liked', demoLiked);
+  document.getElementById('demoLikeNum').textContent = demoLikeCount;
+}
+function setHomeTab(k){
+  document.querySelectorAll('.hometabs .t').forEach(el=>el.classList.toggle('on', el.dataset.ht===k));
+  if(k!=='rec') notReady(k==='follow'?'关注流':'最新流');
+}
+
+// ====== 搜索/发现 ======
+function renderTypeGrid(){
+  document.getElementById('typeGrid').innerHTML = BAGS.map(b=>
+    '<div class="tt" onclick="openHowto(\''+b.bag+'\')"><div class="ic">'+b.ic+'</div><div class="nm">'+b.nm+'</div></div>'
   ).join('');
-})();
-function goStartWithBag(bag){ location.href = 'index.html?prefBag=' + encodeURIComponent(bag); }
+}
+function doSearch(){
+  const kw = document.getElementById('searchInput').value.trim();
+  if(!kw){ renderTypeGrid(); return; }
+  const hit = BAGS.filter(b=> (b.nm+b.st).includes(kw));
+  document.getElementById('typeGrid').innerHTML = hit.length ? hit.map(b=>
+    '<div class="tt" onclick="openHowto(\''+b.bag+'\')"><div class="ic">'+b.ic+'</div><div class="nm">'+b.nm+'</div></div>'
+  ).join('') : '<div class="emptytip" style="grid-column:1/-1">没搜到匹配的款式，换个词试试</div>';
+}
+
+// ====== 怎么做同款(真实功能：适配我的旧衣→index.html重新测量算纸样；直接用模板纸样→calculator.html用模板默认尺寸) ======
+let howtoBag = null, howtoFrom = 'home';
+function openHowto(bag){ howtoBag = bag; howtoFrom = currentView==='howto' ? howtoFrom : currentView; applyView('howto'); }
+function howtoGo(mode){
+  if(!howtoBag) return;
+  if(mode==='fit') location.href = 'index.html?prefBag=' + encodeURIComponent(howtoBag);
+  else location.href = 'calculator.html?bag=' + encodeURIComponent(howtoBag);
+}
 
 // ====== 我的改造 ======
 let pjFilterStatus = 'all';
@@ -244,7 +450,7 @@ function fmtTime(ts){
 async function renderProjects(){
   const filterEl = document.getElementById('pjFilter');
   const filters = [['all','全部'],['in_progress','进行中'],['done','已完成'],['archived','已归档']];
-  filterEl.innerHTML = filters.map(([k,l])=>'<div class="chip'+(pjFilterStatus===k?' on':'')+'" onclick="setPjFilter(\''+k+'\')">'+l+'</div>').join('');
+  filterEl.innerHTML = filters.map(([k,l])=>'<div class="ft'+(pjFilterStatus===k?' on':'')+'" onclick="setPjFilter(\''+k+'\')">'+l+'</div>').join('');
 
   let all = [];
   try{ all = await dbGetAll(); }catch(e){ all = []; }
@@ -260,8 +466,9 @@ async function renderProjects(){
     const thumb = p.creativeImgUrl ? '<img src="'+p.creativeImgUrl+'">' : (p.photo2DataUrl ? '<img src="'+p.photo2DataUrl+'">' : '✂️');
     const acts = [];
     if(p.status!=='archived'){ acts.push('<div class="actbtn" onclick="resumeProject(\''+p.id+'\')">'+(p.status==='done'?'查看':'续做')+'</div>'); }
-    acts.push('<div class="actbtn mut" onclick="toggleArchive(\''+p.id+'\')">'+(p.status==='archived'?'取消归档':'归档')+'</div>');
-    acts.push('<div class="actbtn del" onclick="removeProject(\''+p.id+'\')">删除</div>');
+    else { acts.push('<div class="actbtn" onclick="toggleArchive(\''+p.id+'\')">恢复</div>'); }
+    if(p.status!=='archived'){ acts.push('<div class="actbtn2" onclick="toggleArchive(\''+p.id+'\')">归档</div>'); }
+    acts.push('<div class="actbtn2" onclick="removeProject(\''+p.id+'\')">删除</div>');
     return '<div class="pjcard">'
       + '<div class="thumb">'+thumb+'</div>'
       + '<div class="info"><div class="ttl">'+(p.title||p.bagName||'改造项目')+'</div>'
@@ -280,13 +487,13 @@ async function toggleArchive(id){
   p.updatedAt = Date.now();
   await dbPut(p);
   renderProjects();
-  if(document.getElementById('tab-me').classList.contains('on')) renderMe();
+  if(document.getElementById('tab-me').classList.contains('on')) renderMeHead();
   showToast(p.status==='archived' ? '已归档' : '已取消归档');
 }
 async function removeProject(id){
   await dbDelete(id);
   renderProjects();
-  if(document.getElementById('tab-me').classList.contains('on')) renderMe();
+  if(document.getElementById('tab-me').classList.contains('on')) renderMeHead();
   showToast('已删除');
 }
 
@@ -298,30 +505,59 @@ function editNickname(){
   if(next===null) return;
   const v = next.trim() || '改造达人';
   try{ localStorage.setItem('ecostitch_nickname', v); }catch(e){}
-  renderMe();
+  renderMeHead();
 }
-async function renderMe(){
+let meWorksTab = 'works';
+function setMeWorksTab(k){ meWorksTab=k; document.querySelectorAll('#meWorksTab .ft').forEach(el=>el.classList.toggle('on', el.dataset.mt===k)); renderMeWorks(); }
+async function renderMeHead(){
   document.getElementById('meNickname').innerHTML = getNickname()+' <span class="edit" onclick="editNickname()">改称呼</span>';
   let all = [];
   try{ all = await dbGetAll(); }catch(e){ all = []; }
   const total = all.length;
-  const done = all.filter(p=>p.status==='done').length;
-  const inProg = all.filter(p=>p.status==='in_progress').length;
-  document.getElementById('meStats').innerHTML =
-    '<div class="statcard"><div class="num">'+total+'</div><div class="lb">改造记录</div></div>'
-    + '<div class="statcard"><div class="num">'+done+'</div><div class="lb">已生成纸样</div></div>'
-    + '<div class="statcard"><div class="num">'+inProg+'</div><div class="lb">进行中</div></div>';
+  document.getElementById('meSub').textContent = total+' 作品 · 340 粉丝(示例数字)';
+  window._meProjectsCache = all;
+}
+async function renderMeWorks(){
+  const all = window._meProjectsCache || (window._meProjectsCache = await dbGetAll().catch(()=>[]));
+  const grid = document.getElementById('meWorksGrid');
+  if(meWorksTab==='works'){
+    const done = all.filter(p=>p.creativeImgUrl);
+    if(!done.length){ grid.innerHTML = '<div class="emptytip" style="grid-column:1/-1">还没有生成过效果图的作品——去首页选一个款式"照着做"吧</div>'; return; }
+    grid.innerHTML = done.map(p=>'<div class="wt" onclick="resumeProject(\''+p.id+'\')"><img src="'+p.creativeImgUrl+'"></div>').join('');
+  } else {
+    const favs = getFavs();
+    if(!favs.length){ grid.innerHTML = '<div class="emptytip" style="grid-column:1/-1">还没有收藏——在首页信息流卡片右下角点🔖收藏喜欢的款式</div>'; return; }
+    grid.innerHTML = favs.map(bag=>{ const b=bagById(bag); if(!b) return ''; return '<div class="wt" onclick="openHowto(\''+bag+'\')">'+b.ic+'</div>'; }).join('');
+  }
 }
 
-// ====== 底部导航/Tab切换 ======
-function showTab(t){
+// ====== 视图管理：root tab(首页/我的) + pushed 页面(我的改造/搜索/怎么做同款) ======
+let currentView = 'home';
+function applyView(v){
+  currentView = v;
+  const isPush = (v==='projects' || v==='search' || v==='howto');
+  document.getElementById('gnav').style.display = isPush ? 'none' : 'flex';
+  document.getElementById('pushhead').classList.toggle('on', isPush);
+  document.getElementById('hometabs').style.display = (v==='home') ? 'flex' : 'none';
+  document.getElementById('methead').style.display = (v==='me') ? 'flex' : 'none';
   document.querySelectorAll('.tabpane').forEach(el=>el.classList.remove('on'));
-  document.getElementById('tab-'+t).classList.add('on');
-  document.querySelectorAll('.botnav .item[data-tab]').forEach(el=>el.classList.toggle('on', el.dataset.tab===t));
-  document.getElementById('pageTitle').textContent = {home:'首页 · 改造灵感', projects:'我的改造', me:'我的'}[t];
-  if(t==='projects') renderProjects();
-  if(t==='me') renderMe();
+  document.querySelectorAll('.overlay').forEach(el=>el.classList.remove('on'));
+  document.querySelectorAll('.botnav .item[data-tab]').forEach(el=>el.classList.toggle('on', el.dataset.tab===(v==='projects'?'me':v)));
+
+  if(v==='home'){ document.getElementById('tab-home').classList.add('on'); renderFeed(); }
+  else if(v==='me'){ document.getElementById('tab-me').classList.add('on'); renderMeHead().then(renderMeWorks); }
+  else if(v==='projects'){ document.getElementById('tab-projects').classList.add('on'); document.getElementById('pushTitle').textContent='我的改造'; renderProjects(); }
+  else if(v==='search'){ document.getElementById('ov-search').classList.add('on'); document.getElementById('pushTitle').textContent='搜索 / 发现'; renderTypeGrid(); document.getElementById('searchInput').value=''; }
+  else if(v==='howto'){ document.getElementById('ov-howto').classList.add('on'); document.getElementById('pushTitle').textContent='怎么做同款'; }
 }
+function goBackPush(){
+  if(currentView==='howto') applyView(howtoFrom||'home');
+  else if(currentView==='projects') applyView('me');
+  else applyView('home');
+}
+// showTab(t) 保留作为对外的兼容入口(底部导航/旧调用都走这个)
+function showTab(t){ if(t==='projects') howtoFrom='me'; applyView(t); }
+
 let toastTimer=null;
 function showToast(msg){
   const el = document.getElementById('toast');
@@ -329,24 +565,34 @@ function showToast(msg){
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=>el.classList.remove('on'), 1600);
 }
-function notReady(name){ showToast(name+'这个版本还没做，先用首页/我的改造/我的'); }
+function notReady(name){ showToast(name+'这个版本还没做'); }
 
-// ====== 改造小助手(浮动入口+聊天) ======
+// ====== 改造小助手(浮动入口+提示气泡+聊天) ======
 const AI_ASSISTANT_ENDPOINT = '/api/assistant-chat';
 let aiwHistory = [];
 let aiwOpened = false;
 function aiwContext(){ return { stepLabel: '正在看首页' }; }
 function aiwGreeting(){ return '你好~我能解答改造、缝纫和用法问题，有什么想问的都可以说～'; }
+function aiwQuickChips(){
+  return '<div class="aiw-quickrow">'
+    + '<div class="aiw-quickchip" onclick="document.getElementById(\'aiwInput\').focus()">我还有别的问题</div>'
+    + '<div class="aiw-quickchip" onclick="aiwClose()">先不问了</div>'
+    + '</div>';
+}
 function aiwRenderMsgs(){
   const box = document.getElementById('aiwMsgs');
-  box.innerHTML = aiwHistory.map(h=>{
+  let html = aiwHistory.map(h=>{
     const cls = h.role==='user' ? 'me' : (h.role==='err' ? 'bot err' : 'bot');
     return '<div class="aiw-bub '+cls+'">'+String(h.text).replace(/</g,'&lt;')+'</div>';
   }).join('');
+  const last = aiwHistory[aiwHistory.length-1];
+  if(last && last.role==='model' && !last._typing) html += aiwQuickChips();
+  box.innerHTML = html;
   box.scrollTop = box.scrollHeight;
 }
 function aiwOpen(){
   document.getElementById('aiwPanel').classList.add('on');
+  document.getElementById('aiwTip').classList.remove('on');
   if(!aiwOpened){ aiwOpened=true; aiwHistory.push({role:'model', text: aiwGreeting()}); aiwRenderMsgs(); }
 }
 function aiwClose(){ document.getElementById('aiwPanel').classList.remove('on'); }
@@ -380,6 +626,8 @@ async function aiwSend(){
   aiwRenderMsgs();
 }
 
-showTab('home');
+applyView('home');
+setTimeout(()=>{ if(!aiwOpened) document.getElementById('aiwTip').classList.add('on'); }, 2200);
+setTimeout(()=>{ document.getElementById('aiwTip').classList.remove('on'); }, 7500);
 </script>
 </body></html>
