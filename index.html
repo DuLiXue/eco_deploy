@@ -68,6 +68,11 @@ justify-content:center;position:relative}
 .imgcard img{width:100%;height:100%;object-fit:cover}
 .imgcard .placeholder{text-align:center;color:var(--ink-3);padding:20px}
 .imgcard .placeholder .big{font-size:15px;color:var(--ink-2);margin-bottom:6px;font-weight:600}
+.histgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.histitem{border-radius:10px;overflow:hidden;background:var(--bg);aspect-ratio:1/1;cursor:pointer;position:relative;border:2px solid transparent;box-sizing:border-box}
+.histitem img{width:100%;height:100%;object-fit:cover;display:block}
+.histitem.sel{border-color:var(--green)}
+.histitem .chk{position:absolute;top:3px;right:3px;width:16px;height:16px;border-radius:50%;background:var(--green);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700}
 /* ==== 新增screen用到的样式 ==== */
 .gsel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .gopt{border:1.5px solid var(--line-2);border-radius:12px;padding:10px;cursor:pointer;text-align:center;font-size:13px;font-weight:500}
@@ -219,6 +224,10 @@ font-weight:700;display:flex;align-items:center;justify-content:center;flex-shri
       <div class="pill warn" id="fallbackNote" style="margin-top:12px;display:none">
         <span>⚠️</span>
         <span id="fallbackText"></span>
+      </div>
+      <div id="histSec" style="display:none">
+        <div class="sec" style="margin:14px 0 8px">生成历史 · 点击可切换回之前满意的那张</div>
+        <div class="histgrid" id="histGrid"></div>
       </div>
       <div class="small" style="margin-top:10px" id="pieceNote"></div>
     </div>
@@ -385,7 +394,7 @@ const GARMENT_DIAGRAMS={
 const state={photoDataUrl:null, photo2DataUrl:null, garmentType:null, edge1:null, edge2:null,
   bag:null, bagName:null, style:null, freeform:'', creativeImgUrl:null, usedFallback:false,
   aiGarmentType:null, aiMaterial:null, aiConfidence:null, aiIdentifying:false, aiIdentifyFailed:false,
-  userPickedGarmentType:false};
+  userPickedGarmentType:false, imgHistory:[], selectedHistIdx:-1};
 let cur=1;
 
 const bagselEl=document.getElementById('bagsel');
@@ -744,6 +753,13 @@ async function startGenerate(){
     const url = await callCreativeImageAPI(state.photo2DataUrl, state.bagName, state.style, state.freeform);
     state.creativeImgUrl = url;
     state.usedFallback = false;
+    // 每次成功生成都存进历史记录，方便用户后面点回之前某一张——不去重，
+    // 因为同样的图也可能是用户想比较的两次不同结果(哪怕看起来像,后端每次生成本身就有随机性)。
+    state.imgHistory.push({url:url, ts:Date.now()});
+    // 历史记录只是"回看/切换"用的，不需要无限增长——这里是纯前端内存里的 data URL 数组，
+    // 张数多了会很占内存，超过20张就把最老的丢掉(不影响已经在屏幕上看到过的最近生成)。
+    if(state.imgHistory.length>20){ state.imgHistory.splice(0, state.imgHistory.length-20); }
+    state.selectedHistIdx = state.imgHistory.length-1;
   }catch(err){
     await new Promise(r=>setTimeout(r,900));
     state.creativeImgUrl = null;
@@ -767,6 +783,32 @@ function renderResult(){
     noteText.textContent='这一步需要一个真实的后端中转服务来调用 Gemini 生成图片（key 出于安全考虑不能放进这份前端文件，只能放在服务端）——这份 MVP 演示文件本身没有部署那个后端，所以这里用占位图代替，不是没写完。正式部署、服务端配好中转服务后，这一步会显示真实生成的效果图。';
   }
   document.getElementById('pieceNote').textContent='布料够不够裁「'+state.bagName+'」在选包型那一步已经按你实测的两条边核对过了，这里满意的话就可以直接开始制作——跳转到已验证的纸样计算器，直接预选好这个包型，拿到真实、可1:1打印裁剪的纸样。';
+  renderHistoryGrid();
+}
+
+// 生成历史缩略图网格：每行4张，点哪张就把哪张切回上面的主图区域(不重新调API，纯前端切换)，
+// 方便用户"生成了好几次，发现还是前面某一张更满意"的时候直接用那张继续制作，不用再重新生成。
+function renderHistoryGrid(){
+  const sec=document.getElementById('histSec');
+  const grid=document.getElementById('histGrid');
+  if(!state.imgHistory.length){ sec.style.display='none'; grid.innerHTML=''; return; }
+  sec.style.display='block';
+  grid.innerHTML = state.imgHistory.map((h,i)=>{
+    const sel = (!state.usedFallback && i===state.selectedHistIdx);
+    return '<div class="histitem'+(sel?' sel':'')+'" onclick="selectHistoryImage('+i+')">'
+      +'<img src="'+h.url+'">'
+      +(sel?'<div class="chk">✓</div>':'')
+      +'</div>';
+  }).join('');
+}
+
+function selectHistoryImage(idx){
+  const h = state.imgHistory[idx];
+  if(!h) return;
+  state.creativeImgUrl = h.url;
+  state.usedFallback = false;
+  state.selectedHistIdx = idx;
+  renderResult();
 }
 
 function goToCalculator(){
