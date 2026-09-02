@@ -7791,7 +7791,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
 <div class="hint">真实可用的纸样计算器 · 公式经 <b>Bedi 实物验证校准</b> · 输入尺寸，真的算出每片布怎么裁</div>
 <div class="ph">
   <div class="sb"><span class="t">9:41</span><span class="r">85</span></div>
-  <div class="bar"><div class="rbtn"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style=""><path d="M15 5l-7 7 7 7"/></svg></div><span class="ttl">纸样计算器</span></div>
+  <div class="bar"><div class="rbtn" onclick="goBackCalc()"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style=""><path d="M15 5l-7 7 7 7"/></svg></div><span class="ttl">纸样计算器</span></div>
   <div class="body">
     <!-- INPUT -->
     <div id="input">
@@ -8188,6 +8188,21 @@ function reset(){
   document.getElementById('input').style.display='block';
   document.getElementById('result').classList.remove('show');
   document.getElementById('foot').innerHTML='';
+}
+
+// ⭐2026-09-02修复：这个"‹"返回按钮一直是纯装饰——发现它从这个文件第一次写出来开始就没有绑定任何
+// onclick/addEventListener，点了完全没反应(Bedi反馈"返回按键大都没反应"排查出来的)。现在按最符合直觉的
+// 语义接上：已经算出纸样、正显示结果页时，"返回"应该是回到选包型/填参数那一步重新调整(直接复用已有的
+// reset()，不用另外写一套)；还在选包型这一步(结果还没显示)时，"返回"应该是离开计算器本身——优先用浏览器
+// 自身的历史返回(不管是从 index.html 深链过来还是直接打开书签，history.back() 都是最自然的"上一页")，
+// 真的没有可返回的历史(比如直接在新标签页打开这个网址)才退回到首页 home.html，不留一个按了没反应的死按钮。
+function goBackCalc(){
+  if(document.getElementById('result').classList.contains('show')){ reset(); return; }
+  // 优先看有没有"从本站内部页面跳转过来"的历史——真实网址下 document.referrer 能读到；
+  // file://本地测试时referrer读不到，所以再加一层history.length>2兜底(新开标签页直接打开这个网址只有2条
+  // 历史记录，从别的页面点进来的至少3条)。两个信号都没有，说明真没有更早的页面可回，直接去首页，
+  // 不要调用一个其实哪儿也去不了的history.back()、留一个按了像是没反应的死按钮。
+  if(document.referrer || history.length>2){ history.back(); } else { location.href='home.html'; }
 }
 
 // ⭐2026-08-30 下载纸样后展示制作教程⭐——数据来自 tutorials.js(源自模板库已验证教程文档,不是占位内容)。
