@@ -109,12 +109,46 @@ display:flex;align-items:center;justify-content:center}
 .edgerow .col .lb{font-size:11px;color:var(--ink-2);margin-bottom:6px;display:flex;align-items:center;gap:5px}
 .edgerow .col .lb .dot{width:14px;height:14px;border-radius:50%;background:var(--red);color:#fff;font-size:9px;
 font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* ==== 2026-09-02 视觉照搬29屏高保真设计稿(01-06屏)新增样式：顶部图标行/AI识别结果卡/编号小标题/生成中清单/方案网格 ==== */
+.gnav{display:flex;align-items:center;justify-content:flex-end;gap:14px;padding:2px 26px 4px}
+.gnav .gi{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--ink);cursor:pointer}
+.gnav .badge{font-size:13px;font-weight:600;color:var(--ink)}
+.aicard{background:var(--green-soft);border-radius:14px;padding:14px;margin-bottom:10px}
+.aicard .hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.aicard .hd .lb{font-size:12.5px;font-weight:700;color:var(--green-core)}
+.aicard .hd .edit{font-size:12px;color:var(--green-core);cursor:pointer;font-weight:600}
+.aicard .rs{font-size:15px;font-weight:700}
+.numlabel{font-size:14px;font-weight:600;margin:18px 0 10px;display:flex;align-items:center;gap:6px}
+.numlabel:first-child{margin-top:6px}
+.numlabel .n{font-size:12px;color:var(--ink-2);font-weight:600}
+.numlabel .hintxt{font-size:11.5px;color:var(--ink-3);font-weight:400;margin-left:2px}
+.genchecklist{margin-top:22px;display:flex;flex-direction:column;gap:12px}
+.genchecklist .gi2{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--ink-3)}
+.genchecklist .gi2.done{color:var(--green-core)}
+.genchecklist .gi2.active{color:var(--green-core);font-weight:600}
+.genchecklist .gi2 .ic2{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.planhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.planhead .zoomtip{font-size:11px;color:var(--ink-3)}
+.plangrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.plancard{border-radius:14px;background:var(--bg);aspect-ratio:1/1;position:relative;overflow:hidden;cursor:pointer;border:2px solid transparent;box-sizing:border-box}
+.plancard.sel{border-color:var(--green)}
+.plancard img{width:100%;height:100%;object-fit:cover;display:block}
+.plancard .tag{position:absolute;top:8px;left:8px;background:rgba(28,30,24,.55);color:#fff;font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:10px}
+.plancard.sel .tag{background:var(--green-core)}
+.plancard .ph2{display:flex;align-items:center;justify-content:center;height:100%;font-size:34px;color:var(--nav-off)}
+.regenbtn{display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--line-2);border-radius:14px;
+padding:13px;font-size:13.5px;color:var(--ink);cursor:pointer;margin-top:12px;background:none;font-family:var(--font);width:100%}
 </style></head>
 <body>
 <div class="hint">EcoStitch 旧衣改造 · 核心链路最小闭环<b>MVP</b>验证 · 上传→拆解→裁开→量布→选方向→确认→生成→真实纸样<span class="badge">测试用</span></div>
 
 <div class="ph">
-  <div class="sb"><span class="t">9:41</span><span class="r">85</span></div>
+  <div class="sb"><span class="t">9:41</span></div>
+  <div class="gnav">
+    <span class="gi" onclick="location.href='home.html'">🏠</span>
+    <span class="gi" onclick="location.href='home.html?view=search'">🔍</span>
+    <span class="badge" title="灵感值·示例展示数据">85</span>
+  </div>
   <div class="bar">
     <div class="rbtn" onclick="prevScreen()">‹</div>
     <span class="ttl" id="screenTitle">上传旧衣</span>
@@ -186,16 +220,16 @@ font-weight:700;display:flex;align-items:center;justify-content:center;flex-shri
 
     <!-- 屏5: 选包型 + 改造方向（移到量完布料之后；每个包型按真实测量的布料算"够用/不够用"） -->
     <div class="screen" id="screen5">
-      <div class="sec">① 这件衣服想改造成哪种包</div>
+      <div class="numlabel"><span class="n">①</span><span>改成哪种包</span><span class="hintxt">(绿色=布料够用)</span></div>
       <div class="pill info" style="margin-bottom:12px">
         <span>ℹ️</span>
         <span>正式版会由 AI 结合旧衣裁片大小自动推荐最合适的包型；这次 MVP 里这一步的 AI 判断没有真实接入，先手动选一个（下方13个包型均来自纸样计算器已接入的真实模板库；绿色"够用"/黄色"不够用"是按你上一步实测的两条边算出来的真实核对，不是拍脑袋的预估）。</span>
       </div>
       <div class="bagsel" id="bagsel"></div>
       <div id="bagWarnArea" style="margin-top:10px"></div>
-      <div class="sec">② 想要什么风格（可选）</div>
+      <div class="numlabel"><span class="n">②</span><span>想要什么风格</span><span class="hintxt">(可选)</span></div>
       <div class="chipwrap" id="styleChips"></div>
-      <div class="sec">③ 还想要什么效果（可选）</div>
+      <div class="numlabel"><span class="n">③</span><span>还想要什么效果</span><span class="hintxt">(可选)</span></div>
       <textarea class="ta" id="freeform" placeholder="&quot;加个外贴袋&quot;&quot;做旧感觉&quot;…"></textarea>
     </div>
 
@@ -208,27 +242,34 @@ font-weight:700;display:flex;align-items:center;justify-content:center;flex-shri
 
     <!-- 屏7: 生成中 -->
     <div class="screen" id="screen7">
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:60px 0 20px">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:60px 0 0">
         <div class="spinner"></div>
-        <div style="text-align:center">
-          <div style="font-size:14px;font-weight:500;margin-bottom:4px" id="loadingText">正在为你生成效果图…</div>
-          <div style="font-size:12px;color:var(--ink-3)">结合你裁开摊平后的布料照片和选中的包型</div>
+        <div style="text-align:center;margin-top:6px">
+          <div style="font-size:16px;font-weight:700;margin-bottom:4px" id="loadingText">正在为你设计…</div>
+          <div style="font-size:12px;color:var(--ink-3)">结合你的面料和风格生成中</div>
         </div>
+      </div>
+      <div class="genchecklist">
+        <div class="gi2 done"><span class="ic2">✅</span><span>已理解你的需求</span></div>
+        <div class="gi2 active"><span class="ic2">🔄</span><span>正在生成创意方案</span></div>
+        <div class="gi2"><span class="ic2">◯</span><span>渲染效果图</span></div>
       </div>
     </div>
 
-    <!-- 屏8: 效果图方案 -->
+    <!-- 屏8: 效果图方案(照搬高保真06屏"选方案"的卡片网格视觉，内容是真实的单图生成+可回看的生成历史，
+         不是一次性并发4个方案——后端一次只真实生成一张，"方案N"对应第N次真实生成的结果) -->
     <div class="screen" id="screen8">
-      <div class="sec">改造效果图</div>
+      <div class="planhead"><span class="sec" style="margin:0">改造效果图</span><span class="zoomtip">点图可放大</span></div>
       <div class="imgcard" id="resultImgCard"></div>
       <div class="pill warn" id="fallbackNote" style="margin-top:12px;display:none">
         <span>⚠️</span>
         <span id="fallbackText"></span>
       </div>
       <div id="histSec" style="display:none">
-        <div class="sec" style="margin:14px 0 8px">生成历史 · 点击可切换回之前满意的那张</div>
-        <div class="histgrid" id="histGrid"></div>
+        <div class="sec" style="margin:14px 0 8px">生成历史 · 点哪张切回哪张(不重新调用AI)</div>
+        <div class="plangrid" id="histGrid"></div>
       </div>
+      <button class="regenbtn" id="regenBtn" onclick="showScreen(7);startGenerate()">🔄 <span id="regenBtnTxt">重新生成</span></button>
       <div class="small" style="margin-top:10px" id="pieceNote"></div>
     </div>
 
@@ -584,8 +625,10 @@ function renderAiIdentifyStatus(){
     el.innerHTML = '<div class="pill info"><span>ℹ️</span><span>这次 AI 识别没有成功（可能是网络或服务暂时的问题），不影响继续使用——下面手动选一种旧衣类型就行。</span></div>';
   }else if(state.aiGarmentType){
     const nm = (GARMENT_TYPES.find(x=>x.id===state.aiGarmentType)||{}).nm || state.aiGarmentType;
-    el.innerHTML = '<div class="pill info"><span>🔍</span><span>AI 识别：这可能是「'+nm+'」，材质大概是「'+state.aiMaterial+'」，已经帮你预选好下面的类型——'
-      + (state.aiConfidence==='low' ? '这次识别把握不大，建议你核对一下再继续。' : '不对的话直接点别的选项换。')
+    el.innerHTML = '<div class="aicard"><div class="hd"><span class="lb">识别结果</span><span class="edit" onclick="showScreen(2)">✎ 编辑</span></div>'
+      + '<div class="rs">'+nm+' · '+state.aiMaterial+'</div></div>'
+      + '<div class="pill warn"><span>⚠️</span><span>识别不对？点上面"编辑"改一下'
+      + (state.aiConfidence==='low' ? '——这次识别把握不大，建议核对一下再继续' : '')
       + '</span></div>';
   }else{
     el.innerHTML = '';
@@ -631,7 +674,10 @@ function updateMainBtn(){
   }
   else if(cur===7){ document.getElementById('footArea').innerHTML=''; }
   else if(cur===8){
-    resetFootDual('重新生成一次','开始制作 → 生成纸样', ()=>{ showScreen(7); startGenerate(); }, ()=>goToCalculator());
+    // 照搬高保真06屏"选方案"的footer：只留一个主按钮，"重新生成"挪到内容区(见histSec里的regenbtn)
+    resetFoot();
+    document.getElementById('mainBtn').textContent='开始制作 → 生成纸样';
+    document.getElementById('mainBtn').onclick=()=>goToCalculator();
   }
 }
 
@@ -835,7 +881,7 @@ async function callCreativeImageAPI(photoDataUrl, bagName, style, freeform){
 }
 
 async function startGenerate(){
-  document.getElementById('loadingText').textContent='正在为你生成效果图…';
+  document.getElementById('loadingText').textContent='正在为你设计'+(state.bagName||'')+'…';
   try{
     const url = await callCreativeImageAPI(state.photo2DataUrl, state.bagName, state.style, state.freeform);
     state.creativeImgUrl = url;
@@ -878,13 +924,20 @@ function renderResult(){
 function renderHistoryGrid(){
   const sec=document.getElementById('histSec');
   const grid=document.getElementById('histGrid');
-  if(!state.imgHistory.length){ sec.style.display='none'; grid.innerHTML=''; return; }
+  const regenTxt=document.getElementById('regenBtnTxt');
+  if(!state.imgHistory.length){
+    sec.style.display='none'; grid.innerHTML='';
+    if(regenTxt) regenTxt.textContent='重新生成一次';
+    return;
+  }
   sec.style.display='block';
+  if(regenTxt) regenTxt.textContent='都不满意，重新生成';
+  // 照搬06屏"方案1/方案2..."的卡片视觉，编号按真实生成顺序来(第几次成功生成就是"方案几")，不是并发的4个候选
   grid.innerHTML = state.imgHistory.map((h,i)=>{
     const sel = (!state.usedFallback && i===state.selectedHistIdx);
-    return '<div class="histitem'+(sel?' sel':'')+'" onclick="selectHistoryImage('+i+')">'
+    return '<div class="plancard'+(sel?' sel':'')+'" onclick="selectHistoryImage('+i+')">'
+      +'<span class="tag">方案'+(i+1)+(sel?'✓':'')+'</span>'
       +'<img src="'+h.url+'">'
-      +(sel?'<div class="chk">✓</div>':'')
       +'</div>';
   }).join('');
 }

@@ -626,7 +626,9 @@ async function aiwSend(){
   aiwRenderMsgs();
 }
 
-applyView('home');
+// 支持 home.html?view=xxx 直接打开某个视图(比如从 index.html 顶部🔍图标跳过来直接进搜索页)
+const __initView = new URLSearchParams(location.search).get('view');
+applyView(['home','me','search','projects'].includes(__initView) ? __initView : 'home');
 setTimeout(()=>{ if(!aiwOpened) document.getElementById('aiwTip').classList.add('on'); }, 2200);
 setTimeout(()=>{ document.getElementById('aiwTip').classList.remove('on'); }, 7500);
 </script>
