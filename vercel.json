@@ -5,6 +5,9 @@
     },
     "api/identify-garment.js": {
       "maxDuration": 20
+    },
+    "api/assistant-chat.js": {
+      "maxDuration": 20
     }
   }
 }

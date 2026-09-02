@@ -7750,6 +7750,32 @@ width:100%;font-family:var(--font);cursor:pointer;display:flex;align-items:cente
 .tut-upcycle div{margin-bottom:4px}
 .tut-upcycle div:last-child{margin-bottom:0}
 
+/* ====== 改造小助手(浮动入口+聊天，2026-09-02新增) ====== */
+.aiw-fab{position:absolute;right:16px;bottom:90px;width:52px;height:52px;border-radius:50%;background:var(--green,#4EA415);
+color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;
+box-shadow:0 10px 24px rgba(78,164,21,.35);z-index:50}
+.aiw-tip{position:absolute;right:76px;bottom:100px;background:#fff;border:1px solid var(--line-2,#E2E4DC);border-radius:14px;
+padding:8px 12px;font-size:12px;color:var(--ink-2,#6D6D6D);box-shadow:0 4px 16px rgba(28,30,24,.1);white-space:nowrap;z-index:50;cursor:pointer}
+.aiw-panel{position:absolute;inset:0;background:var(--card,#fff);z-index:60;display:none;flex-direction:column}
+.aiw-panel.on{display:flex}
+.aiw-head{padding:16px 16px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line,#EDEEE9)}
+.aiw-head .ic{width:36px;height:36px;border-radius:50%;background:var(--green-soft,#EAF3E2);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.aiw-head .nm{font-size:14px;font-weight:600}
+.aiw-head .st{font-size:11px;color:var(--green-core,#48A600);display:flex;align-items:center;gap:4px}
+.aiw-head .st .dot{width:6px;height:6px;border-radius:50%;background:var(--green-core,#48A600)}
+.aiw-head .x{margin-left:auto;width:32px;height:32px;border-radius:50%;background:var(--bg,#F3F3F3);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.aiw-msgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.aiw-bub{max-width:80%;padding:10px 13px;border-radius:14px;font-size:13px;line-height:1.6;white-space:pre-wrap}
+.aiw-bub.bot{background:var(--bg,#F3F3F3);color:var(--ink,#1C1E18);align-self:flex-start;border-bottom-left-radius:4px}
+.aiw-bub.me{background:var(--green,#4EA415);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.aiw-bub.err{background:var(--warn-soft,#FBF6E9);color:var(--warn,#B08A2E)}
+.aiw-inputrow{padding:10px 12px;border-top:1px solid var(--line,#EDEEE9);display:flex;gap:8px;align-items:center}
+.aiw-inputrow input{flex:1;border:1.5px solid var(--line-2,#E2E4DC);border-radius:20px;padding:9px 14px;font-size:13px;font-family:var(--font)}
+.aiw-inputrow input:focus{outline:none;border-color:var(--green,#4EA415)}
+.aiw-sendbtn{width:38px;height:38px;border-radius:50%;background:var(--green,#4EA415);color:#fff;border:none;display:flex;
+align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0}
+.aiw-sendbtn[disabled]{opacity:.4;pointer-events:none}
+
 </style></head>
 <body>
 <div id="wxhint" style="display:none;position:fixed;top:0;left:0;right:0;z-index:999;background:#1C1E18;color:#fff;padding:12px 16px;font-size:13px;line-height:1.6;text-align:center">
@@ -7825,6 +7851,23 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     </div>
   </div>
   <div class="foot" id="foot"></div>
+  <div class="aiw-tip" id="aiwTip" onclick="aiwOpen()">卡住了？问问我 👋</div>
+  <div class="aiw-fab" id="aiwFab" onclick="aiwOpen()">💬</div>
+  <div class="aiw-panel" id="aiwPanel">
+    <div class="aiw-head">
+      <div class="ic">💬</div>
+      <div>
+        <div class="nm">改造小助手</div>
+        <div class="st"><span class="dot"></span>在线</div>
+      </div>
+      <div class="x" onclick="aiwClose()">✕</div>
+    </div>
+    <div class="aiw-msgs" id="aiwMsgs"></div>
+    <div class="aiw-inputrow">
+      <input id="aiwInput" placeholder="输入你的问题…" onkeydown="if(event.key==='Enter')aiwSend()">
+      <button class="aiw-sendbtn" id="aiwSendBtn" onclick="aiwSend()">➤</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -9826,4 +9869,71 @@ async function downloadPattern(){
 }
 
 </script>
+
+<script>
+// ====== 改造小助手(浮动入口+聊天，2026-09-02新增) ======
+// 复用 /api/assistant-chat 云函数；这个页面(制作教程页)的场景就是高保真设计稿里"卡住了？问问我"那屏的原型，
+// 把当前在做的包型名字当作背景信息一起传给助手，方便它给出针对这个包型的回答，而不是泛泛而谈。
+const AI_ASSISTANT_ENDPOINT = '/api/assistant-chat';
+let aiwHistory = [];
+let aiwOpened = false;
+function aiwContext(){
+  const nmEl = document.querySelector('.bagopt[data-bag="'+curBag+'"] .nm');
+  return { bagName: nmEl ? nmEl.textContent : null, stepLabel: '正在看纸样/制作教程' };
+}
+function aiwGreeting(){
+  const ctx = aiwContext();
+  let g = '你好~我能解答改造、缝纫和用法问题。';
+  g += ctx.bagName ? ('看到你在做'+ctx.bagName+'，遇到什么了吗？') : '有什么想问的都可以说～';
+  return g;
+}
+function aiwRenderMsgs(){
+  const box = document.getElementById('aiwMsgs');
+  box.innerHTML = aiwHistory.map(h=>{
+    const cls = h.role==='user' ? 'me' : (h.role==='err' ? 'bot err' : 'bot');
+    return '<div class="aiw-bub '+cls+'">'+String(h.text).replace(/</g,'&lt;')+'</div>';
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+function aiwOpen(){
+  document.getElementById('aiwPanel').classList.add('on');
+  const tip = document.getElementById('aiwTip'); if(tip) tip.style.display='none';
+  if(!aiwOpened){
+    aiwOpened = true;
+    aiwHistory.push({role:'model', text: aiwGreeting()});
+    aiwRenderMsgs();
+  }
+}
+function aiwClose(){ document.getElementById('aiwPanel').classList.remove('on'); }
+async function aiwSend(){
+  const input = document.getElementById('aiwInput');
+  const msg = input.value.trim();
+  if(!msg) return;
+  input.value = '';
+  aiwHistory.push({role:'user', text: msg});
+  aiwHistory.push({role:'model', text:'…', _typing:true});
+  aiwRenderMsgs();
+  const btn = document.getElementById('aiwSendBtn'); btn.disabled = true;
+  try{
+    const resp = await fetch(AI_ASSISTANT_ENDPOINT, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        message: msg,
+        history: aiwHistory.filter(h=>!h._typing && h.role!=='err').map(h=>({role:h.role, text:h.text})),
+        context: aiwContext(),
+      }),
+    });
+    aiwHistory.pop(); // 去掉"…"占位气泡
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const data = await resp.json();
+    aiwHistory.push({role:'model', text: data.reply || '这次没拿到回复，换个问法再试试？'});
+  }catch(e){
+    aiwHistory.pop();
+    aiwHistory.push({role:'err', text:'这次没答上，可能是网络问题，过一会儿再试一次～'});
+  }
+  btn.disabled = false;
+  aiwRenderMsgs();
+}
+</script>
+
 </body></html>

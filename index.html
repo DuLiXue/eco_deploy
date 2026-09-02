@@ -394,7 +394,81 @@ const GARMENT_DIAGRAMS={
 const state={photoDataUrl:null, photo2DataUrl:null, garmentType:null, edge1:null, edge2:null,
   bag:null, bagName:null, style:null, freeform:'', creativeImgUrl:null, usedFallback:false,
   aiGarmentType:null, aiMaterial:null, aiConfidence:null, aiIdentifying:false, aiIdentifyFailed:false,
-  userPickedGarmentType:false, imgHistory:[], selectedHistIdx:-1};
+  userPickedGarmentType:false, imgHistory:[], selectedHistIdx:-1, projectId:null, projectCreatedAt:null};
+
+// ====== "我的改造"本地记录(IndexedDB) ======
+// 不依赖任何账号/服务器——纯粹存在用户这台设备的浏览器里，换设备/清缓存就看不到了，这一点在"我的"页面如实说明。
+// 用 IndexedDB 而不是 localStorage：这里要存完整分辨率的照片和生成图(base64 data URL，单条记录可能有几百KB到几MB)，
+// localStorage 单个来源通常只有 5~10MB 总容量上限，存不了几条就会写满；IndexedDB 没有这个量级限制，更适合这种场景。
+const ECO_DB_NAME='ecostitch', ECO_DB_VER=1, ECO_STORE='projects';
+function openProjectsDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(ECO_DB_NAME, ECO_DB_VER);
+    req.onupgradeneeded=()=>{ const db=req.result; if(!db.objectStoreNames.contains(ECO_STORE)) db.createObjectStore(ECO_STORE,{keyPath:'id'}); };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function dbPut(project){
+  const db=await openProjectsDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(ECO_STORE,'readwrite');
+    tx.objectStore(ECO_STORE).put(project);
+    tx.oncomplete=()=>resolve(); tx.onerror=()=>reject(tx.error);
+  });
+}
+async function dbGet(id){
+  const db=await openProjectsDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(ECO_STORE,'readonly');
+    const req=tx.objectStore(ECO_STORE).get(id);
+    req.onsuccess=()=>resolve(req.result||null); req.onerror=()=>reject(req.error);
+  });
+}
+function garmentLabelOf(gid){
+  const g=GARMENT_TYPES.find(x=>x.id===gid);
+  return g?g.nm:'';
+}
+// 记录/更新当前这次改造的进度——从⑤选包型之后每次切屏都调用一次，方便"我的改造"里看到"做到第几步"，
+// 也是"续做"能跳回正确位置的依据。选包型之前(还没决定做哪个包)不建立记录，避免产生大量"刚点开看了看"的空记录。
+async function upsertProject(statusOverride){
+  if(!state.bag) return;
+  if(!state.projectId){ state.projectId='p_'+Date.now()+'_'+Math.random().toString(36).slice(2,8); state.projectCreatedAt=Date.now(); }
+  const gLabel = garmentLabelOf(state.aiGarmentType||state.garmentType);
+  const title = (gLabel?gLabel+'→':'')+(state.bagName||'');
+  const project = {
+    id: state.projectId, title: title,
+    garmentType: state.aiGarmentType||state.garmentType, garmentTypeLabel: gLabel,
+    bag: state.bag, bagName: state.bagName, style: state.style, freeform: state.freeform,
+    edge1: state.edge1, edge2: state.edge2,
+    photoDataUrl: state.photoDataUrl, photo2DataUrl: state.photo2DataUrl,
+    creativeImgUrl: state.creativeImgUrl, imgHistory: state.imgHistory,
+    screen: cur,
+    status: statusOverride || 'in_progress',
+    createdAt: state.projectCreatedAt, updatedAt: Date.now(),
+  };
+  try{ await dbPut(project); }catch(e){ /* 本地存储写失败(比如隐私模式/存储已满)不影响主流程，静默跳过这次记录即可 */ }
+}
+// 从"我的改造"点"续做"跳转过来时(index.html?resume=xxx)，把存的进度读回来接着用。
+// 只恢复到两个经过验证、渲染逻辑纯粹依赖state、不依赖用户手动重新操作DOM控件的"安全落点"：
+// 已经生成过效果图的，直接回到屏⑧(renderResult()完全由state驱动)；只选到包型还没生成的，回到屏⑥确认理解重新确认。
+// 数据不够完整(比如包型都没选)的话，不勉强恢复，从头开始最不容易出错。
+async function tryResumeProject(){
+  const rid = new URLSearchParams(location.search).get('resume');
+  if(!rid) return;
+  let p; try{ p = await dbGet(rid); }catch(e){ return; }
+  if(!p) return;
+  Object.assign(state, {
+    photoDataUrl:p.photoDataUrl, photo2DataUrl:p.photo2DataUrl,
+    garmentType:p.garmentType, edge1:p.edge1, edge2:p.edge2,
+    bag:p.bag, bagName:p.bagName, style:p.style, freeform:p.freeform||'',
+    creativeImgUrl:p.creativeImgUrl, imgHistory:p.imgHistory||[], usedFallback:false,
+    selectedHistIdx:(p.imgHistory&&p.imgHistory.length)?p.imgHistory.length-1:-1,
+    projectId:p.id, projectCreatedAt:p.createdAt, userPickedGarmentType:true,
+  });
+  if(state.imgHistory && state.imgHistory.length){ renderResult(); showScreen(8); }
+  else if(state.bag){ renderSummary(); showScreen(6); }
+}
 let cur=1;
 
 const bagselEl=document.getElementById('bagsel');
@@ -412,6 +486,18 @@ BAGS.forEach(b=>{
   });
   bagselEl.appendChild(d);
 });
+
+// "照着做"深链支持：从首页/发现点某个包型参考卡片跳转过来时(index.html?prefBag=xxx)，进到⑤选包型时
+// 直接预选好这个包型，用户依然可以点别的包型改掉，不锁死——和"AI识别/AI预选，人可以改"这一贯的设计原则一致。
+const __prefBag = new URLSearchParams(location.search).get('prefBag');
+if(__prefBag){
+  const __match = BAGS.find(b=>b.bag===__prefBag);
+  if(__match){
+    state.bag = __match.bag; state.bagName = __match.nm;
+    const __el = document.querySelector('.bagopt[data-bag="'+__match.bag+'"]');
+    if(__el) __el.classList.add('on');
+  }
+}
 
 // 风格选项（纯前端展示用，影响效果图 prompt 文案，不接入真实风格判断）
 const STYLES=['文艺','辣妹','机能','复古','简约','工装'];
@@ -577,10 +663,11 @@ function showScreen(n){
   if(n===4){ renderDiagram(); }
   if(n===5){ refreshBagBadges(); renderBagWarning(); }
   updateMainBtn();
+  upsertProject(); // 选了包型之后的每次切屏都顺手记一次进度，供"我的改造"续做用；没选包型时函数内部直接跳过
 }
 
 function prevScreen(){
-  if(cur===1) return;
+  if(cur===1){ location.href='home.html'; return; } // 屏①的"返回"回到首页(2026-09-02新增首页后，这里不再是死路)
   if(cur===7) return; // 生成中不可返回
   const idx=SCREEN_ORDER.indexOf(cur);
   if(idx>0) showScreen(SCREEN_ORDER[idx-1]);
@@ -811,7 +898,10 @@ function selectHistoryImage(idx){
   renderResult();
 }
 
-function goToCalculator(){
+async function goToCalculator(){
+  // 跳走之前先把这次记录标成"已生成纸样"，"我的改造"列表里能看到这条完成了(不是真的"缝完了"，
+  // 是"已经拿到真实纸样"这个更早、更确定的完成节点——真正缝没缝完这台设备上没法知道，不装作知道)
+  await upsertProject('done');
   // 同目录、纯英文文件名的计算器副本，不依赖任何中文路径能否被正确解压/识别
   location.href = 'calculator.html?bag=' + encodeURIComponent(state.bag);
 }
@@ -819,5 +909,8 @@ function goToCalculator(){
 // 初始化：显式走一遍 showScreen(1)，保证步骤条高亮、footer按钮状态和屏幕标题从一开始就正确，
 // 不依赖静态HTML里"screen1 on"这个初始class巧合对上。
 showScreen(1);
+// 如果是从"我的改造"点"续做"跳转过来的(带 ?resume=xxx)，这里会异步把进度读回来、跳到正确的屏——
+// 放在 showScreen(1) 之后调用，即使读取失败/没有resume参数，也已经有一个正确的默认屏可看，不会卡在空白页。
+tryResumeProject();
 </script>
 </body></html>
