@@ -48,6 +48,15 @@ vercel --prod             # 部署到正式环境，完成后会打印出访问�
 
 `MVP流程/index.html` 里的 `CREATIVE_IMAGE_ENDPOINT` 常量已经写的是相对路径 `/api/generate-creative-image`，只要 `index.html` 和 `api/generate-creative-image.js` 部署在同一个 Vercel 项目/同一个域名下(这份 `部署/vercel/` 文件夹就是这么组织的)，不需要改任何代码，直接就能用。
 
+## ⭐2026-09-01新增：AI 识别旧衣类型/材质(`api/identify-garment.js`)
+
+屏①上传旧衣照片后，会自动调用这个新云函数，识别这是长裤/衬衫/裙装/外套/平整布料里的哪一种、猜一下材质，识别结果会预选屏②的类型(猜错了可以手动点别的类型改过来，不会卡住流程)。
+
+- **用的是同一个 `GEMINI_API_KEY`**，不用额外配置环境变量。
+- 用的模型是 `gemini-3.5-flash-lite`(分类任务用便宜快速的 Flash-Lite 系列，不需要用生成图片那个更贵的模型)，如果报"模型不存在"，去 [模型列表页](https://ai.google.dev/gemini-api/docs/models) 查当前的 Flash-Lite 型号 ID，替换 `api/identify-garment.js` 里的 `MODEL_ID`。
+- 这个功能失败了(网络问题/识别不出来)不会报错卡住用户，会显示一句"这次 AI 识别没有成功，不影响继续使用"，让用户自己手动选类型——和"生成效果图"那步的诚实降级是同一个设计思路。
+- 同样地，这个函数也没能在写代码的这台机器上真实联网调用验证过(仅做了本地 mock 测试)，第一次真实识别准不准，需要部署后拿真实旧衣照片测几次才知道。
+
 ## 这份拷贝和 `MVP流程/index.html`、`纸样计算器/` 的关系
 
 `部署/vercel/index.html`、`部署/vercel/calculator.html` 是从 `MVP流程/` 复制过来的独立拷贝，为了让 Vercel 能直接部署这一个文件夹。**这两处以后如果谁改了(比如 MVP 流程加新功能，或者纸样计算器加新包型)，需要手动把改动同步过来**，不会自动联动——这和交接文档里之前提到过的 `MVP流程/calculator.html` 需要手动从纸样计算器同步是同一类问题，下次改动 `MVP流程/index.html` 之后记得也 `cp` 一份到这里，重新部署一次(`vercel --prod`)才会生效到真实网址上。

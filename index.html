@@ -129,16 +129,13 @@ font-weight:700;display:flex;align-items:center;justify-content:center;flex-shri
         </div>
       </div>
       <input type="file" id="fileInput" accept="image/*" style="display:none">
-      <div class="small" style="margin-top:12px">这一步只做真实的图片选取/预览，AI 材质识别这次没有接入。这张照片主要作为起点参考——拆开之后会在后面单独再拍一张裁开摊平的照片，效果图是根据那张真实裁开后的布料生成的。</div>
+      <div class="small" style="margin-top:12px">上传后会自动跑一次 AI 识别，帮你猜这是什么类型的旧衣、大概什么材质，下一步可以看到识别结果（猜错了可以手动改）。这张照片主要作为起点参考——拆开之后会在后面单独再拍一张裁开摊平的照片，效果图是根据那张真实裁开后的布料生成的。</div>
     </div>
 
     <!-- 屏2: 拆解旧衣引导 -->
     <div class="screen" id="screen2">
       <div class="sec">这件旧衣现在是什么状态</div>
-      <div class="pill info" style="margin-bottom:10px">
-        <span>ℹ️</span>
-        <span>正式版会由 AI 识别旧衣类型自动匹配拆解方案；这次没接入真实识别，先手动选一种，下面的拆解提示是真实的通用缝纫知识，不是编的。</span>
-      </div>
+      <div id="aiIdentifyStatus" style="margin-bottom:10px"></div>
       <div class="pill warn" style="margin-bottom:10px">
         <span>✂️</span>
         <span>旧衣一旦剪开就回不去了——建议先把下面对应的拆解提示看一遍，再动剪刀。</span>
@@ -386,7 +383,9 @@ const GARMENT_DIAGRAMS={
 // state 声明放在这里(所有引用它的构造代码/事件处理函数之前)，避免顶层赋值在 const state 真正
 // 执行到之前就访问它触发暂时性死区(TDZ)报错——之前版本踩过这个坑，见交接文档。
 const state={photoDataUrl:null, photo2DataUrl:null, garmentType:null, edge1:null, edge2:null,
-  bag:null, bagName:null, style:null, freeform:'', creativeImgUrl:null, usedFallback:false};
+  bag:null, bagName:null, style:null, freeform:'', creativeImgUrl:null, usedFallback:false,
+  aiGarmentType:null, aiMaterial:null, aiConfidence:null, aiIdentifying:false, aiIdentifyFailed:false,
+  userPickedGarmentType:false};
 let cur=1;
 
 const bagselEl=document.getElementById('bagsel');
@@ -432,6 +431,7 @@ GARMENT_TYPES.forEach(g=>{
     document.querySelectorAll('.gopt').forEach(x=>x.classList.remove('on'));
     d.classList.add('on');
     state.garmentType=g.id;
+    state.userPickedGarmentType=true; // 用户手动选过了，之后AI识别结果就不再自动覆盖这里
     renderTips(g);
     updateMainBtn();
   });
@@ -442,6 +442,59 @@ function renderTips(g){
     '<div class="tipcard"><div class="tt">🧵 '+g.nm+' 的拆解建议</div><ol>'
     + g.tips.map(t=>'<li>'+t+'</li>').join('')
     + '</ol></div>';
+}
+
+// ====== AI 识别旧衣类型 + 材质（屏①上传照片后自动调用，结果用来预选屏②的类型，可手动改） ======
+const IDENTIFY_GARMENT_ENDPOINT = '/api/identify-garment'; // 部署时换成真实中转函数地址
+
+async function identifyGarment(photoDataUrl){
+  state.aiIdentifying=true;
+  state.aiIdentifyFailed=false;
+  renderAiIdentifyStatus();
+  try{
+    const resp = await fetch(IDENTIFY_GARMENT_ENDPOINT, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ photoDataUrl }),
+    });
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const data = await resp.json();
+    state.aiGarmentType = data.garmentType;
+    state.aiMaterial = data.material;
+    state.aiConfidence = data.confidence;
+  }catch(err){
+    state.aiGarmentType=null; state.aiMaterial=null; state.aiConfidence=null;
+    state.aiIdentifyFailed=true;
+  }
+  state.aiIdentifying=false;
+  // 只要用户还没有自己手动点过类型，就用AI识别结果预选一下（识别失败时这里 aiGarmentType 是 null，不会选）
+  if(!state.userPickedGarmentType && state.aiGarmentType){
+    const match = GARMENT_TYPES.find(x=>x.id===state.aiGarmentType);
+    if(match){
+      state.garmentType = match.id;
+      document.querySelectorAll('.gopt').forEach(x=>x.classList.toggle('on', x.dataset.g===match.id));
+      renderTips(match);
+      updateMainBtn();
+    }
+  }
+  renderAiIdentifyStatus();
+}
+
+function renderAiIdentifyStatus(){
+  const el=document.getElementById('aiIdentifyStatus');
+  if(!el) return;
+  if(state.aiIdentifying){
+    el.innerHTML = '<div class="pill info"><span>🔍</span><span>AI 正在识别这件旧衣的类型和材质…</span></div>';
+  }else if(state.aiIdentifyFailed){
+    el.innerHTML = '<div class="pill info"><span>ℹ️</span><span>这次 AI 识别没有成功（可能是网络或服务暂时的问题），不影响继续使用——下面手动选一种旧衣类型就行。</span></div>';
+  }else if(state.aiGarmentType){
+    const nm = (GARMENT_TYPES.find(x=>x.id===state.aiGarmentType)||{}).nm || state.aiGarmentType;
+    el.innerHTML = '<div class="pill info"><span>🔍</span><span>AI 识别：这可能是「'+nm+'」，材质大概是「'+state.aiMaterial+'」，已经帮你预选好下面的类型——'
+      + (state.aiConfidence==='low' ? '这次识别把握不大，建议你核对一下再继续。' : '不对的话直接点别的选项换。')
+      + '</span></div>';
+  }else{
+    el.innerHTML = '';
+  }
 }
 
 const SCREEN_ORDER=[1,2,3,4,5,6,7,8]; // 现在是纯线性流程，布料够不够在⑤选包型时就实时核对，不再需要单独的分支屏
@@ -535,6 +588,10 @@ document.getElementById('fileInput').addEventListener('change', e=>{
     img.style.display='block';
     document.getElementById('upbox').classList.add('has-img');
     updateMainBtn();
+    // 换了张新照片，之前那次识别结果作废，重新识别一次
+    state.aiGarmentType=null; state.aiMaterial=null; state.aiConfidence=null;
+    state.aiIdentifyFailed=false; state.userPickedGarmentType=false;
+    identifyGarment(state.photoDataUrl);
   };
   reader.readAsDataURL(f);
 });

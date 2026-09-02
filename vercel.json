@@ -2,6 +2,9 @@
   "functions": {
     "api/generate-creative-image.js": {
       "maxDuration": 30
+    },
+    "api/identify-garment.js": {
+      "maxDuration": 20
     }
   }
 }
