@@ -1,60 +1,76 @@
-// ====== EcoStitch 线条图标库(2026-09-03新增，替换原来偏"表情包"风格的emoji图标) ======
-// Bedi 反馈"现在这套UI图标太low了，能不能换一套高级的类似instagram风格的简约图标"——这里统一定义
-// 一套 24x24 viewBox 的描边线条图标(风格参考 calculator.html 里"下载纸样清单/重新计算"按钮本来就
-// 已经在用的那套线条图标：fill=none + stroke=currentColor + stroke-width 1.5~1.6 + 圆头圆角)，
+// ====== EcoStitch 线条图标库(2026-09-03新增，2026-09-03再更新——按 Bedi 发来的参考图标重做) ======
+// 第一版是照着 calculator.html 里"下载纸样清单/重新计算"按钮本来就在用的线条图标风格自己手画的；
+// Bedi 发来一张参考图标板(截图，标了中文用途)，要求"参考这份图标来做"——这版改用 Tabler Icons
+// (开源MIT协议线条图标库，https://tabler.io/icons，通过 npm 拉取真实矢量数据，不是照图片肉眼描的)
+// 里视觉上最接近参考图的具体图标，逐个手动比对挑选(不是整包套用默认映射)。风格改动：描边粗细从
+// 1.5~1.6 统一加粗到 2(参考图线条明显更粗更"实在")；"首页"图标改成实心(参考图里房子是纯黑色实
+// 心的，不是描边的，其余大部分图标仍是描边)。
 // 三个页面(index.html/flow.html/calculator.html)通过 <script src="assets/icons.js"> 共享同一份数据，
 // 不再各自维护一份拷贝——图标改一次，三个页面都同步生效，不存在"忘了同步"的风险。
-// 用法：icon('home', 20) 返回一段可以直接塞进 innerHTML 的 <svg> 字符串；iconFilled('heart', 18) 是
-// 实心版本(点赞/收藏后的高亮状态用)；bagIcon('bucket', 28) 返回13个包型里对应那个的线条图标。
-// 少数静态写在 HTML 里、不经过 JS 生成的图标(比如顶部 gnav 行)，直接把 icon()/bagIcon() 生成的
-// <svg> 源码誊抄进了 HTML——数据源头仍然是这份文件里的 ICONS/BAG_ICONS，改路径记得两边一起改。
+// 用法：icon('home', 20) 返回一段可以直接塞进 innerHTML 的 <svg> 字符串(描边版)；
+// iconFilled('heart', 18) 返回实心版本——对 home/more/heart/bookmark 这四个，实心版用的是 Tabler
+// 专门设计的实心图形数据(不是简单地把描边版路径填色，形状会更饱满)，其余图标没有专门的实心版数据，
+// iconFilled() 兜底复用描边版路径直接填色。bagIcon('bucket', 28) 返回13个包型里对应那个的线条图标，
+// 这13个是本项目专属设计(对应每个包型真实的结构差异)，网上找不到现成的，不在这次换图标的范围内，
+// 只把描边粗细同步加到了2，和其它图标保持一致的视觉重量。
+// 少数静态写在 HTML 里、不经过 JS 生成的图标(比如顶部 gnav 行)，直接把 icon()/iconFilled()/bagIcon()
+// 生成的 <svg> 源码誊抄进了 HTML——数据源头仍然是这份文件里的 ICONS/BAG_ICONS，改路径记得两边一起改。
 
 const ICONS = {
-  home: '<path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3v-5.5h4V20h3a1 1 0 0 0 1-1V9.5"/>',
-  search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/>',
-  heart: '<path d="M12 20.3s-7.1-4.4-9.6-8.9C.7 8 2.2 4.5 5.7 3.9c2-.35 3.9.6 6.3 2.9 2.4-2.3 4.3-3.25 6.3-2.9 3.5.6 5 4.1 3.3 7.5-2.5 4.5-9.6 8.9-9.6 8.9z"/>',
-  comment: '<path d="M21 12a8 8 0 0 1-8 8H7.3L3 23l.9-4.4A8 8 0 1 1 21 12z"/>',
-  bookmark: '<path d="M6.5 4h11a1 1 0 0 1 1 1v15l-6.5-4-6.5 4V5a1 1 0 0 1 1-1z"/>',
-  send: '<path d="M21.5 2.5 10.8 13.2"/><path d="M21.5 2.5 14.8 21l-4-8-8-4z"/>',
-  back: '<path d="M15 5l-7 7 7 7"/>',
-  close: '<path d="M6 6l12 12M18 6 6 18"/>',
-  plus: '<path d="M12 5v14M5 12h14"/>',
-  person: '<circle cx="12" cy="8.3" r="3.5"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>',
-  personAdd: '<circle cx="9" cy="8.3" r="3.2"/><path d="M2.3 20a6.7 6.7 0 0 1 13.4 0"/><path d="M18 7.5v6M15 10.5h6"/>',
-  bag: '<path d="M6 8h12l1 12.2a1 1 0 0 1-1 1.1H6a1 1 0 0 1-1-1.1L6 8z"/><path d="M9 8V6.3a3 3 0 0 1 6 0V8"/>',
-  mail: '<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3.6 6.6 12 13l8.4-6.4"/>',
-  bell: '<path d="M12 3a5 5 0 0 0-5 5v3.3c0 1-.4 2-1.1 2.7L4.5 16h15l-1.4-2c-.7-.7-1.1-1.7-1.1-2.7V8a5 5 0 0 0-5-5z"/><path d="M10 19a2 2 0 0 0 4 0"/>',
-  edit: '<path d="M4 20l.8-4 11.4-11.4a1.5 1.5 0 0 1 2.1 0l1.1 1.1a1.5 1.5 0 0 1 0 2.1L8 19.2 4 20z"/><path d="M14 6.2l3 3"/>',
-  refresh: '<path d="M4 12a8 8 0 0 1 13.7-5.6L20 8M20 4v4h-4M20 12a8 8 0 0 1-13.7 5.6L4 16M4 20v-4h4"/>',
-  check: '<path d="M5 13l4 4L19 7"/>',
-  checkCircle: '<circle cx="12" cy="12" r="9"/><path d="M8 12.3l2.5 2.5L16 9.3"/>',
-  circle: '<circle cx="12" cy="12" r="9"/>',
-  warning: '<path d="M12 3.3 21.3 20H2.7L12 3.3z"/><path d="M12 10v4"/><circle cx="12" cy="16.8" r="0.6" fill="currentColor" stroke="none"/>',
-  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.3"/><circle cx="12" cy="8" r="0.7" fill="currentColor" stroke="none"/>',
-  camera: '<path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9z"/><circle cx="12" cy="13" r="3.2"/>',
-  ruler: '<path d="M3 16 16 3l5 5L8 21z"/><path d="M9.3 9.3l2 2M12.5 6.3l2 2M6.3 12.5l2 2"/>',
-  palette: '<path d="M12 3a9 9 0 1 0 3.2 17.4c.8-.3 1-1.3.4-1.9-.3-.3-.5-.6-.5-1 0-.8.6-1.5 1.4-1.5h1.7A4.2 4.2 0 0 0 22.4 12 9.4 9.4 0 0 0 12 3z"/><circle cx="7.3" cy="11" r="1" fill="currentColor" stroke="none"/><circle cx="9.8" cy="7.3" r="1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="7.3" r="1" fill="currentColor" stroke="none"/><circle cx="16.7" cy="11" r="1" fill="currentColor" stroke="none"/>',
-  sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/><path d="M19 15l.6 1.8 1.8.6-1.8.6-.6 1.8-.6-1.8-1.8-.6 1.8-.6z"/>',
-  scissors: '<circle cx="6.2" cy="6.5" r="2.2"/><circle cx="6.2" cy="17.5" r="2.2"/><path d="M8 8 20 19M8 16 20 5"/>',
-  download: '<path d="M12 3v12M7 10l5 5 5-5M4 20h16"/>',
-  tag: '<path d="M20 12.5 12.5 20a1.5 1.5 0 0 1-2.1 0L3 12.5V4h8.5L20 12.5z"/><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor" stroke="none"/>',
-  receipt: '<path d="M6 3h12v18l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3-2 1.3V3z"/><path d="M9 8h6M9 12h6"/>',
-  needle: '<path d="M4 15.5c3.2-4.2 8.3-6.3 12.6-3.2"/><circle cx="18.3" cy="7.3" r="2" /><path d="M16.8 5.8 5.5 17"/>',
-  bookOpen: '<path d="M12 6.3c-2-1.3-4.6-1.8-7.2-1.5v13c2.6-.3 5.2.2 7.2 1.5 2-1.3 4.6-1.8 7.2-1.5v-13c-2.6-.3-5.2.2-7.2 1.5z"/><path d="M12 6.3v13"/>',
-  page: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9.3 12h5.4M9.3 15h5.4M9.3 9h2"/>',
-  chevronDown: '<path d="M6 9l6 6 6-6"/>',
-  more: '<circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none"/>',
+  home: '<path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/>',
+  search: '<path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/>',
+  heart: '<path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572"/>',
+  comment: '<path d="M3 20l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c3.255 2.777 3.695 7.266 1.029 10.501c-2.666 3.235 -7.615 4.215 -11.574 2.293l-4.7 1"/>',
+  bookmark: '<path d="M18 7v14l-6 -4l-6 4v-14a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4"/>',
+  send: '<path d="M10 14l11 -11"/><path d="M21 3l-6.5 18a.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a.55 .55 0 0 1 0 -1l18 -6.5"/>',
+  back: '<path d="M15 6l-6 6l6 6"/>',
+  close: '<path d="M18 6l-12 12"/><path d="M6 6l12 12"/>',
+  plus: '<path d="M12 5l0 14"/><path d="M5 12l14 0"/>',
+  person: '<path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M9 10a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855"/>',
+  personAdd: '<path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/><path d="M16 19h6"/><path d="M19 16v6"/><path d="M6 21v-2a4 4 0 0 1 4 -4h4"/>',
+  bag: '<path d="M6.331 8h11.339a2 2 0 0 1 1.977 2.304l-1.255 8.152a3 3 0 0 1 -2.966 2.544h-6.852a3 3 0 0 1 -2.965 -2.544l-1.255 -8.152a2 2 0 0 1 1.977 -2.304"/><path d="M9 11v-5a3 3 0 0 1 6 0v5"/>',
+  mail: '<path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10"/><path d="M3 7l9 6l9 -6"/>',
+  bell: '<path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6"/><path d="M9 17v1a3 3 0 0 0 6 0v-1"/>',
+  edit: '<path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4"/><path d="M13.5 6.5l4 4"/>',
+  refresh: '<path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>',
+  check: '<path d="M5 12l5 5l10 -10"/>',
+  checkCircle: '<path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M9 12l2 2l4 -4"/>',
+  circle: '<path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/>',
+  warning: '<path d="M12 9v4"/><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0"/><path d="M12 16h.01"/>',
+  info: '<path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 9h.01"/><path d="M11 12h1v4h1"/>',
+  camera: '<path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/>',
+  ruler: '<path d="M17 3l4 4l-14 14l-4 -4l14 -14"/><path d="M16 7l-1.5 -1.5"/><path d="M13 10l-1.5 -1.5"/><path d="M10 13l-1.5 -1.5"/><path d="M7 16l-1.5 -1.5"/>',
+  palette: '<path d="M12 21a9 9 0 0 1 0 -18c4.97 0 9 3.582 9 8c0 1.06 -.474 2.078 -1.318 2.828c-.844 .75 -1.989 1.172 -3.182 1.172h-2.5a2 2 0 0 0 -1 3.75a1.3 1.3 0 0 1 -1 2.25"/><path d="M7.5 10.5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M11.5 7.5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M15.5 10.5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/>',
+  sparkle: '<path d="M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2m0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2m-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6"/>',
+  scissors: '<path d="M3 7a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M3 17a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M8.6 8.6l10.4 10.4"/><path d="M8.6 15.4l10.4 -10.4"/>',
+  download: '<path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 11l5 5l5 -5"/><path d="M12 4l0 12"/>',
+  tag: '<path d="M6.5 7.5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M3 6v5.172a2 2 0 0 0 .586 1.414l7.71 7.71a2.41 2.41 0 0 0 3.408 0l5.592 -5.592a2.41 2.41 0 0 0 0 -3.408l-7.71 -7.71a2 2 0 0 0 -1.414 -.586h-5.172a3 3 0 0 0 -3 3"/>',
+  receipt: '<path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2m4 -14h6m-6 4h6m-2 4h2"/>',
+  needle: '<path d="M3 21c-.667 -.667 3.262 -6.236 11.785 -16.709a3.5 3.5 0 1 1 5.078 4.791c-10.575 8.612 -16.196 12.585 -16.863 11.918"/><path d="M17.5 6.5l-1 1"/><path d="M17 7c-2.333 -2.667 -3.5 -4 -5 -4s-2 1 -2 2c0 4 8.161 8.406 6 11c-1.056 1.268 -3.363 1.285 -5.75 .808"/><path d="M5.739 15.425c-1.393 -.565 -3.739 -1.925 -3.739 -3.425"/><path d="M19.5 9.5l1.5 1.5"/>',
+  bookOpen: '<path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6l0 13"/><path d="M12 6l0 13"/><path d="M21 6l0 13"/>',
+  page: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2"/><path d="M9 9l1 0"/><path d="M9 13l6 0"/><path d="M9 17l6 0"/>',
+  chevronDown: '<path d="M6 9l6 6l6 -6"/>',
+  more: '<path d="M4 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M18 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/>',
+};
+
+// 只有这四个图标有 Tabler 专门设计的实心版本(形状比"直接把描边路径填色"更饱满好看)，
+// 其余图标没有对应实心版数据——iconFilled() 对不在这个表里的名字会自动兜底用 ICONS 里的描边路径填色。
+const ICONS_FILLED = {
+  home: '<path d="M12.707 2.293l9 9c.63 .63 .184 1.707 -.707 1.707h-1v6a3 3 0 0 1 -3 3h-1v-7a3 3 0 0 0 -2.824 -2.995l-.176 -.005h-2a3 3 0 0 0 -3 3v7h-1a3 3 0 0 1 -3 -3v-6h-1c-.89 0 -1.337 -1.077 -.707 -1.707l9 -9a1 1 0 0 1 1.414 0m.293 11.707a1 1 0 0 1 1 1v7h-4v-7a1 1 0 0 1 .883 -.993l.117 -.007z"/>',
+  more: '<path d="M7 12a2 2 0 1 1 -4 0q 0 -.053 .005 -.102a1.996 1.996 0 0 1 1.995 -1.898a2 2 0 0 1 2 2"/><path d="M14 12a2 2 0 1 1 -4 0q 0 -.053 .005 -.102a1.996 1.996 0 0 1 1.995 -1.898a2 2 0 0 1 2 2"/><path d="M21 12a2 2 0 1 1 -4 0q 0 -.053 .005 -.102a1.996 1.996 0 0 1 1.995 -1.898a2 2 0 0 1 2 2"/>',
+  heart: '<path d="M6.979 3.074a6 6 0 0 1 4.988 1.425l.037 .033l.034 -.03a6 6 0 0 1 4.733 -1.44l.246 .036a6 6 0 0 1 3.364 10.008l-.18 .185l-.048 .041l-7.45 7.379a1 1 0 0 1 -1.313 .082l-.094 -.082l-7.493 -7.422a6 6 0 0 1 3.176 -10.215z"/>',
+  bookmark: '<path d="M14 2a5 5 0 0 1 5 5v14a1 1 0 0 1 -1.555 .832l-5.445 -3.63l-5.444 3.63a1 1 0 0 1 -1.55 -.72l-.006 -.112v-14a5 5 0 0 1 5 -5h4z"/>',
 };
 
 function icon(name, size, cls) {
   const d = ICONS[name] || '';
   size = size || 20;
-  return '<svg class="'+(cls||'')+'" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block">'+d+'</svg>';
+  return '<svg class="'+(cls||'')+'" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block">'+d+'</svg>';
 }
 // 实心版本：点赞后的❤️、收藏后的🔖 这类"已激活"状态用填充色而不是再画一层描边，视觉上更接近
-// Instagram 点赞后心形变红填满的效果。只有 heart/bookmark 这种本来就是封闭图形的图标适合填充。
+// Instagram 点赞后心形变红填满的效果。home/more 平时也总是用实心版(参考图里这两个本来就是实心的)。
 function iconFilled(name, size, cls) {
-  const d = ICONS[name] || '';
+  const d = ICONS_FILLED[name] || ICONS[name] || '';
   size = size || 20;
   return '<svg class="'+(cls||'')+'" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" fill="currentColor" stroke="none" style="display:block">'+d+'</svg>';
 }
@@ -64,6 +80,8 @@ function iconFilled(name, size, cls) {
 // 本来就是同一个基础"托特包"轮廓、只是拼接缝的位置和数量不同(对应各自 BAGS 数据里 st 字段写的真实
 // 结构描述)，所以图标也只用"轮廓相同、缝合线数量不同"来体现，没有为了"看起来不一样"而画不存在的
 // 装饰细节；双肩包/水桶包/马鞍包这些结构本来就明显不同的包型，轮廓也画得明显不同。
+// 这13个是本项目专属设计，网上现成图标库找不到，不在"参考图标重做"这次的换图范围内，只把描边粗细
+// 从1.4统一加到2，和其它图标保持一致的视觉重量。
 const BAG_ICONS = {
   boxtote: '<path d="M5 9h14l-1 11.2a1 1 0 0 1-1 .8H7a1 1 0 0 1-1-.8L5 9z"/><path d="M8.3 9V7a3.7 3.7 0 0 1 7.4 0v2"/>',
   jointote: '<path d="M5 9h14l-1 11.2a1 1 0 0 1-1 .8H7a1 1 0 0 1-1-.8L5 9z"/><path d="M8.3 9V7a3.7 3.7 0 0 1 7.4 0v2"/><path d="M6.2 16.3h11.6"/>',
@@ -83,5 +101,5 @@ const BAG_ICONS = {
 function bagIcon(bag, size, cls) {
   const d = BAG_ICONS[bag] || BAG_ICONS.boxtote;
   size = size || 28;
-  return '<svg class="'+(cls||'')+'" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="display:block">'+d+'</svg>';
+  return '<svg class="'+(cls||'')+'" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block">'+d+'</svg>';
 }

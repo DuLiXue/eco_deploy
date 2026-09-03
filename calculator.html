@@ -7794,7 +7794,7 @@ align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shr
 <body>
 <div id="wxhint" style="display:none;position:fixed;top:0;left:0;right:0;z-index:999;background:#1C1E18;color:#fff;padding:12px 16px;font-size:13px;line-height:1.6;text-align:center">
   当前在微信内打开，下载纸样可能受限。请点右上角 <b>···</b> → <b>在浏览器打开</b>，即可正常下载 PDF。
-  <span onclick="document.getElementById('wxhint').style.display='none'" style="margin-left:8px;opacity:.6"><svg class="" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M6 6l12 12M18 6 6 18"/></svg></span>
+  <span onclick="document.getElementById('wxhint').style.display='none'" style="margin-left:8px;opacity:.6"><svg class="" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></span>
 </div>
 <script>
 if(/MicroMessenger/i.test(navigator.userAgent)){
@@ -7804,8 +7804,8 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
 
 <div class="hint">真实可用的纸样计算器 · 公式经 <b>Bedi 实物验证校准</b> · 输入尺寸，真的算出每片布怎么裁</div>
 <div class="ph">
-  <div class="sb"><span class="t">9:41</span></div><div class="gnav"><span class="gi" onclick="location.href='index.html'"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3v-5.5h4V20h3a1 1 0 0 0 1-1V9.5"/></svg></span><span class="gi" onclick="location.href='index.html?view=search'"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg></span><span class="badge" title="灵感值·示例展示数据">85</span></div>
-  <div class="bar"><div class="rbtn" onclick="goBackCalc()"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style=""><path d="M15 5l-7 7 7 7"/></svg></div><span class="ttl">纸样计算器</span></div>
+  <div class="sb"><span class="t">9:41</span></div><div class="gnav"><span class="gi" onclick="location.href='index.html'"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg></span><span class="gi" onclick="location.href='index.html?view=search'"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg></span><span class="badge" title="灵感值·示例展示数据">85</span></div>
+  <div class="bar"><div class="rbtn" onclick="goBackCalc()"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style=""><path d="M15 6l-6 6l6 6"/></svg></div><span class="ttl">纸样计算器</span></div>
   <div class="body">
     <!-- INPUT -->
     <div id="input">
@@ -7850,7 +7850,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <div class="sec">③ 缝份（可按布料调整）</div>
       <div class="field"><label>缝份</label><div class="ig"><input id="SA" type="number" inputmode="decimal" placeholder="1" value="1"><span class="unit">cm</span></div></div>
 
-      <button class="btn" onclick="calculate()" style="margin-top:6px"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style=""><path d="M5 3h4v18H5zM9 7H5M9 11H5M9 15H5M9 19H5"/></svg>算出裁剪纸样</button>
+      <button class="btn" onclick="calculate()" style="margin-top:6px"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style=""><path d="M5 3h4v18H5zM9 7H5M9 11H5M9 15H5M9 19H5"/></svg>算出裁剪纸样</button>
       <div class="small">公式已用 Bedi 亲手验证的方底托特包（净21×27×9.5）校准：算出前后片 23×29、侧底围条 11.5×36.5，与实物完全一致。</div>
     </div>
 
@@ -7859,27 +7859,27 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <div id="checkBox"></div>
       <div class="sec" style="margin-top:2px">裁剪清单（已含缝份，直接照此裁布）</div>
       <div class="rcard" id="cutList"></div>
-      <div class="restabs"><div class="rt on" id="resTabPreview" onclick="switchResTab('preview')">整体预览</div><div class="rt" id="resTabA4" onclick="switchResTab('a4')">A4分页</div></div><div class="diagram" id="diagram"></div><div class="a4preview" id="a4preview"><svg class="inline-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9.3 12h5.4M9.3 15h5.4M9.3 9h2"/></svg> A4分页的可视化预览这一版还没做——点下面"下载纸样清单"拿到的PDF本身已经是按A4自动分好页、带对齐标记的，可以直接打印，只是这里还看不到分页后的样子。</div>
+      <div class="restabs"><div class="rt on" id="resTabPreview" onclick="switchResTab('preview')">整体预览</div><div class="rt" id="resTabA4" onclick="switchResTab('a4')">A4分页</div></div><div class="diagram" id="diagram"></div><div class="a4preview" id="a4preview"><svg class="inline-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2"/><path d="M9 9l1 0"/><path d="M9 13l6 0"/><path d="M9 17l6 0"/></svg> A4分页的可视化预览这一版还没做——点下面"下载纸样清单"拿到的PDF本身已经是按A4自动分好页、带对齐标记的，可以直接打印，只是这里还看不到分页后的样子。</div>
       <div class="small" id="note"></div>
       <div id="tutorialSec"></div>
     </div>
   </div>
   <div class="foot" id="foot"></div>
   <div class="aiw-tip" id="aiwTip" onclick="aiwOpen()">卡住了？问问我</div>
-  <div class="aiw-fab" id="aiwFab" onclick="aiwOpen()"><svg class="" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21 12a8 8 0 0 1-8 8H7.3L3 23l.9-4.4A8 8 0 1 1 21 12z"/></svg></div>
+  <div class="aiw-fab" id="aiwFab" onclick="aiwOpen()"><svg class="" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 20l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c3.255 2.777 3.695 7.266 1.029 10.501c-2.666 3.235 -7.615 4.215 -11.574 2.293l-4.7 1"/></svg></div>
   <div class="aiw-panel" id="aiwPanel">
     <div class="aiw-head">
-      <div class="ic"><svg class="" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21 12a8 8 0 0 1-8 8H7.3L3 23l.9-4.4A8 8 0 1 1 21 12z"/></svg></div>
+      <div class="ic"><svg class="" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 20l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c3.255 2.777 3.695 7.266 1.029 10.501c-2.666 3.235 -7.615 4.215 -11.574 2.293l-4.7 1"/></svg></div>
       <div>
         <div class="nm">改造小助手</div>
         <div class="st"><span class="dot"></span>在线</div>
       </div>
-      <div class="x" onclick="aiwClose()"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M6 6l12 12M18 6 6 18"/></svg></div>
+      <div class="x" onclick="aiwClose()"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></div>
     </div>
     <div class="aiw-msgs" id="aiwMsgs"></div>
     <div class="aiw-inputrow">
       <input id="aiwInput" placeholder="输入你的问题…" onkeydown="if(event.key==='Enter')aiwSend()">
-      <button class="aiw-sendbtn" id="aiwSendBtn" onclick="aiwSend()"><svg class="" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21.5 2.5 10.8 13.2"/><path d="M21.5 2.5 14.8 21l-4-8-8-4z"/></svg></button>
+      <button class="aiw-sendbtn" id="aiwSendBtn" onclick="aiwSend()"><svg class="" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M10 14l11 -11"/><path d="M21 3l-6.5 18a.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a.55 .55 0 0 1 0 -1l18 -6.5"/></svg></button>
     </div>
   </div>
 </div>
@@ -8174,13 +8174,13 @@ function calculate(){
   });
   // 估算需要的整块布(按总面积 + 30%排布损耗,估一个方形边长参考)
   const estSide=Math.ceil(Math.sqrt(estTotalArea*1.3));
-  const checkHtml=`<div class="check ok"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg><div class="tx"><b>预估用料（对照你的旧衣看够不够）</b><br>最大单片：<b>${estMaxW}×${estMaxH}cm</b>（${estMaxName}）——旧衣至少要有一块能放下它<br>总用料约：<b>${estSide}×${estSide}cm</b> 见方（含排布损耗，可用多块拼）<br><span style="color:var(--ink-3,#9DA192)">旧衣是碎块，够不够以能否裁下最大单片为准；不够可用同色布拼接。</span></div></div>`;
+  const checkHtml=`<div class="check ok"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg><div class="tx"><b>预估用料（对照你的旧衣看够不够）</b><br>最大单片：<b>${estMaxW}×${estMaxH}cm</b>（${estMaxName}）——旧衣至少要有一块能放下它<br>总用料约：<b>${estSide}×${estSide}cm</b> 见方（含排布损耗，可用多块拼）<br><span style="color:var(--ink-3,#9DA192)">旧衣是碎块，够不够以能否裁下最大单片为准；不够可用同色布拼接。</span></div></div>`;
   document.getElementById('checkBox').innerHTML=checkHtml;
 
   // cut list
   let rows=pieces.map(p=>`<div class="rrow"><div class="pn">${p[0]}</div><div class="sz">${p[1]} × ${p[2]} cm</div><div class="qt">${p[3]}</div></div>`).join('');
   const vf = curBag==="boxtote" ? "<span class=\"pill v\">✓ 已验证</span>" : (curBag==="crescent"||curBag==="trianglepouch") ? "<span class=\"pill v\">✓ 曲线纸样复刻</span>" : "<span class=\"pill r\">模板库·建议先小样</span>"; // roundbp 走模板库分支,同 saddle/jiaozi
-  document.getElementById('cutList').innerHTML=`<div class="rh"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style=""><circle cx="7" cy="6.8" r="2.4"/><circle cx="7" cy="17.2" r="2.4"/><path d="M9.2 8.1 20.5 15.6M9.2 15.9 20.5 8.4"/></svg>裁片清单 ${vf}</div>`+rows;
+  document.getElementById('cutList').innerHTML=`<div class="rh"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style=""><circle cx="7" cy="6.8" r="2.4"/><circle cx="7" cy="17.2" r="2.4"/><path d="M9.2 8.1 20.5 15.6M9.2 15.9 20.5 8.4"/></svg>裁片清单 ${vf}</div>`+rows;
 
   // simple diagram (proportional boxes)
   const maxW=Math.max(...pieces.map(p=>p[1])), sc=120/maxW;
@@ -8194,7 +8194,7 @@ function calculate(){
     W:W,H:H,D:D,sa:sa, verified:(curBag==='boxtote'), bagType:curBag};
   document.getElementById('input').style.display='none';
   document.getElementById('result').classList.add('show');
-  document.getElementById('foot').innerHTML=`<button class="btn" onclick="downloadPattern()"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style=""><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>下载纸样清单</button><button class="btn sec2" style="margin-top:10px" onclick="reset()"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style=""><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8M20 4v4h-4M20 12a8 8 0 0 1-13.7 5.6L4 16M4 20v-4h4"/></svg>重新计算</button>`;
+  document.getElementById('foot').innerHTML=`<button class="btn" onclick="downloadPattern()"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style=""><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 11l5 5l5 -5"/><path d="M12 4l0 12"/></svg>下载纸样清单</button><button class="btn sec2" style="margin-top:10px" onclick="reset()"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style=""><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>重新计算</button>`;
   document.querySelector('.body').scrollTop=0;
 }
 
@@ -8227,13 +8227,13 @@ function renderTutorial(bag){
   const t=TUTORIALS&&TUTORIALS[bag];
   if(!t){ box.innerHTML=''; return; }
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const acc=t.accessories.map(a=>`<div class="tut-acc-row"><div class="aic"><svg class="" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4 15.5c3.2-4.2 8.3-6.3 12.6-3.2"/><circle cx="18.3" cy="7.3" r="2" /><path d="M16.8 5.8 5.5 17"/></svg></div><div class="an">${esc(a.name)}</div><div class="as">${esc(a.spec)}</div><div class="aq">${esc(a.qty)}</div></div>`).join('')||'<div class="tut-acc-row"><div class="an" style="color:var(--ink-3,#9DA192)">这款用不到额外辅料，表布里布即可</div></div>';
+  const acc=t.accessories.map(a=>`<div class="tut-acc-row"><div class="aic"><svg class="" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 21c-.667 -.667 3.262 -6.236 11.785 -16.709a3.5 3.5 0 1 1 5.078 4.791c-10.575 8.612 -16.196 12.585 -16.863 11.918"/><path d="M17.5 6.5l-1 1"/><path d="M17 7c-2.333 -2.667 -3.5 -4 -5 -4s-2 1 -2 2c0 4 8.161 8.406 6 11c-1.056 1.268 -3.363 1.285 -5.75 .808"/><path d="M5.739 15.425c-1.393 -.565 -3.739 -1.925 -3.739 -3.425"/><path d="M19.5 9.5l1.5 1.5"/></svg></div><div class="an">${esc(a.name)}</div><div class="as">${esc(a.spec)}</div><div class="aq">${esc(a.qty)}</div></div>`).join('')||'<div class="tut-acc-row"><div class="an" style="color:var(--ink-3,#9DA192)">这款用不到额外辅料，表布里布即可</div></div>';
   const steps=t.steps.map((s,i)=>`<div class="tut-step" id="tutStep${i}"><div class="tut-step-h" onclick="toggleTutStep(${i})"><span class="idx">${i+1}</span><span class="stt">${esc(s.title)}</span><span class="chev">▾</span></div><div class="tut-step-b">${s.body.map(l=>`<div>${esc(l)}</div>`).join('')}</div></div>`).join('');
   const pitfalls=t.pitfalls.map(p=>`<div class="tut-pitfall"><b>${esc(p.step)}：</b>${esc(p.issue)} → ${esc(p.fix)}</div>`).join('');
   const upcycle=(t.upcycleTip&&t.upcycleTip.length)?`<div class="tut-block"><div class="th">旧衣改造提示</div><div class="tut-upcycle">${t.upcycleTip.map(l=>`<div>${esc(l)}</div>`).join('')}</div></div>`:'';
   box.innerHTML=`
     <div class="tut-toggle" id="tutToggle" onclick="toggleTutPanel()">
-      <div><div class="tt"><svg class="inline-ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.3c-2-1.3-4.6-1.8-7.2-1.5v13c2.6-.3 5.2.2 7.2 1.5 2-1.3 4.6-1.8 7.2-1.5v-13c-2.6-.3-5.2.2-7.2 1.5z"/><path d="M12 6.3v13"/></svg> 查看《${esc(t.name)}》制作教程</div><div class="meta">${esc(t.difficulty)} · 预计 ${esc(t.time)}</div></div>
+      <div><div class="tt"><svg class="inline-ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6l0 13"/><path d="M12 6l0 13"/><path d="M21 6l0 13"/></svg> 查看《${esc(t.name)}》制作教程</div><div class="meta">${esc(t.difficulty)} · 预计 ${esc(t.time)}</div></div>
       <span class="arrow">▾</span>
     </div>
     <div class="tut-panel" id="tutPanel">
