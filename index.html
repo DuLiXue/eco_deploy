@@ -24,6 +24,7 @@ box-shadow:0 20px 50px rgba(28,30,24,.16),0 0 0 10px #14150F,0 0 0 12px #2C2E24;
 .pushhead .back{width:32px;height:32px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;flex-shrink:0}
 .pushhead .ttl{font-size:16px;font-weight:600}
 .hometabs{display:flex;align-items:center;padding:2px 16px 10px;gap:18px;flex-shrink:0}
+.hometabs .htsearch{margin-left:auto;cursor:pointer;color:var(--ink)}
 .hometabs .plus{font-size:19px;color:var(--ink);cursor:pointer;margin-right:2px}
 .hometabs .t{font-size:15.5px;color:var(--ink-3);cursor:pointer;font-weight:500}
 .hometabs .t.on{color:var(--green-core);font-weight:700}
@@ -57,8 +58,8 @@ background:linear-gradient(135deg,var(--green-soft),#F5F7F1)}
 .feedcard .uinfo{flex:1;min-width:0}
 .feedcard .uname{font-size:14px;font-weight:700}
 .feedcard .usub{font-size:11px;color:var(--ink-3)}
-.feedcard .followbtn{font-size:12px;font-weight:700;color:var(--green-core);border:1.5px solid var(--green-core);border-radius:16px;padding:5px 14px;cursor:pointer}
-.feedcard .followbtn.on{color:var(--ink-3);border-color:var(--line-2)}
+.feedcard .followbtn{font-size:13px;font-weight:600;color:var(--green-core);cursor:pointer;padding:4px 2px}
+.feedcard .followbtn.on{color:var(--ink-3)}
 .feedcard .cap{font-size:13.5px;line-height:1.6;margin-bottom:8px}
 .feedcard .tagchip{display:inline-flex;align-items:center;gap:4px;background:var(--bg);color:var(--green-core);font-size:12px;font-weight:600;
 padding:6px 12px;border-radius:14px;margin-bottom:12px;cursor:pointer}
@@ -138,7 +139,13 @@ opacity:0;transform:translateY(6px);pointer-events:none;transition:all .25s}
 .aiw-tip.on{opacity:1;transform:translateY(0);pointer-events:auto;cursor:pointer}
 .aiw-fab{position:absolute;right:16px;bottom:96px;width:52px;height:52px;border-radius:50%;background:var(--green);
 color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;
-box-shadow:0 10px 24px rgba(78,164,21,.35);z-index:50}
+box-shadow:0 10px 24px rgba(78,164,21,.35);z-index:50;transition:opacity .18s,transform .18s}
+/* 浮动入口固定悬浮在手机框上、不随内容滚动，而信息流每张卡片底部都有一个通栏的"照着做同款"按钮——
+   滚动经过时两者会在同一屏幕位置短暂重叠(2026-09-03 Bedi 反馈"滚动时图标被挡住"排查确认)。
+   根治思路不是简单调 z-index(调了谁在上面，另一个的点击区域依然被挡，问题没解决，只是换了哪个看不见)，
+   而是让浮动入口在"正在滚动"这个短暂窗口里主动让位：滚动时半透明+不可点击，停止滚动后立刻恢复，
+   静态阅读/点赞评论时完全不受影响，只在手指滑动的一瞬间避让，这也是很多真实App(小红书/淘宝同类浮动按钮)的做法。 */
+.aiw-tip.scrolling,.aiw-fab.scrolling{opacity:.3!important;pointer-events:none!important;transform:scale(.9)}
 .aiw-panel{position:absolute;inset:0;background:var(--card);z-index:60;display:none;flex-direction:column}
 .aiw-panel.on{display:flex}
 .aiw-head{padding:16px 16px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
@@ -208,6 +215,7 @@ align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shr
     <span class="t on" data-ht="rec" onclick="setHomeTab('rec')">推荐</span>
     <span class="t" data-ht="follow" onclick="setHomeTab('follow')">关注</span>
     <span class="t" data-ht="new" onclick="setHomeTab('new')">最新</span>
+    <span class="htsearch" onclick="applyView('search')"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg></span>
   </div>
   <!-- 我的 tab 顶部标题 -->
   <div class="methead" id="methead"><span class="ttl">我的</span></div>
@@ -344,10 +352,10 @@ align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shr
 
   <div class="botnav">
     <div class="item on" data-tab="home" onclick="showTab('home')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg></span><span>首页</span></div>
-    <div class="item disabled" onclick="notReady('商城')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M6.331 8h11.339a2 2 0 0 1 1.977 2.304l-1.255 8.152a3 3 0 0 1 -2.966 2.544h-6.852a3 3 0 0 1 -2.965 -2.544l-1.255 -8.152a2 2 0 0 1 1.977 -2.304"/><path d="M9 11v-5a3 3 0 0 1 6 0v5"/></svg></span><span>商城</span></div>
+    <div class="item disabled" onclick="notReady('商城')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17h-11v-14h-2"/><path d="M6 5l14 1l-1 7h-13"/></svg></span><span>商城</span></div>
     <div class="fabwrap"><div class="circ" onclick="location.href='flow.html'"><svg class="" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 7a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M3 17a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M8.6 8.6l10.4 10.4"/><path d="M8.6 15.4l10.4 -10.4"/></svg></div></div>
     <div class="item" data-tab="messages" onclick="showTab('messages')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10"/><path d="M3 7l9 6l9 -6"/></svg></span><span>消息</span></div>
-    <div class="item" data-tab="me" onclick="showTab('me')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M9 10a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855"/></svg></span><span>我的</span></div>
+    <div class="item" data-tab="me" onclick="showTab('me')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/></svg></span><span>我的</span></div>
   </div>
 </div>
 
@@ -429,9 +437,9 @@ function renderFeed(){
   html += '<div class="feedcard">'
     + '<div class="imgwrap" onclick="openDetail(\'demo\')"><img src="assets/demo-post-bag.jpg" alt="旧牛仔裤改的水桶包"></div>'
     + '<div class="userrow"><div class="av" style="overflow:hidden;cursor:pointer" onclick="openProfile()"><img src="assets/demo-author-avatar.jpg" style="width:100%;height:100%;object-fit:cover"></div><div class="uinfo" style="cursor:pointer" onclick="openProfile()"><div class="uname">改造达人_Lin</div><div class="usub">340 粉丝 · 示例展示</div></div>'
-    + '<div class="followbtn'+(followed?' on':'')+'" onclick="toggleDemoFollow()">'+(followed?'已关注':'关注')+'</div></div>'
+    + '<div class="followbtn'+(followed?' on':'')+'" onclick="toggleDemoFollow()">'+(followed?'已关注':'+ 关注')+'</div></div>'
     + '<div class="cap">旧牛仔裤改的水桶包，通勤刚好装下电脑～ 用了原来的后袋做装饰，超有味道</div>'
-    + '<div class="tagchip" onclick="openHowto(\'bucket\')">牛仔裤 → 水桶包</div>'
+    + '<div class="tagchip" onclick="openHowto(\'bucket\')">› 牛仔裤 → 水桶包</div>'
     + '<div class="actrow">'
       + '<span class="a'+(demoLiked?' liked':'')+'" onclick="toggleDemoLike(this)">'+(demoLiked?'<svg class="" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none" style="display:block"><path d="M6.979 3.074a6 6 0 0 1 4.988 1.425l.037 .033l.034 -.03a6 6 0 0 1 4.733 -1.44l.246 .036a6 6 0 0 1 3.364 10.008l-.18 .185l-.048 .041l-7.45 7.379a1 1 0 0 1 -1.313 .082l-.094 -.082l-7.493 -7.422a6 6 0 0 1 3.176 -10.215z"/></svg>':'<svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572"/></svg>')+' <span class="demoLikeNumTxt">'+demoLikeCount+'</span></span>'
       + '<span class="a" onclick="notReady(\'评论\')"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 20l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c3.255 2.777 3.695 7.266 1.029 10.501c-2.666 3.235 -7.615 4.215 -11.574 2.293l-4.7 1"/></svg> 24</span>'
@@ -448,7 +456,7 @@ function renderFeed(){
       + '<div class="imgwrap" onclick="openDetail(\'bag\',\''+b.bag+'\')"><div class="pill-tag">模板库参考</div><div class="tile">'+bagIcon(b.bag,60)+'</div></div>'
       + '<div class="userrow"><div class="av"><svg class="" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 21c-.667 -.667 3.262 -6.236 11.785 -16.709a3.5 3.5 0 1 1 5.078 4.791c-10.575 8.612 -16.196 12.585 -16.863 11.918"/><path d="M17.5 6.5l-1 1"/><path d="M17 7c-2.333 -2.667 -3.5 -4 -5 -4s-2 1 -2 2c0 4 8.161 8.406 6 11c-1.056 1.268 -3.363 1.285 -5.75 .808"/><path d="M5.739 15.425c-1.393 -.565 -3.739 -1.925 -3.739 -3.425"/><path d="M19.5 9.5l1.5 1.5"/></svg></div><div class="uinfo"><div class="uname">EcoStitch 模板库</div><div class="usub">'+b.vf+' · 项目结构数据库</div></div></div>'
       + '<div class="cap">'+b.nm+'：'+b.st+'</div>'
-      + '<div class="tagchip" onclick="openHowto(\''+b.bag+'\')">旧衣 → '+b.nm+'</div>'
+      + '<div class="tagchip" onclick="openHowto(\''+b.bag+'\')">› 旧衣 → '+b.nm+'</div>'
       + '<div class="actrow">'
         + '<span class="a"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572"/></svg> '+n.like+'</span>'
         + '<span class="a" onclick="notReady(\'评论\')"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 20l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c3.255 2.777 3.695 7.266 1.029 10.501c-2.666 3.235 -7.615 4.215 -11.574 2.293l-4.7 1"/></svg> '+n.cmt+'</span>'
@@ -523,9 +531,9 @@ function renderDetail(){
         + '<div class="beforewrap"><img src="assets/demo-post-before.jpg" alt="改造前"><span class="lbl">改造前</span></div></div>'
       + '<div class="userrow"><div class="av" style="overflow:hidden;cursor:pointer" onclick="openProfile()"><img src="assets/demo-author-avatar.jpg" style="width:100%;height:100%;object-fit:cover"></div>'
         + '<div class="uinfo" style="cursor:pointer" onclick="openProfile()"><div class="uname">改造达人_Lin</div><div class="usub">340 粉丝 · 示例展示</div></div>'
-        + '<div class="followbtn'+(followed?' on':'')+'" onclick="toggleDemoFollow()">'+(followed?'已关注':'关注')+'</div></div>'
+        + '<div class="followbtn'+(followed?' on':'')+'" onclick="toggleDemoFollow()">'+(followed?'已关注':'+ 关注')+'</div></div>'
       + '<div class="cap">旧牛仔裤改的水桶包，通勤刚好装下电脑～ 用了原来的后袋做装饰，超有味道</div>'
-      + '<div class="tagchip" onclick="openHowto(\'bucket\')">牛仔裤 → 水桶包</div>'
+      + '<div class="tagchip" onclick="openHowto(\'bucket\')">› 牛仔裤 → 水桶包</div>'
       + '<div class="actrow">'
         + '<span class="a'+(demoLiked?' liked':'')+'" onclick="toggleDemoLike(this)">'+(demoLiked?'<svg class="" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none" style="display:block"><path d="M6.979 3.074a6 6 0 0 1 4.988 1.425l.037 .033l.034 -.03a6 6 0 0 1 4.733 -1.44l.246 .036a6 6 0 0 1 3.364 10.008l-.18 .185l-.048 .041l-7.45 7.379a1 1 0 0 1 -1.313 .082l-.094 -.082l-7.493 -7.422a6 6 0 0 1 3.176 -10.215z"/></svg>':'<svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572"/></svg>')+' <span class="demoLikeNumTxt">'+demoLikeCount+'</span></span>'
         + '<span class="a" onclick="notReady(\'评论\')"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 20l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c3.255 2.777 3.695 7.266 1.029 10.501c-2.666 3.235 -7.615 4.215 -11.574 2.293l-4.7 1"/></svg> 24</span>'
@@ -543,7 +551,7 @@ function renderDetail(){
       + '<div class="detailimg"><div class="pill-tag">模板库参考</div><div class="tile">'+bagIcon(b.bag,74)+'</div></div>'
       + '<div class="userrow"><div class="av"><svg class="" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 21c-.667 -.667 3.262 -6.236 11.785 -16.709a3.5 3.5 0 1 1 5.078 4.791c-10.575 8.612 -16.196 12.585 -16.863 11.918"/><path d="M17.5 6.5l-1 1"/><path d="M17 7c-2.333 -2.667 -3.5 -4 -5 -4s-2 1 -2 2c0 4 8.161 8.406 6 11c-1.056 1.268 -3.363 1.285 -5.75 .808"/><path d="M5.739 15.425c-1.393 -.565 -3.739 -1.925 -3.739 -3.425"/><path d="M19.5 9.5l1.5 1.5"/></svg></div><div class="uinfo"><div class="uname">EcoStitch 模板库</div><div class="usub">'+b.vf+' · 项目结构数据库</div></div></div>'
       + '<div class="cap">'+b.nm+'：'+b.st+'</div>'
-      + '<div class="tagchip" onclick="openHowto(\''+b.bag+'\')">旧衣 → '+b.nm+'</div>'
+      + '<div class="tagchip" onclick="openHowto(\''+b.bag+'\')">› 旧衣 → '+b.nm+'</div>'
       + '<div class="actrow">'
         + '<span class="a"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572"/></svg> '+n.like+'</span>'
         + '<span class="a" onclick="notReady(\'评论\')"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 20l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c3.255 2.777 3.695 7.266 1.029 10.501c-2.666 3.235 -7.615 4.215 -11.574 2.293l-4.7 1"/></svg> '+n.cmt+'</span>'
@@ -806,5 +814,19 @@ const __initView = new URLSearchParams(location.search).get('view');
 applyView(['home','me','search','projects','messages'].includes(__initView) ? __initView : 'home');
 setTimeout(()=>{ if(!aiwOpened) document.getElementById('aiwTip').classList.add('on'); }, 2200);
 setTimeout(()=>{ document.getElementById('aiwTip').classList.remove('on'); }, 7500);
+
+// 改造小助手浮动入口在信息流滚动时避让"照着做同款"按钮(见上方 .scrolling 样式注释)
+(function(){
+  const body = document.querySelector('.ph .body');
+  const tip = document.getElementById('aiwTip');
+  const fab = document.getElementById('aiwFab');
+  if(!body || !fab) return;
+  let hideT = null;
+  body.addEventListener('scroll', ()=>{
+    tip.classList.add('scrolling'); fab.classList.add('scrolling');
+    if(hideT) clearTimeout(hideT);
+    hideT = setTimeout(()=>{ tip.classList.remove('scrolling'); fab.classList.remove('scrolling'); }, 200);
+  }, {passive:true});
+})();
 </script>
 </body></html>

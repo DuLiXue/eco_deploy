@@ -7765,11 +7765,17 @@ width:100%;font-family:var(--font);cursor:pointer;display:flex;align-items:cente
 
 
 /* ====== 改造小助手(浮动入口+聊天，2026-09-02新增) ====== */
-.aiw-fab{position:absolute;right:16px;bottom:90px;width:52px;height:52px;border-radius:50%;background:var(--green,#4EA415);
+/* 原来 bottom 是写死的90/100px，只按"输入步骤"时#foot是空的这一种情况估的；
+   结果屏#foot会真实塞进"下载纸样清单/重新计算"两个通栏按钮，把#foot撑到~154px高，
+   写死的90px正好落在这两个按钮中间，导致浮动入口稳定地压在按钮上面(2026-09-03 Bedi 反馈的"图标被挡住"
+   在计算器这里甚至不需要滚动，一直都挡着)。根治：不再写死数字，而是每次#foot内容变化时(见下方
+   syncAiwFabPos())实测#foot当前的真实高度，让浮动入口贴着#foot的真实顶部往上留一点安全距离，
+   #foot是空还是塞了1个还是2个按钮都能自动让位，不用每次改按钮布局都手动改这两个数字。 */
+.aiw-fab{position:absolute;right:16px;bottom:calc(var(--foot-h,0px) + 14px);width:52px;height:52px;border-radius:50%;background:var(--green,#4EA415);
 color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;
-box-shadow:0 10px 24px rgba(78,164,21,.35);z-index:50}
-.aiw-tip{position:absolute;right:76px;bottom:100px;background:#fff;border:1px solid var(--line-2,#E2E4DC);border-radius:14px;
-padding:8px 12px;font-size:12px;color:var(--ink-2,#6D6D6D);box-shadow:0 4px 16px rgba(28,30,24,.1);white-space:nowrap;z-index:50;cursor:pointer}
+box-shadow:0 10px 24px rgba(78,164,21,.35);z-index:50;transition:bottom .15s}
+.aiw-tip{position:absolute;right:76px;bottom:calc(var(--foot-h,0px) + 24px);background:#fff;border:1px solid var(--line-2,#E2E4DC);border-radius:14px;
+padding:8px 12px;font-size:12px;color:var(--ink-2,#6D6D6D);box-shadow:0 4px 16px rgba(28,30,24,.1);white-space:nowrap;z-index:50;cursor:pointer;transition:bottom .15s}
 .aiw-panel{position:absolute;inset:0;background:var(--card,#fff);z-index:60;display:none;flex-direction:column}
 .aiw-panel.on{display:flex}
 .aiw-head{padding:16px 16px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line,#EDEEE9)}
@@ -8196,12 +8202,22 @@ function calculate(){
   document.getElementById('result').classList.add('show');
   document.getElementById('foot').innerHTML=`<button class="btn" onclick="downloadPattern()"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style=""><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 11l5 5l5 -5"/><path d="M12 4l0 12"/></svg>下载纸样清单</button><button class="btn sec2" style="margin-top:10px" onclick="reset()"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style=""><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>重新计算</button>`;
   document.querySelector('.body').scrollTop=0;
+  syncAiwFabPos();
 }
 
 function reset(){
   document.getElementById('input').style.display='block';
   document.getElementById('result').classList.remove('show');
   document.getElementById('foot').innerHTML='';
+  syncAiwFabPos();
+}
+
+// 让改造小助手浮动入口贴着 #foot 实际高度让位，不写死像素(见上方 .aiw-fab/.aiw-tip 样式注释)
+function syncAiwFabPos(){
+  const foot = document.getElementById('foot');
+  const ph = document.querySelector('.ph');
+  if(!foot || !ph) return;
+  ph.style.setProperty('--foot-h', foot.offsetHeight + 'px');
 }
 
 // ⭐2026-09-02修复：这个"‹"返回按钮一直是纯装饰——发现它从这个文件第一次写出来开始就没有绑定任何
