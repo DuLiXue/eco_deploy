@@ -25,6 +25,10 @@ color:var(--ink);cursor:pointer;font-size:18px;flex-shrink:0}
 .steps div{flex:1;height:4px;border-radius:2px;background:var(--line-2)}
 .steps div.on{background:var(--green)}
 .body{padding:4px 20px 20px;flex:1;overflow-y:auto}
+/* 手机外框内的滚动条统一隐藏——这是仿真机型的界面mockup，露出浏览器原生滚动条(那条灰色圆角小块)会穿帮，
+   隐藏的是浏览器自己画的滚动条UI，不影响滚动功能本身，用手指划/拖拽照样能滚 */
+.ph *{scrollbar-width:none;-ms-overflow-style:none}
+.ph *::-webkit-scrollbar{display:none;width:0;height:0}
 .sec{font-size:13px;color:var(--ink-2);font-weight:500;margin:18px 0 10px}
 .sec:first-child{margin-top:6px}
 .upbox{border:1.5px dashed var(--line-2);border-radius:16px;height:220px;display:flex;flex-direction:column;

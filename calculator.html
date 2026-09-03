@@ -7678,6 +7678,9 @@ box-shadow:0 20px 50px rgba(28,30,24,.16),0 0 0 10px #14150F,0 0 0 12px #2C2E24;
 .rbtn{width:40px;height:40px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--ink)}
 .bar .ttl{font-size:18px;font-weight:600;margin-left:4px}
 .body{padding:4px 20px 20px;flex:1;overflow-y:auto}
+/* 手机外框内的滚动条统一隐藏——仿真机型mockup，露出浏览器原生滚动条会穿帮，不影响滑动滚动本身 */
+.ph *{scrollbar-width:none;-ms-overflow-style:none}
+.ph *::-webkit-scrollbar{display:none;width:0;height:0}
 .sec{font-size:13px;color:var(--ink-2);font-weight:500;margin:18px 0 10px}
 .sec:first-child{margin-top:6px}
 .bagsel{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -7749,6 +7752,17 @@ width:100%;font-family:var(--font);cursor:pointer;display:flex;align-items:cente
 .tut-upcycle{font-size:12.5px;color:var(--ink-2);line-height:1.8;background:var(--bg);border-radius:12px;padding:10px 12px}
 .tut-upcycle div{margin-bottom:4px}
 .tut-upcycle div:last-child{margin-bottom:0}
+/* ==== 2026-09-02 视觉照搬高保真09/10/11屏新增样式：顶部图标行/整体预览-A4分页tab/辅料图标tile ==== */
+.gnav{display:flex;align-items:center;justify-content:flex-end;gap:14px;padding:2px 26px 4px}
+.gnav .gi{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--ink);cursor:pointer}
+.gnav .badge{font-size:13px;font-weight:600;color:var(--ink)}
+.restabs{display:flex;gap:8px;margin:4px 0 12px}
+.restabs .rt{border-radius:10px;padding:8px 16px;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.restabs .rt.on{background:var(--green-soft);color:var(--green)}
+.a4preview{display:none;border:1.5px solid var(--line);border-radius:16px;padding:30px 20px;text-align:center;color:var(--ink-3,#9DA192);font-size:12.5px;line-height:1.8;margin-bottom:12px}
+.a4preview.on{display:block}
+.tut-acc-row .aic{width:30px;height:30px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+
 
 /* ====== 改造小助手(浮动入口+聊天，2026-09-02新增) ====== */
 .aiw-fab{position:absolute;right:16px;bottom:90px;width:52px;height:52px;border-radius:50%;background:var(--green,#4EA415);
@@ -7790,7 +7804,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
 
 <div class="hint">真实可用的纸样计算器 · 公式经 <b>Bedi 实物验证校准</b> · 输入尺寸，真的算出每片布怎么裁</div>
 <div class="ph">
-  <div class="sb"><span class="t">9:41</span><span class="r">85</span></div>
+  <div class="sb"><span class="t">9:41</span></div><div class="gnav"><span class="gi" onclick="location.href='home.html'">🏠</span><span class="gi" onclick="location.href='home.html?view=search'">🔍</span><span class="badge" title="灵感值·示例展示数据">85</span></div>
   <div class="bar"><div class="rbtn" onclick="goBackCalc()"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style=""><path d="M15 5l-7 7 7 7"/></svg></div><span class="ttl">纸样计算器</span></div>
   <div class="body">
     <!-- INPUT -->
@@ -7845,7 +7859,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <div id="checkBox"></div>
       <div class="sec" style="margin-top:2px">裁剪清单（已含缝份，直接照此裁布）</div>
       <div class="rcard" id="cutList"></div>
-      <div class="diagram" id="diagram"></div>
+      <div class="restabs"><div class="rt on" id="resTabPreview" onclick="switchResTab('preview')">整体预览</div><div class="rt" id="resTabA4" onclick="switchResTab('a4')">A4分页</div></div><div class="diagram" id="diagram"></div><div class="a4preview" id="a4preview">📄 A4分页的可视化预览这一版还没做——点下面"下载纸样清单"拿到的PDF本身已经是按A4自动分好页、带对齐标记的，可以直接打印，只是这里还看不到分页后的样子。</div>
       <div class="small" id="note"></div>
       <div id="tutorialSec"></div>
     </div>
@@ -8213,7 +8227,7 @@ function renderTutorial(bag){
   const t=TUTORIALS&&TUTORIALS[bag];
   if(!t){ box.innerHTML=''; return; }
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const acc=t.accessories.map(a=>`<div class="tut-acc-row"><div class="an">${esc(a.name)}</div><div class="as">${esc(a.spec)}</div><div class="aq">${esc(a.qty)}</div></div>`).join('')||'<div class="tut-acc-row"><div class="an" style="color:var(--ink-3,#9DA192)">这款用不到额外辅料，表布里布即可</div></div>';
+  const acc=t.accessories.map(a=>`<div class="tut-acc-row"><div class="aic">🧵</div><div class="an">${esc(a.name)}</div><div class="as">${esc(a.spec)}</div><div class="aq">${esc(a.qty)}</div></div>`).join('')||'<div class="tut-acc-row"><div class="an" style="color:var(--ink-3,#9DA192)">这款用不到额外辅料，表布里布即可</div></div>';
   const steps=t.steps.map((s,i)=>`<div class="tut-step" id="tutStep${i}"><div class="tut-step-h" onclick="toggleTutStep(${i})"><span class="idx">${i+1}</span><span class="stt">${esc(s.title)}</span><span class="chev">▾</span></div><div class="tut-step-b">${s.body.map(l=>`<div>${esc(l)}</div>`).join('')}</div></div>`).join('');
   const pitfalls=t.pitfalls.map(p=>`<div class="tut-pitfall"><b>${esc(p.step)}：</b>${esc(p.issue)} → ${esc(p.fix)}</div>`).join('');
   const upcycle=(t.upcycleTip&&t.upcycleTip.length)?`<div class="tut-block"><div class="th">旧衣改造提示</div><div class="tut-upcycle">${t.upcycleTip.map(l=>`<div>${esc(l)}</div>`).join('')}</div></div>`:'';
@@ -8234,6 +8248,14 @@ function toggleTutPanel(){
   const t=document.getElementById('tutToggle'), p=document.getElementById('tutPanel');
   if(!t||!p) return;
   t.classList.toggle('open'); p.classList.toggle('open');
+}
+// 照搬高保真09/10屏的"整体预览/A4分页"tab切换——整体预览是真实的裁片比例缩放示意图(已有功能)，
+// A4分页目前没有单独的可视化预览，如实告知、不假装有(下载出来的PDF本身就是已经分好页的)
+function switchResTab(which){
+  document.getElementById('resTabPreview').classList.toggle('on', which==='preview');
+  document.getElementById('resTabA4').classList.toggle('on', which==='a4');
+  document.getElementById('diagram').style.display = which==='preview' ? '' : 'none';
+  document.getElementById('a4preview').classList.toggle('on', which==='a4');
 }
 function toggleTutStep(i){
   const el=document.getElementById('tutStep'+i);

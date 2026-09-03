@@ -30,6 +30,9 @@ box-shadow:0 20px 50px rgba(28,30,24,.16),0 0 0 10px #14150F,0 0 0 12px #2C2E24;
 .methead{display:flex;align-items:center;padding:2px 18px 10px;flex-shrink:0}
 .methead .ttl{font-size:17px;font-weight:700}
 .body{padding:0 18px 18px;flex:1;overflow-y:auto;position:relative}
+/* 手机外框内的滚动条统一隐藏——仿真机型mockup，露出浏览器原生滚动条会穿帮，不影响滑动滚动本身 */
+.ph *{scrollbar-width:none;-ms-overflow-style:none}
+.ph *::-webkit-scrollbar{display:none;width:0;height:0}
 .sec{font-size:13px;color:var(--ink-2);font-weight:500;margin:18px 0 10px}
 .sec:first-child{margin-top:4px}
 .small{font-size:11px;color:var(--ink-3);line-height:1.6;margin-top:4px}
@@ -156,9 +159,32 @@ box-shadow:0 10px 24px rgba(78,164,21,.35);z-index:50}
 .aiw-sendbtn{width:38px;height:38px;border-radius:50%;background:var(--green);color:#fff;border:none;display:flex;
 align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0}
 .aiw-sendbtn[disabled]{opacity:.4;pointer-events:none}
+/* ===== 作品详情(12屏)：pushed 覆盖层，示例帖和13个模板库款式共用一套详情视觉 ===== */
+.detailimg{position:relative;margin:-16px -18px 14px;background:#EFEFEC}
+.detailimg img.main{width:100%;display:block;aspect-ratio:1/1.05;object-fit:cover}
+.detailimg .tile{width:100%;aspect-ratio:1/1.05;display:flex;align-items:center;justify-content:center;font-size:80px;background:linear-gradient(135deg,var(--green-soft),#F5F7F1)}
+.detailimg .beforewrap{position:absolute;left:14px;bottom:14px;width:72px;border-radius:12px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.25);border:2px solid #fff}
+.detailimg .beforewrap img{width:100%;display:block;aspect-ratio:3/4;object-fit:cover}
+.detailimg .beforewrap .lbl{position:absolute;left:0;right:0;bottom:0;background:rgba(28,30,24,.62);color:#fff;font-size:9px;text-align:center;padding:3px 0}
+.detailimg .pill-tag{position:absolute;top:12px;left:12px;z-index:2}
+/* ===== 个人主页(24屏)：只对示例帖的示例作者"改造达人_Lin"开放——项目没有真实多用户系统，其它作者不存在真实主页 ===== */
+.profilehead{display:flex;flex-direction:column;align-items:center;text-align:center;padding:10px 0 16px}
+.profilehead .pav{width:64px;height:64px;border-radius:50%;overflow:hidden;margin-bottom:10px;background:var(--green-soft)}
+.profilehead .pav img{width:100%;height:100%;object-fit:cover;display:block}
+.profilehead .pnm{font-size:17px;font-weight:700;margin-bottom:6px}
+.profilehead .pstats{display:flex;gap:16px;font-size:12.5px;color:var(--ink-2);margin-bottom:14px}
+.profilehead .pstats b{color:var(--ink);font-size:13.5px}
+.profilehead .followbtn2{font-size:13px;font-weight:700;color:#fff;background:var(--green-core);border-radius:18px;padding:8px 26px;cursor:pointer}
+.profilehead .followbtn2.on{color:var(--ink-3);background:var(--bg)}
+/* ===== 消息(25屏)：互动是仿照设计稿的示例内容(如实标注，没有真实多用户后端)，交易私信随商城一起如实标注未做 ===== */
+.msgrow{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.msgrow .mav{width:42px;height:42px;border-radius:50%;background:var(--green-soft);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.msgrow .mtx{flex:1;min-width:0}
+.msgrow .mtx .t1{font-size:13.5px;font-weight:700;margin-bottom:2px}
+.msgrow .mtx .t2{font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style></head>
 <body>
-<div class="hint">EcoStitch 首页 · <b>MVP</b>验证 · 界面视觉照搬29屏高保真设计稿，功能上"我的改造/我的/改造小助手/照着做"是真实可用的本地功能，"商城/消息/评论/关注"等需要真实多用户后端的部分保留入口但如实提示未做<span class="small"></span></div>
+<div class="hint">EcoStitch 首页 · <b>MVP</b>验证 · 界面视觉照搬29屏高保真设计稿，功能上"我的改造/我的/改造小助手/照着做/作品详情/个人主页"是真实可用的本地功能或如实标注的示例展示；"消息"页的"互动"是仿照设计稿的示例内容(没有真实多用户后端，如实标注)，"交易私信"和"商城"一起保留入口但如实提示未做<span class="small"></span></div>
 
 <div class="ph">
   <div class="sb"><span class="t" id="clockTxt">9:41</span></div>
@@ -184,6 +210,8 @@ align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shr
   </div>
   <!-- 我的 tab 顶部标题 -->
   <div class="methead" id="methead"><span class="ttl">我的</span></div>
+  <!-- 消息 tab 顶部标题 -->
+  <div class="methead" id="msghead"><span class="ttl">消息</span></div>
 
   <div class="body">
 
@@ -196,6 +224,15 @@ align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shr
     <div class="tabpane" id="tab-projects">
       <div class="flattabs" id="pjFilter"></div>
       <div id="pjList"></div>
+    </div>
+
+    <!-- 消息：root tab，"互动"是仿照设计稿的示例内容，"交易私信"和商城一起如实标注未做 -->
+    <div class="tabpane" id="tab-messages">
+      <div class="flattabs" id="msgTabs">
+        <div class="ft on" data-mt="interact" onclick="setMsgTab('interact')">互动</div>
+        <div class="ft" data-mt="trade" onclick="setMsgTab('trade')">交易私信</div>
+      </div>
+      <div id="msgBody"></div>
     </div>
 
     <!-- 我的：root tab，头像+统计卡片+作品/收藏宫格 -->
@@ -258,6 +295,30 @@ align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shr
       </div>
     </div>
 
+    <!-- 作品详情：pushed 覆盖层，示例帖(照搬设计稿12屏) 和 13个模板库款式(复用同一套卡片信息) 共用 -->
+    <div class="overlay" id="ov-detail">
+      <div class="obody" id="detailBody"></div>
+    </div>
+
+    <!-- 个人主页：pushed 覆盖层，只有示例帖的示例作者"改造达人_Lin"能查看 -->
+    <div class="overlay" id="ov-profile">
+      <div class="obody">
+        <div class="profilehead">
+          <div class="pav"><img src="assets/demo-author-avatar.jpg" alt="改造达人_Lin"></div>
+          <div class="pnm">改造达人_Lin</div>
+          <div class="pstats"><span><b>1</b> 作品</span><span><b>340</b> 粉丝</span><span><b id="profileLikes">128</b> 获赞</span></div>
+          <div class="followbtn2" id="profileFollowBtn" onclick="toggleDemoFollow()">关注</div>
+        </div>
+        <div class="flattabs sm" id="profileTabs">
+          <div class="ft on" data-pt="works" onclick="setProfileTab('works')">作品</div>
+          <div class="ft" data-pt="sale" onclick="setProfileTab('sale')">在售</div>
+          <div class="ft" data-pt="fav" onclick="setProfileTab('fav')">收藏</div>
+        </div>
+        <div class="worksgrid" id="profileGrid" style="margin-top:12px"></div>
+        <div class="pill info" style="margin-top:16px"><span>ℹ️</span><span>这是示例社区账号的主页展示效果——项目没有真实的多用户系统，除了这一个示例帖之外不存在别的真实用户主页可看；粉丝数是示例数字，获赞数会随你点赞/取消点赞这条示例帖实时变化(不是编的固定数字)。</span></div>
+      </div>
+    </div>
+
   </div>
 
   <div class="toast" id="toast"></div>
@@ -284,7 +345,7 @@ align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shr
     <div class="item on" data-tab="home" onclick="showTab('home')"><span class="ic">🏠</span><span>首页</span></div>
     <div class="item disabled" onclick="notReady('商城')"><span class="ic">🛍️</span><span>商城</span></div>
     <div class="fabwrap"><div class="circ" onclick="location.href='index.html'">✂️</div></div>
-    <div class="item disabled" onclick="notReady('消息')"><span class="ic">✉️</span><span>消息</span></div>
+    <div class="item" data-tab="messages" onclick="showTab('messages')"><span class="ic">✉️</span><span>消息</span></div>
     <div class="item" data-tab="me" onclick="showTab('me')"><span class="ic">🙍</span><span>我的</span></div>
   </div>
 </div>
@@ -364,13 +425,13 @@ function renderFeed(){
   // 示例帖(照搬设计稿"社区流"那张真实截图，映射到真实的水桶包)
   const followed = localStorage.getItem('ecostitch_demo_follow')==='1';
   html += '<div class="feedcard">'
-    + '<div class="imgwrap"><img src="assets/demo-post-bag.jpg" alt="旧牛仔裤改的水桶包"></div>'
-    + '<div class="userrow"><div class="av">👖</div><div class="uinfo"><div class="uname">改造达人_Lin</div><div class="usub">340 粉丝 · 示例展示</div></div>'
-    + '<div class="followbtn'+(followed?' on':'')+'" onclick="toggleDemoFollow(this)">'+(followed?'已关注':'关注')+'</div></div>'
+    + '<div class="imgwrap" onclick="openDetail(\'demo\')"><img src="assets/demo-post-bag.jpg" alt="旧牛仔裤改的水桶包"></div>'
+    + '<div class="userrow"><div class="av" style="overflow:hidden;cursor:pointer" onclick="openProfile()"><img src="assets/demo-author-avatar.jpg" style="width:100%;height:100%;object-fit:cover"></div><div class="uinfo" style="cursor:pointer" onclick="openProfile()"><div class="uname">改造达人_Lin</div><div class="usub">340 粉丝 · 示例展示</div></div>'
+    + '<div class="followbtn'+(followed?' on':'')+'" onclick="toggleDemoFollow()">'+(followed?'已关注':'关注')+'</div></div>'
     + '<div class="cap">旧牛仔裤改的水桶包，通勤刚好装下电脑～ 用了原来的后袋做装饰，超有味道</div>'
     + '<div class="tagchip" onclick="openHowto(\'bucket\')">牛仔裤 → 水桶包</div>'
     + '<div class="actrow">'
-      + '<span class="a'+(demoLiked?' liked':'')+'" onclick="toggleDemoLike(this)">❤️ <span id="demoLikeNum">'+demoLikeCount+'</span></span>'
+      + '<span class="a'+(demoLiked?' liked':'')+'" onclick="toggleDemoLike(this)">❤️ <span class="demoLikeNumTxt">'+demoLikeCount+'</span></span>'
       + '<span class="a" onclick="notReady(\'评论\')">💬 24</span>'
       + '<span class="a'+(isFav('bucket')?' saved':'')+'" onclick="toggleFav(\'bucket\')">🔖 <span>'+(isFav('bucket')?16:15)+'</span></span>'
       + '<span class="a" onclick="notReady(\'分享\')" style="margin-left:auto">➤ 分享</span>'
@@ -382,7 +443,7 @@ function renderFeed(){
     const n = demoNums(i);
     const fav = isFav(b.bag);
     html += '<div class="feedcard">'
-      + '<div class="imgwrap"><div class="pill-tag">模板库参考</div><div class="tile">'+b.ic+'</div></div>'
+      + '<div class="imgwrap" onclick="openDetail(\'bag\',\''+b.bag+'\')"><div class="pill-tag">模板库参考</div><div class="tile">'+b.ic+'</div></div>'
       + '<div class="userrow"><div class="av">🧵</div><div class="uinfo"><div class="uname">EcoStitch 模板库</div><div class="usub">'+b.vf+' · 项目结构数据库</div></div></div>'
       + '<div class="cap">'+b.nm+'：'+b.st+'</div>'
       + '<div class="tagchip" onclick="openHowto(\''+b.bag+'\')">旧衣 → '+b.nm+'</div>'
@@ -397,16 +458,20 @@ function renderFeed(){
   });
   el.innerHTML = html;
 }
-function toggleDemoFollow(elBtn){
+function toggleDemoFollow(){
   const on = localStorage.getItem('ecostitch_demo_follow')==='1';
   try{ localStorage.setItem('ecostitch_demo_follow', on?'0':'1'); }catch(e){}
-  renderFeed();
+  if(currentView==='home') renderFeed();
+  else if(currentView==='detail') renderDetail();
+  else if(currentView==='profile') renderProfile();
 }
 let demoLiked = false, demoLikeCount = 128;
 function toggleDemoLike(elA){
   demoLiked = !demoLiked; demoLikeCount += demoLiked?1:-1;
   elA.classList.toggle('liked', demoLiked);
-  document.getElementById('demoLikeNum').textContent = demoLikeCount;
+  document.querySelectorAll('.demoLikeNumTxt').forEach(el=>el.textContent=demoLikeCount);
+  const profileLikesEl = document.getElementById('profileLikes');
+  if(profileLikesEl) profileLikesEl.textContent = demoLikeCount;
 }
 function setHomeTab(k){
   document.querySelectorAll('.hometabs .t').forEach(el=>el.classList.toggle('on', el.dataset.ht===k));
@@ -435,6 +500,106 @@ function howtoGo(mode){
   if(!howtoBag) return;
   if(mode==='fit') location.href = 'index.html?prefBag=' + encodeURIComponent(howtoBag);
   else location.href = 'calculator.html?bag=' + encodeURIComponent(howtoBag);
+}
+
+// ====== 作品详情(12屏)：示例帖(照搬设计稿内容) 和 13个模板库款式(复用同一套卡片信息) 共用一套详情结构 ======
+let detailData = null, detailFrom = 'home';
+function openDetail(type, bag){
+  detailData = { type, bag };
+  detailFrom = (currentView==='detail') ? detailFrom : currentView;
+  applyView('detail');
+}
+function renderDetail(){
+  const el = document.getElementById('detailBody');
+  if(!detailData) return;
+  if(detailData.type==='demo'){
+    const followed = localStorage.getItem('ecostitch_demo_follow')==='1';
+    el.innerHTML = '<div class="feedcard" style="border-bottom:none;padding:0 18px 14px">'
+      + '<div class="detailimg"><img class="main" src="assets/demo-post-bag.jpg" alt="旧牛仔裤改的水桶包">'
+        + '<div class="beforewrap"><img src="assets/demo-post-before.jpg" alt="改造前"><span class="lbl">改造前</span></div></div>'
+      + '<div class="userrow"><div class="av" style="overflow:hidden;cursor:pointer" onclick="openProfile()"><img src="assets/demo-author-avatar.jpg" style="width:100%;height:100%;object-fit:cover"></div>'
+        + '<div class="uinfo" style="cursor:pointer" onclick="openProfile()"><div class="uname">改造达人_Lin</div><div class="usub">340 粉丝 · 示例展示</div></div>'
+        + '<div class="followbtn'+(followed?' on':'')+'" onclick="toggleDemoFollow()">'+(followed?'已关注':'关注')+'</div></div>'
+      + '<div class="cap">旧牛仔裤改的水桶包，通勤刚好装下电脑～ 用了原来的后袋做装饰，超有味道</div>'
+      + '<div class="tagchip" onclick="openHowto(\'bucket\')">牛仔裤 → 水桶包</div>'
+      + '<div class="actrow">'
+        + '<span class="a'+(demoLiked?' liked':'')+'" onclick="toggleDemoLike(this)">❤️ <span class="demoLikeNumTxt">'+demoLikeCount+'</span></span>'
+        + '<span class="a" onclick="notReady(\'评论\')">💬 24</span>'
+        + '<span class="a'+(isFav('bucket')?' saved':'')+'" onclick="toggleFav(\'bucket\')">🔖 '+(isFav('bucket')?16:15)+'</span>'
+        + '<span class="a" onclick="notReady(\'分享\')" style="margin-left:auto">➤ 分享</span>'
+      + '</div>'
+      + '<button class="ctabtn" onclick="openHowto(\'bucket\')">照着做同款</button>'
+      + '</div>';
+  } else {
+    const b = bagById(detailData.bag);
+    if(!b){ el.innerHTML=''; return; }
+    const n = demoNums(BAGS.indexOf(b));
+    const fav = isFav(b.bag);
+    el.innerHTML = '<div class="feedcard" style="border-bottom:none;padding:0 18px 14px">'
+      + '<div class="detailimg"><div class="pill-tag">模板库参考</div><div class="tile">'+b.ic+'</div></div>'
+      + '<div class="userrow"><div class="av">🧵</div><div class="uinfo"><div class="uname">EcoStitch 模板库</div><div class="usub">'+b.vf+' · 项目结构数据库</div></div></div>'
+      + '<div class="cap">'+b.nm+'：'+b.st+'</div>'
+      + '<div class="tagchip" onclick="openHowto(\''+b.bag+'\')">旧衣 → '+b.nm+'</div>'
+      + '<div class="actrow">'
+        + '<span class="a">❤️ '+n.like+'</span>'
+        + '<span class="a" onclick="notReady(\'评论\')">💬 '+n.cmt+'</span>'
+        + '<span class="a'+(fav?' saved':'')+'" onclick="toggleFav(\''+b.bag+'\')">🔖 '+(n.col+(fav?1:0))+'</span>'
+        + '<span class="a" onclick="notReady(\'分享\')" style="margin-left:auto">➤ 分享</span>'
+      + '</div>'
+      + '<button class="ctabtn" onclick="openHowto(\''+b.bag+'\')">照着做同款</button>'
+      + '</div>';
+  }
+}
+
+// ====== 个人主页(24屏)：只有示例帖的示例作者"改造达人_Lin"能查看——项目没有真实多用户系统，其它作者不存在真实主页 ======
+let profileFrom = 'home', profileTab = 'works';
+function openProfile(){
+  profileFrom = (currentView==='profile') ? profileFrom : currentView;
+  applyView('profile');
+}
+function renderProfile(){
+  const followed = localStorage.getItem('ecostitch_demo_follow')==='1';
+  const btn = document.getElementById('profileFollowBtn');
+  btn.className = 'followbtn2'+(followed?' on':'');
+  btn.textContent = followed?'已关注':'关注';
+  document.getElementById('profileLikes').textContent = demoLikeCount;
+  renderProfileGrid();
+}
+function setProfileTab(k){
+  profileTab = k;
+  document.querySelectorAll('#profileTabs .ft').forEach(el=>el.classList.toggle('on', el.dataset.pt===k));
+  renderProfileGrid();
+}
+function renderProfileGrid(){
+  const grid = document.getElementById('profileGrid');
+  if(profileTab==='works'){
+    grid.innerHTML = '<div class="wt" onclick="openDetail(\'demo\')"><img src="assets/demo-post-bag.jpg"></div>';
+  } else if(profileTab==='sale'){
+    grid.innerHTML = '<div class="emptytip" style="grid-column:1/-1">这个版本没有真实的商城/在售系统</div>';
+  } else {
+    grid.innerHTML = '<div class="emptytip" style="grid-column:1/-1">这是示例账号，没有真实的收藏记录数据</div>';
+  }
+}
+
+// ====== 消息(25屏)：root tab，"互动"是仿照设计稿的示例内容(如实标注)，"交易私信"和商城一起如实标注未做 ======
+let msgTab = 'interact';
+function setMsgTab(k){
+  msgTab = k;
+  document.querySelectorAll('#msgTabs .ft').forEach(el=>el.classList.toggle('on', el.dataset.mt===k));
+  renderMsgBody();
+}
+function renderMsgBody(){
+  const el = document.getElementById('msgBody');
+  if(msgTab==='trade'){
+    el.innerHTML = '<div class="emptytip">这个版本没有真实的商城/交易系统，"交易私信"和商城一起暂未开放，等以后接了真实交易功能再一起做</div>';
+    return;
+  }
+  el.innerHTML = '<div class="pill info" style="margin-top:14px"><span>ℹ️</span><span>下面这组互动通知是仿照设计稿展示效果的示例内容——项目没有真实的多用户后端，不存在别的真实用户来点赞/评论/关注你，不是真实通知。</span></div>'
+    + '<div class="msgrow" onclick="notReady(\'互动详情\')"><div class="mav">❤️</div><div class="mtx"><div class="t1">赞和收藏</div><div class="t2">12 个新互动</div></div></div>'
+    + '<div class="msgrow" onclick="notReady(\'关注详情\')"><div class="mav">➕</div><div class="mtx"><div class="t1">新增关注</div><div class="t2">3 人关注了你</div></div></div>'
+    + '<div class="msgrow" onclick="notReady(\'私信\')"><div class="mav">🧵</div><div class="mtx"><div class="t1">@手作阿May</div><div class="t2">评论了你：这个太实用了！</div></div></div>'
+    + '<div class="msgrow" onclick="notReady(\'私信\')"><div class="mav">🧵</div><div class="mtx"><div class="t1">@旧物新生</div><div class="t2">收藏了你的水桶包</div></div></div>'
+    + '<div class="msgrow" onclick="notReady(\'系统通知详情\')"><div class="mav">🔔</div><div class="mtx"><div class="t1">系统通知</div><div class="t2">你的作品被推荐到首页</div></div></div>';
 }
 
 // ====== 我的改造 ======
@@ -535,24 +700,30 @@ async function renderMeWorks(){
 let currentView = 'home';
 function applyView(v){
   currentView = v;
-  const isPush = (v==='projects' || v==='search' || v==='howto');
+  const isPush = (v==='projects' || v==='search' || v==='howto' || v==='detail' || v==='profile');
   document.getElementById('gnav').style.display = isPush ? 'none' : 'flex';
   document.getElementById('pushhead').classList.toggle('on', isPush);
   document.getElementById('hometabs').style.display = (v==='home') ? 'flex' : 'none';
   document.getElementById('methead').style.display = (v==='me') ? 'flex' : 'none';
+  document.getElementById('msghead').style.display = (v==='messages') ? 'flex' : 'none';
   document.querySelectorAll('.tabpane').forEach(el=>el.classList.remove('on'));
   document.querySelectorAll('.overlay').forEach(el=>el.classList.remove('on'));
   document.querySelectorAll('.botnav .item[data-tab]').forEach(el=>el.classList.toggle('on', el.dataset.tab===(v==='projects'?'me':v)));
 
   if(v==='home'){ document.getElementById('tab-home').classList.add('on'); renderFeed(); }
   else if(v==='me'){ document.getElementById('tab-me').classList.add('on'); renderMeHead().then(renderMeWorks); }
+  else if(v==='messages'){ document.getElementById('tab-messages').classList.add('on'); renderMsgBody(); }
   else if(v==='projects'){ document.getElementById('tab-projects').classList.add('on'); document.getElementById('pushTitle').textContent='我的改造'; renderProjects(); }
   else if(v==='search'){ document.getElementById('ov-search').classList.add('on'); document.getElementById('pushTitle').textContent='搜索 / 发现'; renderTypeGrid(); document.getElementById('searchInput').value=''; }
   else if(v==='howto'){ document.getElementById('ov-howto').classList.add('on'); document.getElementById('pushTitle').textContent='怎么做同款'; }
+  else if(v==='detail'){ document.getElementById('ov-detail').classList.add('on'); document.getElementById('pushTitle').textContent=(detailData&&detailData.type==='demo')?'作品详情':'模板详情'; renderDetail(); }
+  else if(v==='profile'){ document.getElementById('ov-profile').classList.add('on'); document.getElementById('pushTitle').textContent='个人主页'; renderProfile(); }
 }
 function goBackPush(){
   if(currentView==='howto') applyView(howtoFrom||'home');
   else if(currentView==='projects') applyView('me');
+  else if(currentView==='detail') applyView(detailFrom||'home');
+  else if(currentView==='profile') applyView(profileFrom||'home');
   else applyView('home');
 }
 // showTab(t) 保留作为对外的兼容入口(底部导航/旧调用都走这个)
@@ -628,7 +799,7 @@ async function aiwSend(){
 
 // 支持 home.html?view=xxx 直接打开某个视图(比如从 index.html 顶部🔍图标跳过来直接进搜索页)
 const __initView = new URLSearchParams(location.search).get('view');
-applyView(['home','me','search','projects'].includes(__initView) ? __initView : 'home');
+applyView(['home','me','search','projects','messages'].includes(__initView) ? __initView : 'home');
 setTimeout(()=>{ if(!aiwOpened) document.getElementById('aiwTip').classList.add('on'); }, 2200);
 setTimeout(()=>{ document.getElementById('aiwTip').classList.remove('on'); }, 7500);
 </script>
