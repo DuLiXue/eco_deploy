@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>EcoStitch 首页(MVP)</title>
 <style>
-:root{--green:#4EA415;--green-core:#48A600;--green-soft:#EAF3E2;--ink:#1C1E18;--ink-2:#6D6D6D;--ink-3:#9DA192;
+:root{--green:#3AB54A;--green-core:#3AB54A;--green-soft:#F2F8EE;--ink:#1C1E18;--ink-2:#6D6D6D;--ink-3:#9DA192;
 --nav-off:#B5B5B5;--card:#FFFFFF;--bg:#F3F3F3;--line:#EDEEE9;--line-2:#E2E4DC;--warn:#B08A2E;--warn-soft:#FBF6E9;
 --red:#C0392B;
 --font:'PingFang SC','Noto Sans CJK SC',-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;}
@@ -30,7 +30,7 @@ box-shadow:0 20px 50px rgba(28,30,24,.16),0 0 0 10px #14150F,0 0 0 12px #2C2E24;
 .hometabs .t.on{color:var(--green-core);font-weight:700}
 .methead{display:flex;align-items:center;padding:2px 18px 10px;flex-shrink:0}
 .methead .ttl{font-size:17px;font-weight:700}
-.body{padding:0 18px 18px;flex:1;overflow-y:auto;position:relative}
+.body{padding:0 18px 46px;flex:1;overflow-y:auto;position:relative}
 /* 手机外框内的滚动条统一隐藏——仿真机型mockup，露出浏览器原生滚动条会穿帮，不影响滑动滚动本身 */
 .ph *{scrollbar-width:none;-ms-overflow-style:none}
 .ph *::-webkit-scrollbar{display:none;width:0;height:0}
@@ -199,7 +199,7 @@ align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shr
 
   <!-- 根级(首页/我的)顶部：仿设计稿的 首页/搜索 线条图标 + 角标 -->
   <div class="gnav" id="gnav">
-    <span class="gi" onclick="applyView('home')"><svg class="" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg></span>
+    <span class="gi" onclick="applyView('home')"><svg class="" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 9L12 2L21 9V20C21 20.53 20.79 21.04 20.41 21.41C20.04 21.79 19.53 22 19 22H5C4.47 22 3.96 21.79 3.59 21.41C3.21 21.04 3 20.53 3 20V9"/></svg></span>
     <span class="gi" onclick="applyView('search')"><svg class="" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg></span>
     <span class="badge" title="灵感值·示例展示数据">85</span>
   </div>
@@ -351,11 +351,11 @@ align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shr
   </div>
 
   <div class="botnav">
-    <div class="item on" data-tab="home" onclick="showTab('home')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg></span><span>首页</span></div>
-    <div class="item disabled" onclick="notReady('商城')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17h-11v-14h-2"/><path d="M6 5l14 1l-1 7h-13"/></svg></span><span>商城</span></div>
+    <div class="item on" data-tab="home" onclick="showTab('home')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 9L12 2L21 9V20C21 20.53 20.79 21.04 20.41 21.41C20.04 21.79 19.53 22 19 22H5C4.47 22 3.96 21.79 3.59 21.41C3.21 21.04 3 20.53 3 20V9"/></svg></span><span>首页</span></div>
+    <div class="item disabled" onclick="notReady('商城')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5.68 2H18.32C18.51 2 18.7 2.05 18.87 2.15C19.04 2.26 19.17 2.4 19.26 2.58L21.47 7.26H2.53L4.74 2.58C4.83 2.4 4.96 2.26 5.13 2.15C5.29 2.05 5.49 2 5.68 2Z"/><path d="M19.37 7.26H4.63C3.47 7.26 2.53 8.21 2.53 9.37V19.89C2.53 21.06 3.47 22 4.63 22H19.37C20.53 22 21.47 21.06 21.47 19.89V9.37C21.47 8.21 20.53 7.26 19.37 7.26Z"/></svg></span><span>商城</span></div>
     <div class="fabwrap"><div class="circ" onclick="location.href='flow.html'"><svg class="" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 7a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M3 17a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M8.6 8.6l10.4 10.4"/><path d="M8.6 15.4l10.4 -10.4"/></svg></div></div>
-    <div class="item" data-tab="messages" onclick="showTab('messages')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10"/><path d="M3 7l9 6l9 -6"/></svg></span><span>消息</span></div>
-    <div class="item" data-tab="me" onclick="showTab('me')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/></svg></span><span>我的</span></div>
+    <div class="item" data-tab="messages" onclick="showTab('messages')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M22 15.33C22 15.92 21.77 16.49 21.35 16.9C20.93 17.32 20.37 17.56 19.78 17.56H6.44L2 22V4.22C2 3.63 2.23 3.07 2.65 2.65C3.07 2.23 3.63 2 4.22 2H19.78C20.37 2 20.93 2.23 21.35 2.65C21.77 3.07 22 3.63 22 4.22V15.33Z"/></svg></span><span>消息</span></div>
+    <div class="item" data-tab="me" onclick="showTab('me')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 10.89C14.45 10.89 16.44 8.9 16.44 6.44C16.44 3.99 14.45 2 12 2C9.55 2 7.56 3.99 7.56 6.44C7.56 8.9 9.55 10.89 12 10.89"/><path d="M20.89 22V19.78C20.89 18.6 20.42 17.47 19.59 16.64C18.75 15.8 17.62 15.33 16.44 15.33H7.56C6.38 15.33 5.25 15.8 4.41 16.64C3.58 17.47 3.11 18.6 3.11 19.78V22"/></svg></span><span>我的</span></div>
   </div>
 </div>
 
