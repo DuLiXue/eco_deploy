@@ -197,11 +197,8 @@ align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shr
 <div class="ph">
   <div class="sb"><span class="t" id="clockTxt">9:41</span></div>
 
-  <!-- 根级(首页/我的)顶部：仿设计稿的 首页/搜索 线条图标 + 角标 -->
-  <div class="gnav" id="gnav">
-    <span class="gi" onclick="applyView('home')"><svg class="" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 9L12 2L21 9V20C21 20.53 20.79 21.04 20.41 21.41C20.04 21.79 19.53 22 19 22H5C4.47 22 3.96 21.79 3.59 21.41C3.21 21.04 3 20.53 3 20V9"/></svg></span>
-    <span class="gi" onclick="applyView('search')"><svg class="" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg></span>
-    <span class="badge" title="灵感值·示例展示数据">85</span>
+  <!-- 2026-09-03：按 Bedi 提供的新版Figma设计稿，30屏里没有一屏用到这个🏠🔍85角标行(首页流/消息/我的原图顶部都是直接进内容)，已移除；保留 #gnav 元素但强制隐藏，避免破坏 JS 里现有的 display 切换逻辑 -->
+  <div class="gnav" id="gnav" style="display:none!important">
   </div>
   <!-- 子页面(我的改造/搜索/怎么做同款/聊天)顶部：返回箭头，仿设计稿的 pushed 页面 -->
   <div class="pushhead" id="pushhead">
@@ -713,7 +710,7 @@ let currentView = 'home';
 function applyView(v){
   currentView = v;
   const isPush = (v==='projects' || v==='search' || v==='howto' || v==='detail' || v==='profile');
-  document.getElementById('gnav').style.display = isPush ? 'none' : 'flex';
+  // 2026-09-03：#gnav(🏠🔍85角标行)已按新设计稿移除展示，这里不再切换为 flex，永远保持隐藏
   document.getElementById('pushhead').classList.toggle('on', isPush);
   document.getElementById('hometabs').style.display = (v==='home') ? 'flex' : 'none';
   document.getElementById('methead').style.display = (v==='me') ? 'flex' : 'none';
