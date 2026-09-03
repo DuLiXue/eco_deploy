@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="zh"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>EcoStitch 旧衣改造(MVP闭环)</title>
+<title>EcoStitch 首页(MVP)</title>
 <style>
 :root{--green:#4EA415;--green-core:#48A600;--green-soft:#EAF3E2;--ink:#1C1E18;--ink-2:#6D6D6D;--ink-3:#9DA192;
 --nav-off:#B5B5B5;--card:#FFFFFF;--bg:#F3F3F3;--line:#EDEEE9;--line-2:#E2E4DC;--warn:#B08A2E;--warn-soft:#FBF6E9;
@@ -11,280 +11,396 @@ body{background:#E9EAE5;font-family:var(--font);color:var(--ink);letter-spacing:
 display:flex;flex-direction:column;align-items:center;padding:30px 16px 60px;-webkit-font-smoothing:antialiased}
 .hint{font-size:12px;color:#8A8E82;text-align:center;margin-bottom:16px;max-width:390px;line-height:1.7}
 .hint b{color:var(--green)}
-.badge{display:inline-block;background:var(--warn-soft);color:var(--warn);font-size:11px;font-weight:600;
-padding:2px 8px;border-radius:8px;margin-left:4px}
 .ph{width:390px;background:var(--card);border-radius:40px;overflow:hidden;position:relative;
 box-shadow:0 20px 50px rgba(28,30,24,.16),0 0 0 10px #14150F,0 0 0 12px #2C2E24;display:flex;flex-direction:column;height:844px}
-.sb{height:50px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 30px 8px}
-.sb .t{font-size:16px;font-weight:600}.sb .r{font-size:13px;font-weight:600}
-.bar{display:flex;align-items:center;padding:8px 16px 12px;gap:8px}
-.rbtn{width:40px;height:40px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;
-color:var(--ink);cursor:pointer;font-size:18px;flex-shrink:0}
-.bar .ttl{font-size:18px;font-weight:600;margin-left:4px}
-.steps{display:flex;gap:4px;padding:0 20px 14px}
-.steps div{flex:1;height:4px;border-radius:2px;background:var(--line-2)}
-.steps div.on{background:var(--green)}
-.body{padding:4px 20px 20px;flex:1;overflow-y:auto}
-/* 手机外框内的滚动条统一隐藏——这是仿真机型的界面mockup，露出浏览器原生滚动条(那条灰色圆角小块)会穿帮，
-   隐藏的是浏览器自己画的滚动条UI，不影响滚动功能本身，用手指划/拖拽照样能滚 */
+.sb{height:40px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 4px;flex-shrink:0}
+.sb .t{font-size:15px;font-weight:600}
+/* ===== 全局顶部：根级tab(首页/我的)用图标行；子页面(我的改造/搜索/怎么做同款)用返回箭头 ===== */
+.gnav{display:flex;align-items:center;justify-content:flex-end;gap:14px;padding:6px 18px 2px;flex-shrink:0}
+.gnav .gi{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ink);cursor:pointer}
+.gnav .badge{font-size:13px;font-weight:600;color:var(--ink)}
+.pushhead{display:none;align-items:center;padding:8px 16px 6px;gap:10px;flex-shrink:0}
+.pushhead.on{display:flex}
+.pushhead .back{width:32px;height:32px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;flex-shrink:0}
+.pushhead .ttl{font-size:16px;font-weight:600}
+.hometabs{display:flex;align-items:center;padding:2px 16px 10px;gap:18px;flex-shrink:0}
+.hometabs .plus{font-size:19px;color:var(--ink);cursor:pointer;margin-right:2px}
+.hometabs .t{font-size:15.5px;color:var(--ink-3);cursor:pointer;font-weight:500}
+.hometabs .t.on{color:var(--green-core);font-weight:700}
+.methead{display:flex;align-items:center;padding:2px 18px 10px;flex-shrink:0}
+.methead .ttl{font-size:17px;font-weight:700}
+.body{padding:0 18px 18px;flex:1;overflow-y:auto;position:relative}
+/* 手机外框内的滚动条统一隐藏——仿真机型mockup，露出浏览器原生滚动条会穿帮，不影响滑动滚动本身 */
 .ph *{scrollbar-width:none;-ms-overflow-style:none}
 .ph *::-webkit-scrollbar{display:none;width:0;height:0}
 .sec{font-size:13px;color:var(--ink-2);font-weight:500;margin:18px 0 10px}
-.sec:first-child{margin-top:6px}
-.upbox{border:1.5px dashed var(--line-2);border-radius:16px;height:220px;display:flex;flex-direction:column;
-align-items:center;justify-content:center;gap:8px;color:var(--ink-3);cursor:pointer;overflow:hidden;position:relative}
-.upbox img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.upbox .uptext{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px}
-.upbox.has-img .uptext{display:none}
-.bagsel{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.bagopt{border:1.5px solid var(--line-2);border-radius:14px;padding:12px;cursor:pointer;transition:all .15s;position:relative}
-.bagopt.on{border:2px solid var(--green);background:var(--green-soft)}
-.bagopt .nm{font-size:14px;font-weight:600;margin-bottom:2px}
-.bagopt .st{font-size:11px;color:var(--ink-3)}
-.bagopt .vf{position:absolute;top:10px;right:10px;font-size:10px;color:var(--green);font-weight:600}
-.bagopt .vf.ref{color:var(--warn)}
-.bagopt .estbadge{position:absolute;bottom:10px;right:10px;font-size:10px;font-weight:600;padding:1px 6px;border-radius:6px}
-.bagopt .estbadge.good{background:var(--green-soft);color:var(--green-core)}
-.bagopt .estbadge.tight{background:var(--warn-soft);color:var(--warn)}
-.btn{background:var(--green);color:#fff;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:600;
-width:100%;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
-transition:transform .1s,opacity .1s}
-.btn:active{transform:scale(.98)}
-.btn.sec2{background:var(--bg);color:var(--ink)}
-.btn[disabled]{opacity:.4;pointer-events:none}
-.foot{padding:14px 20px 30px}
-.foot .row2{display:flex;gap:8px}
-.foot .row2 .btn{flex:1}
-.foot .row2 .btn.wide{flex:1.4}
+.sec:first-child{margin-top:4px}
 .small{font-size:11px;color:var(--ink-3);line-height:1.6;margin-top:4px}
-.screen{display:none}
-.screen.on{display:block;animation:fade .3s}
-@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
-.spinner{width:52px;height:52px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--green);
-animation:spin 1s linear infinite;margin:0 auto}
-@keyframes spin{to{transform:rotate(360deg)}}
-.pill{border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.6;display:flex;gap:8px;align-items:flex-start}
-.pill.warn{background:var(--warn-soft);color:var(--warn)}
-.pill.info{background:var(--green-soft);color:var(--green)}
-.pill.ok{background:var(--green-soft);color:var(--green-core)}
-.imgcard{border-radius:16px;overflow:hidden;background:var(--bg);height:280px;display:flex;align-items:center;
-justify-content:center;position:relative}
-.imgcard img{width:100%;height:100%;object-fit:cover}
-.imgcard .placeholder{text-align:center;color:var(--ink-3);padding:20px}
-.imgcard .placeholder .big{font-size:15px;color:var(--ink-2);margin-bottom:6px;font-weight:600}
-.histgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
-.histitem{border-radius:10px;overflow:hidden;background:var(--bg);aspect-ratio:1/1;cursor:pointer;position:relative;border:2px solid transparent;box-sizing:border-box}
-.histitem img{width:100%;height:100%;object-fit:cover;display:block}
-.histitem.sel{border-color:var(--green)}
-.histitem .chk{position:absolute;top:3px;right:3px;width:16px;height:16px;border-radius:50%;background:var(--green);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700}
-/* ==== 新增screen用到的样式 ==== */
-.gsel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-.gopt{border:1.5px solid var(--line-2);border-radius:12px;padding:10px;cursor:pointer;text-align:center;font-size:13px;font-weight:500}
-.gopt.on{border:2px solid var(--green);background:var(--green-soft);color:var(--green-core)}
-.tipcard{border:1px solid var(--line-2);border-radius:14px;padding:12px;margin-top:4px}
-.tipcard .tt{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.tipcard ol{margin:0;padding-left:18px;font-size:12.5px;color:var(--ink-2);line-height:1.9}
-.chipwrap{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:1.5px solid var(--line-2);border-radius:20px;padding:6px 14px;font-size:12.5px;cursor:pointer;color:var(--ink-2)}
-.chip.on{border-color:var(--green);background:var(--green-soft);color:var(--green-core);font-weight:600}
-.ta{width:100%;border:1.5px solid var(--line-2);border-radius:12px;padding:10px 12px;font-size:13px;font-family:var(--font);
-resize:none;height:60px;color:var(--ink)}
-.ta:focus{outline:none;border-color:var(--green)}
-.sumcard{background:var(--green-soft);border-radius:14px;padding:14px}
-.sumrow{display:flex;gap:10px;margin-bottom:10px;font-size:13.5px;align-items:flex-start}
-.sumrow:last-child{margin-bottom:0}
-.sumrow .ic{font-size:15px;flex-shrink:0}
-.sumrow b{color:var(--green-core)}
-.numin{width:100%;border:1.5px solid var(--line-2);border-radius:12px;padding:10px 12px;font-size:15px;font-family:var(--font);color:var(--ink)}
-.numin:focus{outline:none;border-color:var(--green)}
-.altcard{border:1.5px solid var(--line-2);border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer}
-.altcard:hover{border-color:var(--green)}
-.altcard .nm{font-size:13.5px;font-weight:600}
-.altcard .st{font-size:11px;color:var(--ink-3);margin-top:1px}
-.altcard .need{font-size:11px;color:var(--green-core);font-weight:600;margin-left:auto;text-align:right;white-space:nowrap}
-/* ==== 屏4: 按旧衣类型给的量边示意图 + 用户自己的照片(不叠线) ==== */
-.diagramcard{border:1px solid var(--line-2);border-radius:16px;padding:8px;background:var(--bg);
-display:flex;align-items:center;justify-content:center}
-.diagramcard svg{width:100%;height:auto;max-height:200px}
-.photopreview{border-radius:16px;overflow:hidden;background:var(--bg);height:150px}
-.photopreview img{width:100%;height:100%;object-fit:cover;display:block}
-.edgerow{display:flex;gap:10px;margin-top:12px}
-.edgerow .col{flex:1}
-.edgerow .col .lb{font-size:11px;color:var(--ink-2);margin-bottom:6px;display:flex;align-items:center;gap:5px}
-.edgerow .col .lb .dot{width:14px;height:14px;border-radius:50%;background:var(--red);color:#fff;font-size:9px;
-font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-/* ==== 2026-09-02 视觉照搬29屏高保真设计稿(01-06屏)新增样式：顶部图标行/AI识别结果卡/编号小标题/生成中清单/方案网格 ==== */
-.gnav{display:flex;align-items:center;justify-content:flex-end;gap:14px;padding:2px 26px 4px}
-.gnav .gi{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--ink);cursor:pointer}
-.gnav .badge{font-size:13px;font-weight:600;color:var(--ink)}
-.aicard{background:var(--green-soft);border-radius:14px;padding:14px;margin-bottom:10px}
-.aicard .hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.aicard .hd .lb{font-size:12.5px;font-weight:700;color:var(--green-core)}
-.aicard .hd .edit{font-size:12px;color:var(--green-core);cursor:pointer;font-weight:600}
-.aicard .rs{font-size:15px;font-weight:700}
-.numlabel{font-size:14px;font-weight:600;margin:18px 0 10px;display:flex;align-items:center;gap:6px}
-.numlabel:first-child{margin-top:6px}
-.numlabel .n{font-size:12px;color:var(--ink-2);font-weight:600}
-.numlabel .hintxt{font-size:11.5px;color:var(--ink-3);font-weight:400;margin-left:2px}
-.genchecklist{margin-top:22px;display:flex;flex-direction:column;gap:12px}
-.genchecklist .gi2{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--ink-3)}
-.genchecklist .gi2.done{color:var(--green-core)}
-.genchecklist .gi2.active{color:var(--green-core);font-weight:600}
-.genchecklist .gi2 .ic2{font-size:15px;width:18px;text-align:center;flex-shrink:0}
-.planhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.planhead .zoomtip{font-size:11px;color:var(--ink-3)}
-.plangrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.plancard{border-radius:14px;background:var(--bg);aspect-ratio:1/1;position:relative;overflow:hidden;cursor:pointer;border:2px solid transparent;box-sizing:border-box}
-.plancard.sel{border-color:var(--green)}
-.plancard img{width:100%;height:100%;object-fit:cover;display:block}
-.plancard .tag{position:absolute;top:8px;left:8px;background:rgba(28,30,24,.55);color:#fff;font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:10px}
-.plancard.sel .tag{background:var(--green-core)}
-.plancard .ph2{display:flex;align-items:center;justify-content:center;height:100%;font-size:34px;color:var(--nav-off)}
-.regenbtn{display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--line-2);border-radius:14px;
-padding:13px;font-size:13.5px;color:var(--ink);cursor:pointer;margin-top:12px;background:none;font-family:var(--font);width:100%}
+.tabpane{display:none}
+.tabpane.on{display:block;animation:fade .25s}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+.pill{border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.6;display:flex;gap:8px;align-items:flex-start;margin-bottom:12px}
+.pill.info{background:var(--green-soft);color:var(--green-core)}
+.ctabtn{display:block;width:100%;text-align:center;background:var(--green);color:#fff;font-size:14.5px;font-weight:700;
+border:none;border-radius:14px;padding:13px;cursor:pointer;font-family:var(--font)}
+/* ===== 首页 Feed：信息流卡片(照搬设计稿"社区流"视觉——示例帖+13个真实模板款式，用同一套卡片语言) ===== */
+.feedcard{border-bottom:8px solid var(--bg);margin:0 -18px 14px;padding:0 18px 14px}
+.feedcard:last-child{border-bottom:none}
+.feedcard .imgwrap{position:relative;border-radius:16px;overflow:hidden;background:#EFEFEC;margin-bottom:10px}
+.feedcard .imgwrap img{width:100%;display:block;aspect-ratio:1/1.05;object-fit:cover}
+.feedcard .imgwrap .tile{width:100%;aspect-ratio:1/1.05;display:flex;align-items:center;justify-content:center;font-size:64px;color:var(--green-core);
+background:linear-gradient(135deg,var(--green-soft),#F5F7F1)}
+.feedcard .pill-tag{position:absolute;top:12px;left:12px;background:rgba(28,30,24,.62);color:#fff;font-size:11px;font-weight:600;padding:6px 12px;border-radius:20px}
+.feedcard .pill-buy{position:absolute;top:12px;right:12px;background:#fff;color:var(--ink);font-size:11px;font-weight:600;padding:6px 12px 6px 8px;border-radius:20px;display:flex;align-items:center;gap:4px;cursor:pointer}
+.feedcard .userrow{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.feedcard .av{width:34px;height:34px;border-radius:50%;background:var(--green-soft);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.feedcard .uinfo{flex:1;min-width:0}
+.feedcard .uname{font-size:14px;font-weight:700}
+.feedcard .usub{font-size:11px;color:var(--ink-3)}
+.feedcard .followbtn{font-size:12px;font-weight:700;color:var(--green-core);border:1.5px solid var(--green-core);border-radius:16px;padding:5px 14px;cursor:pointer}
+.feedcard .followbtn.on{color:var(--ink-3);border-color:var(--line-2)}
+.feedcard .cap{font-size:13.5px;line-height:1.6;margin-bottom:8px}
+.feedcard .tagchip{display:inline-flex;align-items:center;gap:4px;background:var(--bg);color:var(--green-core);font-size:12px;font-weight:600;
+padding:6px 12px;border-radius:14px;margin-bottom:12px;cursor:pointer}
+.feedcard .actrow{display:flex;align-items:center;gap:20px;padding:8px 0 12px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.feedcard .actrow .a{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink-2);cursor:pointer}
+.feedcard .actrow .a.liked{color:var(--red)}
+.feedcard .actrow .a.saved{color:var(--green-core)}
+/* ===== 搜索/发现 & 怎么做同款：覆盖层(pushed screen) ===== */
+.overlay{position:absolute;inset:0;background:var(--card);z-index:55;display:none;flex-direction:column}
+.overlay.on{display:flex}
+.overlay .obody{padding:16px 18px;flex:1;overflow-y:auto}
+.searchbox{background:var(--bg);border-radius:12px;padding:11px 14px;font-size:13.5px;color:var(--ink-3);display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.searchbox input{border:none;background:none;outline:none;flex:1;font-size:13.5px;font-family:var(--font);color:var(--ink)}
+.filchips{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:20px}
+.filchip{border:1.5px solid var(--line-2);border-radius:20px;padding:8px 16px;font-size:13px;color:var(--ink-2);cursor:pointer}
+.filchip.on{border-color:var(--green-core);background:var(--green-soft);color:var(--green-core);font-weight:700}
+.filchip.mut{opacity:.55}
+.typegrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.typegrid .tt{aspect-ratio:1/1;border-radius:14px;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:6px}
+.typegrid .tt .ic{font-size:26px}
+.typegrid .tt .nm{font-size:10.5px;color:var(--ink-2);text-align:center;line-height:1.3}
+.howtocard{border:1.5px solid var(--line-2);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer}
+.howtocard.rec{border-color:var(--green-core);background:var(--green-soft)}
+.howtocard .hd{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.howtocard .hd .ic{font-size:16px}
+.howtocard .hd .tt{font-size:15px;font-weight:700;flex:1}
+.howtocard .hd .tag{background:var(--green-core);color:#fff;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:10px}
+.howtocard .ds{font-size:12.5px;color:var(--ink-2);line-height:1.6}
+/* ===== 我的改造(pushed列表，视觉照搬设计稿的扁平tab+列表) ===== */
+.flattabs{display:flex;gap:20px;padding:2px 0 14px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.flattabs .ft{font-size:13.5px;color:var(--ink-3);cursor:pointer;padding-bottom:10px;margin-bottom:-1px}
+.flattabs .ft.on{color:var(--green-core);font-weight:700;border-bottom:2px solid var(--green-core)}
+.pjcard{border:1px solid var(--line-2);border-radius:14px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.pjcard .thumb{width:48px;height:48px;border-radius:10px;background:var(--bg);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--ink-3)}
+.pjcard .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.pjcard .info{flex:1;min-width:0}
+.pjcard .ttl{font-size:14px;font-weight:700;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pjcard .meta{font-size:11px;color:var(--ink-3);display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pjcard .meta .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--nav-off)}
+.pjcard .meta .dot.in_progress{background:var(--green)}
+.pjcard .meta .dot.done{background:#3A7BD5}
+.pjcard .meta .dot.archived{background:var(--nav-off)}
+.pjcard .acts{display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end}
+.pjcard .actbtn{font-size:12.5px;color:var(--green-core);font-weight:700;cursor:pointer;white-space:nowrap}
+.pjcard .actbtn2{font-size:10.5px;color:var(--ink-3);cursor:pointer;white-space:nowrap}
+.emptytip{text-align:center;color:var(--ink-3);font-size:12.5px;padding:50px 20px;line-height:1.9}
+.inline-ic{display:inline-block;vertical-align:-3px}
+/* ===== 我的(root tab，照搬设计稿头像+统计卡片+作品宫格) ===== */
+.mehead{display:flex;align-items:center;gap:14px;padding:6px 0 16px}
+.mehead .av{width:60px;height:60px;border-radius:50%;background:var(--green-soft);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.mehead .nm{font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
+.mehead .nm .edit{font-size:11px;color:var(--ink-3);font-weight:400;cursor:pointer;border:1px solid var(--line-2);border-radius:10px;padding:2px 8px}
+.mehead .sub{font-size:12px;color:var(--ink-3);margin-top:3px}
+.metiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
+.metiles .mt{border:1px solid var(--line-2);border-radius:14px;padding:14px 6px;text-align:center;cursor:pointer}
+.metiles .mt .ic{font-size:19px;margin-bottom:6px}
+.metiles .mt .tx{font-size:12px;font-weight:600}
+.flattabs.sm .ft{font-size:13px}
+.worksgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.worksgrid .wt{aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--ink-3);cursor:pointer}
+.worksgrid .wt img{width:100%;height:100%;object-fit:cover;display:block}
+/* ===== 底部导航(5个位置，商城/消息这个版本还没做，灰置但保留位置——如实标注，不是假装不存在) ===== */
+.botnav{display:flex;border-top:1px solid var(--line);flex-shrink:0}
+.botnav .item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--nav-off);cursor:pointer;padding:8px 0 10px}
+.botnav .item.on{color:var(--green-core);font-weight:600}
+.botnav .item.disabled{opacity:.4;cursor:default}
+.botnav .item .ic{font-size:19px}
+.botnav .fabwrap{flex:1;display:flex;align-items:flex-start;justify-content:center;padding-top:0}
+.botnav .fabwrap .circ{width:46px;height:46px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;margin-top:-20px;box-shadow:0 8px 18px rgba(78,164,21,.4)}
+.toast{position:absolute;left:50%;bottom:100px;transform:translateX(-50%);background:rgba(28,30,24,.88);color:#fff;
+font-size:12px;padding:9px 16px;border-radius:20px;white-space:nowrap;z-index:80;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+/* ====== 改造小助手(浮动入口+提示气泡+聊天，照搬设计稿) ====== */
+.aiw-tip{position:absolute;right:16px;bottom:154px;background:#fff;color:var(--ink);font-size:12.5px;font-weight:500;
+padding:9px 14px;border-radius:18px 18px 4px 18px;box-shadow:0 6px 18px rgba(28,30,24,.16);z-index:49;white-space:nowrap;
+opacity:0;transform:translateY(6px);pointer-events:none;transition:all .25s}
+.aiw-tip.on{opacity:1;transform:translateY(0);pointer-events:auto;cursor:pointer}
+.aiw-fab{position:absolute;right:16px;bottom:96px;width:52px;height:52px;border-radius:50%;background:var(--green);
+color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;
+box-shadow:0 10px 24px rgba(78,164,21,.35);z-index:50}
+.aiw-panel{position:absolute;inset:0;background:var(--card);z-index:60;display:none;flex-direction:column}
+.aiw-panel.on{display:flex}
+.aiw-head{padding:16px 16px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+.aiw-head .back{width:32px;height:32px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.aiw-head .ic{width:36px;height:36px;border-radius:50%;background:var(--green-soft);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.aiw-head .nm{font-size:14px;font-weight:700}
+.aiw-head .st{font-size:11px;color:var(--green-core);display:flex;align-items:center;gap:4px}
+.aiw-head .st .dot{width:6px;height:6px;border-radius:50%;background:var(--green-core)}
+.aiw-msgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.aiw-bub{max-width:80%;padding:10px 13px;border-radius:14px;font-size:13px;line-height:1.6;white-space:pre-wrap}
+.aiw-bub.bot{background:var(--bg);color:var(--ink);align-self:flex-start;border-bottom-left-radius:4px}
+.aiw-bub.me{background:var(--green);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.aiw-bub.err{background:var(--warn-soft);color:var(--warn)}
+.aiw-quickrow{display:flex;gap:8px;flex-wrap:wrap;align-self:flex-start;max-width:86%}
+.aiw-quickchip{border:1.5px solid var(--line-2);border-radius:16px;padding:7px 13px;font-size:12px;color:var(--ink-2);cursor:pointer;white-space:nowrap}
+.aiw-inputrow{padding:10px 12px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center}
+.aiw-inputrow input{flex:1;border:1.5px solid var(--line-2);border-radius:20px;padding:9px 14px;font-size:13px;font-family:var(--font)}
+.aiw-inputrow input:focus{outline:none;border-color:var(--green)}
+.aiw-sendbtn{width:38px;height:38px;border-radius:50%;background:var(--green);color:#fff;border:none;display:flex;
+align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0}
+.aiw-sendbtn[disabled]{opacity:.4;pointer-events:none}
+/* ===== 作品详情(12屏)：pushed 覆盖层，示例帖和13个模板库款式共用一套详情视觉 ===== */
+.detailimg{position:relative;margin:-16px -18px 14px;background:#EFEFEC}
+.detailimg img.main{width:100%;display:block;aspect-ratio:1/1.05;object-fit:cover}
+.detailimg .tile{width:100%;aspect-ratio:1/1.05;display:flex;align-items:center;justify-content:center;font-size:80px;color:var(--green-core);background:linear-gradient(135deg,var(--green-soft),#F5F7F1)}
+.detailimg .beforewrap{position:absolute;left:14px;bottom:14px;width:72px;border-radius:12px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.25);border:2px solid #fff}
+.detailimg .beforewrap img{width:100%;display:block;aspect-ratio:3/4;object-fit:cover}
+.detailimg .beforewrap .lbl{position:absolute;left:0;right:0;bottom:0;background:rgba(28,30,24,.62);color:#fff;font-size:9px;text-align:center;padding:3px 0}
+.detailimg .pill-tag{position:absolute;top:12px;left:12px;z-index:2}
+/* ===== 个人主页(24屏)：只对示例帖的示例作者"改造达人_Lin"开放——项目没有真实多用户系统，其它作者不存在真实主页 ===== */
+.profilehead{display:flex;flex-direction:column;align-items:center;text-align:center;padding:10px 0 16px}
+.profilehead .pav{width:64px;height:64px;border-radius:50%;overflow:hidden;margin-bottom:10px;background:var(--green-soft)}
+.profilehead .pav img{width:100%;height:100%;object-fit:cover;display:block}
+.profilehead .pnm{font-size:17px;font-weight:700;margin-bottom:6px}
+.profilehead .pstats{display:flex;gap:16px;font-size:12.5px;color:var(--ink-2);margin-bottom:14px}
+.profilehead .pstats b{color:var(--ink);font-size:13.5px}
+.profilehead .followbtn2{font-size:13px;font-weight:700;color:#fff;background:var(--green-core);border-radius:18px;padding:8px 26px;cursor:pointer}
+.profilehead .followbtn2.on{color:var(--ink-3);background:var(--bg)}
+/* ===== 消息(25屏)：互动是仿照设计稿的示例内容(如实标注，没有真实多用户后端)，交易私信随商城一起如实标注未做 ===== */
+.msgrow{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.msgrow .mav{width:42px;height:42px;border-radius:50%;background:var(--green-soft);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.msgrow .mtx{flex:1;min-width:0}
+.msgrow .mtx .t1{font-size:13.5px;font-weight:700;margin-bottom:2px}
+.msgrow .mtx .t2{font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style></head>
 <body>
-<div class="hint">EcoStitch 旧衣改造 · 核心链路最小闭环<b>MVP</b>验证 · 上传→拆解→裁开→量布→选方向→确认→生成→真实纸样<span class="badge">测试用</span></div>
+<div class="hint">EcoStitch 首页 · <b>MVP</b>验证 · 界面视觉照搬29屏高保真设计稿，功能上"我的改造/我的/改造小助手/照着做/作品详情/个人主页"是真实可用的本地功能或如实标注的示例展示；"消息"页的"互动"是仿照设计稿的示例内容(没有真实多用户后端，如实标注)，"交易私信"和"商城"一起保留入口但如实提示未做<span class="small"></span></div>
 
 <div class="ph">
-  <div class="sb"><span class="t">9:41</span></div>
-  <div class="gnav">
-    <span class="gi" onclick="location.href='home.html'">🏠</span>
-    <span class="gi" onclick="location.href='home.html?view=search'">🔍</span>
+  <div class="sb"><span class="t" id="clockTxt">9:41</span></div>
+
+  <!-- 根级(首页/我的)顶部：仿设计稿的 首页/搜索 线条图标 + 角标 -->
+  <div class="gnav" id="gnav">
+    <span class="gi" onclick="applyView('home')"><svg class="" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3v-5.5h4V20h3a1 1 0 0 0 1-1V9.5"/></svg></span>
+    <span class="gi" onclick="applyView('search')"><svg class="" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg></span>
     <span class="badge" title="灵感值·示例展示数据">85</span>
   </div>
-  <div class="bar">
-    <div class="rbtn" onclick="prevScreen()">‹</div>
-    <span class="ttl" id="screenTitle">上传旧衣</span>
+  <!-- 子页面(我的改造/搜索/怎么做同款/聊天)顶部：返回箭头，仿设计稿的 pushed 页面 -->
+  <div class="pushhead" id="pushhead">
+    <span class="back" onclick="goBackPush()"><svg class="" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"/></svg></span>
+    <span class="ttl" id="pushTitle"></span>
   </div>
-  <div class="steps" id="stepsBar"></div>
+
+  <!-- 首页 tab 行：推荐/关注/最新，仿设计稿 -->
+  <div class="hometabs" id="hometabs">
+    <span class="plus" onclick="notReady('发布')">＋</span>
+    <span class="t on" data-ht="rec" onclick="setHomeTab('rec')">推荐</span>
+    <span class="t" data-ht="follow" onclick="setHomeTab('follow')">关注</span>
+    <span class="t" data-ht="new" onclick="setHomeTab('new')">最新</span>
+  </div>
+  <!-- 我的 tab 顶部标题 -->
+  <div class="methead" id="methead"><span class="ttl">我的</span></div>
+  <!-- 消息 tab 顶部标题 -->
+  <div class="methead" id="msghead"><span class="ttl">消息</span></div>
+
   <div class="body">
 
-    <!-- 屏1: 上传旧衣（完整状态，仅作为流程起点/参考，不再是生成效果图的底图——生成效果图改用屏3拍的裁开后布料照片，更贴近实际能做出来的样子） -->
-    <div class="screen on" id="screen1">
-      <div class="sec">拍一张你想改造的旧衣（完整状态）</div>
-      <div class="upbox" id="upbox" onclick="document.getElementById('fileInput').click()">
-        <img id="upPreview" style="display:none">
-        <div class="uptext">
-          <span style="font-size:26px">📷</span>
-          <span style="font-size:14px;font-weight:500">点击拍照 / 从相册上传</span>
-          <span style="font-size:11px;color:var(--ink-3)">单件平铺、背景干净，效果更好</span>
+    <!-- 首页：示例帖(照搬设计稿) + 13个真实模板库款式，同一套信息流卡片视觉 -->
+    <div class="tabpane on" id="tab-home">
+      <div id="feedList"></div>
+    </div>
+
+    <!-- 我的改造：pushed列表，本地真实记录 -->
+    <div class="tabpane" id="tab-projects">
+      <div class="flattabs" id="pjFilter"></div>
+      <div id="pjList"></div>
+    </div>
+
+    <!-- 消息：root tab，"互动"是仿照设计稿的示例内容，"交易私信"和商城一起如实标注未做 -->
+    <div class="tabpane" id="tab-messages">
+      <div class="flattabs" id="msgTabs">
+        <div class="ft on" data-mt="interact" onclick="setMsgTab('interact')">互动</div>
+        <div class="ft" data-mt="trade" onclick="setMsgTab('trade')">交易私信</div>
+      </div>
+      <div id="msgBody"></div>
+    </div>
+
+    <!-- 我的：root tab，头像+统计卡片+作品/收藏宫格 -->
+    <div class="tabpane" id="tab-me">
+      <div class="mehead">
+        <div class="av"><svg class="" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4 15.5c3.2-4.2 8.3-6.3 12.6-3.2"/><circle cx="18.3" cy="7.3" r="2" /><path d="M16.8 5.8 5.5 17"/></svg></div>
+        <div>
+          <div class="nm" id="meNickname">改造达人 <span class="edit" onclick="editNickname()">改称呼</span></div>
+          <div class="sub" id="meSub"></div>
         </div>
       </div>
-      <input type="file" id="fileInput" accept="image/*" style="display:none">
-      <div class="small" style="margin-top:12px">上传后会自动跑一次 AI 识别，帮你猜这是什么类型的旧衣、大概什么材质，下一步可以看到识别结果（猜错了可以手动改）。这张照片主要作为起点参考——拆开之后会在后面单独再拍一张裁开摊平的照片，效果图是根据那张真实裁开后的布料生成的。</div>
-    </div>
-
-    <!-- 屏2: 拆解旧衣引导 -->
-    <div class="screen" id="screen2">
-      <div class="sec">这件旧衣现在是什么状态</div>
-      <div id="aiIdentifyStatus" style="margin-bottom:10px"></div>
-      <div class="pill warn" style="margin-bottom:10px">
-        <span>✂️</span>
-        <span>旧衣一旦剪开就回不去了——建议先把下面对应的拆解提示看一遍，再动剪刀。</span>
+      <div class="metiles">
+        <div class="mt" onclick="showTab('projects')"><div class="ic"><svg class="" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><circle cx="6.2" cy="6.5" r="2.2"/><circle cx="6.2" cy="17.5" r="2.2"/><path d="M8 8 20 19M8 16 20 5"/></svg></div><div class="tx">我的改造</div></div>
+        <div class="mt" onclick="notReady('商城/订单')"><div class="ic"><svg class="" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M6 3h12v18l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3-2 1.3V3z"/><path d="M9 8h6M9 12h6"/></svg></div><div class="tx">我的订单</div></div>
+        <div class="mt" onclick="notReady('商城/在售')"><div class="ic"><svg class="" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M20 12.5 12.5 20a1.5 1.5 0 0 1-2.1 0L3 12.5V4h8.5L20 12.5z"/><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor" stroke="none"/></svg></div><div class="tx">我的在售</div></div>
       </div>
-      <div class="gsel" id="gsel"></div>
-      <div id="tipArea"></div>
+      <div class="flattabs sm" id="meWorksTab">
+        <div class="ft on" data-mt="works" onclick="setMeWorksTab('works')">作品</div>
+        <div class="ft" data-mt="fav" onclick="setMeWorksTab('fav')">收藏</div>
+      </div>
+      <div class="worksgrid" id="meWorksGrid"></div>
+      <div class="pill info" style="margin-top:16px"><span><svg class="inline-ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.3"/><circle cx="12" cy="8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span>以上"改造/作品"数据真实存在这台设备的浏览器本地(换设备或清缓存会丢失，没有账号系统)；粉丝数是仿照设计稿展示效果的示例数字，不是真实用户数据。</span></div>
     </div>
 
-    <!-- 屏3: 拍摄裁开后的平面图上传（新，衣物已经在②的引导下真实裁开摊平） -->
-    <div class="screen" id="screen3">
-      <div class="sec">拍一张裁开摊平后的布料</div>
-      <div class="upbox" id="upbox2" onclick="document.getElementById('fileInput2').click()">
-        <img id="upPreview2" style="display:none">
-        <div class="uptext">
-          <span style="font-size:26px">📐</span>
-          <span style="font-size:14px;font-weight:500">点击拍照 / 从相册上传</span>
-          <span style="font-size:11px;color:var(--ink-3)">尽量摊平、拍正面，方便下一步量边</span>
+    <!-- 搜索/发现：pushed 覆盖层 -->
+    <div class="overlay" id="ov-search">
+      <div class="obody">
+        <div class="searchbox"><span><svg class="inline-ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg></span><input id="searchInput" placeholder="搜灵感、款式、面料" oninput="doSearch()"></div>
+        <div class="sec" style="margin-top:0">按原衣物面料</div>
+        <div class="filchips">
+          <div class="filchip mut" onclick="notReady('按面料筛选')">牛仔</div>
+          <div class="filchip mut" onclick="notReady('按面料筛选')">针织</div>
+          <div class="filchip mut" onclick="notReady('按面料筛选')">衬衫布</div>
+          <div class="filchip mut" onclick="notReady('按面料筛选')">帆布</div>
+        </div>
+        <div class="sec">按难度</div>
+        <div class="filchips">
+          <div class="filchip mut" onclick="notReady('按难度筛选')">新手友好</div>
+          <div class="filchip mut" onclick="notReady('按难度筛选')">1-2小时</div>
+          <div class="filchip mut" onclick="notReady('按难度筛选')">免缝纫</div>
+        </div>
+        <div class="sec">按包的类型(13个模板库真实款式，可直接点)</div>
+        <div class="typegrid" id="typeGrid"></div>
+      </div>
+    </div>
+
+    <!-- 怎么做同款：pushed 覆盖层 -->
+    <div class="overlay" id="ov-howto">
+      <div class="obody">
+        <div style="font-size:19px;font-weight:700;margin-bottom:8px">怎么做同款</div>
+        <div style="font-size:12.5px;color:var(--ink-2);margin-bottom:18px">你的旧衣尺寸和模板库多半不同，选一种方式：</div>
+        <div class="howtocard rec" onclick="howtoGo('fit')">
+          <div class="hd"><span class="ic"><svg class="" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/><path d="M19 15l.6 1.8 1.8.6-1.8.6-.6 1.8-.6-1.8-1.8-.6 1.8-.6z"/></svg></span><span class="tt">适配我的旧衣</span><span class="tag">推荐</span></div>
+          <div class="ds">按你自己实测的旧衣尺寸重新算纸样，保证用你手上这块布做得出来</div>
+        </div>
+        <div class="howtocard" onclick="howtoGo('raw')">
+          <div class="hd"><span class="ic"><svg class="" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg></span><span class="tt">直接用模板纸样</span></div>
+          <div class="ds">跳过拍照测量，直接用模板库这个款式的标准尺寸生纸样，布料是否够用需要你自己对照</div>
         </div>
       </div>
-      <input type="file" id="fileInput2" accept="image/*" style="display:none">
-      <div class="small" style="margin-top:12px">这张照片接下来会用来生成改造后的效果图，也会在下一步用来帮你确认要量哪两条边。</div>
     </div>
 
-    <!-- 屏4: 按旧衣类型给量边示意图 + 输入实测长度（新） -->
-    <div class="screen" id="screen4">
-      <div class="sec">量两条边，算算这块布够不够用</div>
-      <div class="diagramcard" id="diagramArea"></div>
-      <div class="small" style="margin-top:8px" id="diagramCaption"></div>
-      <div class="sec">你上传的这张照片（仅供你自己核对，图上不画线）</div>
-      <div class="photopreview"><img id="measPhotoPreview"></div>
-      <div class="edgerow">
-        <div class="col">
-          <div class="lb"><span class="dot">①</span><span id="edge1Label">长边（cm）</span></div>
-          <input type="number" class="numin" id="edge1Input" placeholder="比如 60" inputmode="decimal">
+    <!-- 作品详情：pushed 覆盖层，示例帖(照搬设计稿12屏) 和 13个模板库款式(复用同一套卡片信息) 共用 -->
+    <div class="overlay" id="ov-detail">
+      <div class="obody" id="detailBody"></div>
+    </div>
+
+    <!-- 个人主页：pushed 覆盖层，只有示例帖的示例作者"改造达人_Lin"能查看 -->
+    <div class="overlay" id="ov-profile">
+      <div class="obody">
+        <div class="profilehead">
+          <div class="pav"><img src="assets/demo-author-avatar.jpg" alt="改造达人_Lin"></div>
+          <div class="pnm">改造达人_Lin</div>
+          <div class="pstats"><span><b>1</b> 作品</span><span><b>340</b> 粉丝</span><span><b id="profileLikes">128</b> 获赞</span></div>
+          <div class="followbtn2" id="profileFollowBtn" onclick="toggleDemoFollow()">关注</div>
         </div>
-        <div class="col">
-          <div class="lb"><span class="dot">②</span><span id="edge2Label">宽边（cm）</span></div>
-          <input type="number" class="numin" id="edge2Input" placeholder="比如 45" inputmode="decimal">
+        <div class="flattabs sm" id="profileTabs">
+          <div class="ft on" data-pt="works" onclick="setProfileTab('works')">作品</div>
+          <div class="ft" data-pt="sale" onclick="setProfileTab('sale')">在售</div>
+          <div class="ft" data-pt="fav" onclick="setProfileTab('fav')">收藏</div>
         </div>
+        <div class="worksgrid" id="profileGrid" style="margin-top:12px"></div>
+        <div class="pill info" style="margin-top:16px"><span><svg class="inline-ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.3"/><circle cx="12" cy="8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span>这是示例社区账号的主页展示效果——项目没有真实的多用户系统，除了这一个示例帖之外不存在别的真实用户主页可看；粉丝数是示例数字，获赞数会随你点赞/取消点赞这条示例帖实时变化(不是编的固定数字)。</span></div>
       </div>
-      <div id="edgeFeedback" style="margin-top:10px"></div>
-    </div>
-
-    <!-- 屏5: 选包型 + 改造方向（移到量完布料之后；每个包型按真实测量的布料算"够用/不够用"） -->
-    <div class="screen" id="screen5">
-      <div class="numlabel"><span class="n">①</span><span>改成哪种包</span><span class="hintxt">(绿色=布料够用)</span></div>
-      <div class="pill info" style="margin-bottom:12px">
-        <span>ℹ️</span>
-        <span>正式版会由 AI 结合旧衣裁片大小自动推荐最合适的包型；这次 MVP 里这一步的 AI 判断没有真实接入，先手动选一个（下方13个包型均来自纸样计算器已接入的真实模板库；绿色"够用"/黄色"不够用"是按你上一步实测的两条边算出来的真实核对，不是拍脑袋的预估）。</span>
-      </div>
-      <div class="bagsel" id="bagsel"></div>
-      <div id="bagWarnArea" style="margin-top:10px"></div>
-      <div class="numlabel"><span class="n">②</span><span>想要什么风格</span><span class="hintxt">(可选)</span></div>
-      <div class="chipwrap" id="styleChips"></div>
-      <div class="numlabel"><span class="n">③</span><span>还想要什么效果</span><span class="hintxt">(可选)</span></div>
-      <textarea class="ta" id="freeform" placeholder="&quot;加个外贴袋&quot;&quot;做旧感觉&quot;…"></textarea>
-    </div>
-
-    <!-- 屏6: 确认理解 -->
-    <div class="screen" id="screen6">
-      <div class="sec">我理解你想要的是——</div>
-      <div class="sumcard" id="sumCard"></div>
-      <div class="small" style="margin-top:10px">确认无误后开始生成效果图；如果哪里不对，可以回上一步改。</div>
-    </div>
-
-    <!-- 屏7: 生成中 -->
-    <div class="screen" id="screen7">
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:60px 0 0">
-        <div class="spinner"></div>
-        <div style="text-align:center;margin-top:6px">
-          <div style="font-size:16px;font-weight:700;margin-bottom:4px" id="loadingText">正在为你设计…</div>
-          <div style="font-size:12px;color:var(--ink-3)">结合你的面料和风格生成中</div>
-        </div>
-      </div>
-      <div class="genchecklist">
-        <div class="gi2 done"><span class="ic2">✅</span><span>已理解你的需求</span></div>
-        <div class="gi2 active"><span class="ic2">🔄</span><span>正在生成创意方案</span></div>
-        <div class="gi2"><span class="ic2">◯</span><span>渲染效果图</span></div>
-      </div>
-    </div>
-
-    <!-- 屏8: 效果图方案(照搬高保真06屏"选方案"的卡片网格视觉，内容是真实的单图生成+可回看的生成历史，
-         不是一次性并发4个方案——后端一次只真实生成一张，"方案N"对应第N次真实生成的结果) -->
-    <div class="screen" id="screen8">
-      <div class="planhead"><span class="sec" style="margin:0">改造效果图</span><span class="zoomtip">点图可放大</span></div>
-      <div class="imgcard" id="resultImgCard"></div>
-      <div class="pill warn" id="fallbackNote" style="margin-top:12px;display:none">
-        <span>⚠️</span>
-        <span id="fallbackText"></span>
-      </div>
-      <div id="histSec" style="display:none">
-        <div class="sec" style="margin:14px 0 8px">生成历史 · 点哪张切回哪张(不重新调用AI)</div>
-        <div class="plangrid" id="histGrid"></div>
-      </div>
-      <button class="regenbtn" id="regenBtn" onclick="showScreen(7);startGenerate()">🔄 <span id="regenBtnTxt">重新生成</span></button>
-      <div class="small" style="margin-top:10px" id="pieceNote"></div>
     </div>
 
   </div>
-  <div class="foot" id="footArea">
-    <button class="btn" id="mainBtn" onclick="nextScreen()" disabled>下一步</button>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="aiw-tip" id="aiwTip" onclick="aiwOpen()">卡住了？问问我</div>
+  <div class="aiw-fab" id="aiwFab" onclick="aiwOpen()"><svg class="" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21 12a8 8 0 0 1-8 8H7.3L3 23l.9-4.4A8 8 0 1 1 21 12z"/></svg></div>
+  <div class="aiw-panel" id="aiwPanel">
+    <div class="aiw-head">
+      <div class="back" onclick="aiwClose()"><svg class="" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"/></svg></div>
+      <div class="ic"><svg class="" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21 12a8 8 0 0 1-8 8H7.3L3 23l.9-4.4A8 8 0 1 1 21 12z"/></svg></div>
+      <div>
+        <div class="nm">改造小助手</div>
+        <div class="st"><span class="dot"></span>在线</div>
+      </div>
+    </div>
+    <div class="aiw-msgs" id="aiwMsgs"></div>
+    <div class="aiw-inputrow">
+      <input id="aiwInput" placeholder="输入你的问题…" onkeydown="if(event.key==='Enter')aiwSend()">
+      <button class="aiw-sendbtn" id="aiwSendBtn" onclick="aiwSend()"><svg class="" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21.5 2.5 10.8 13.2"/><path d="M21.5 2.5 14.8 21l-4-8-8-4z"/></svg></button>
+    </div>
+  </div>
+
+  <div class="botnav">
+    <div class="item on" data-tab="home" onclick="showTab('home')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3v-5.5h4V20h3a1 1 0 0 0 1-1V9.5"/></svg></span><span>首页</span></div>
+    <div class="item disabled" onclick="notReady('商城')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M6 8h12l1 12.2a1 1 0 0 1-1 1.1H6a1 1 0 0 1-1-1.1L6 8z"/><path d="M9 8V6.3a3 3 0 0 1 6 0V8"/></svg></span><span>商城</span></div>
+    <div class="fabwrap"><div class="circ" onclick="location.href='flow.html'"><svg class="" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><circle cx="6.2" cy="6.5" r="2.2"/><circle cx="6.2" cy="17.5" r="2.2"/><path d="M8 8 20 19M8 16 20 5"/></svg></div></div>
+    <div class="item" data-tab="messages" onclick="showTab('messages')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3.6 6.6 12 13l8.4-6.4"/></svg></span><span>消息</span></div>
+    <div class="item" data-tab="me" onclick="showTab('me')"><span class="ic"><svg class="" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><circle cx="12" cy="8.3" r="3.5"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></span><span>我的</span></div>
   </div>
 </div>
 
+<script src="assets/icons.js"></script>
 <script>
-// ====== 包型库（和纸样计算器 src/app.js 里的 STD 保持一致，UI 已开放的13个包型全部同步）======
+// ====== "我的改造"本地记录(IndexedDB)——和 MVP流程/flow.html 用同一个数据库/表名，两个页面共享同一份记录 ======
+// (这两处的读写代码是独立维护的两份拷贝，和项目里 calculator.html/flow.html 互相同步的惯例一样，以后改动需要手动同步)
+const ECO_DB_NAME='ecostitch', ECO_DB_VER=1, ECO_STORE='projects';
+function openProjectsDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(ECO_DB_NAME, ECO_DB_VER);
+    req.onupgradeneeded=()=>{ const db=req.result; if(!db.objectStoreNames.contains(ECO_STORE)) db.createObjectStore(ECO_STORE,{keyPath:'id'}); };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function dbGetAll(){
+  const db=await openProjectsDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(ECO_STORE,'readonly');
+    const req=tx.objectStore(ECO_STORE).getAll();
+    req.onsuccess=()=>resolve(req.result||[]); req.onerror=()=>reject(req.error);
+  });
+}
+async function dbPut(project){
+  const db=await openProjectsDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(ECO_STORE,'readwrite');
+    tx.objectStore(ECO_STORE).put(project);
+    tx.oncomplete=()=>resolve(); tx.onerror=()=>reject(tx.error);
+  });
+}
+async function dbDelete(id){
+  const db=await openProjectsDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(ECO_STORE,'readwrite');
+    tx.objectStore(ECO_STORE).delete(id);
+    tx.oncomplete=()=>resolve(); tx.onerror=()=>reject(tx.error);
+  });
+}
+
+// ====== 收藏(本地真实功能，localStorage) ======
+function getFavs(){ try{ return JSON.parse(localStorage.getItem('ecostitch_favs')||'[]'); }catch(e){ return []; } }
+function isFav(bag){ return getFavs().includes(bag); }
+function toggleFav(bag){
+  let f = getFavs();
+  if(f.includes(bag)){ f = f.filter(x=>x!==bag); showToast('已取消收藏'); }
+  else { f.push(bag); showToast('已收藏'); }
+  try{ localStorage.setItem('ecostitch_favs', JSON.stringify(f)); }catch(e){}
+  renderFeed(); if(currentView==='me' && meWorksTab==='fav') renderMeWorks();
+}
+
+// ====== 首页 Feed：13个已验证包型(和 MVP流程/flow.html 里的 BAGS 数据一致，独立维护的拷贝) ======
 const BAGS=[
   {bag:'boxtote',nm:'方底托特包',st:'有侧片·立体方包',vf:'✓已验证',ref:false},
   {bag:'jointote',nm:'拼接底托特包',st:'上下拼色+夹缝背带',vf:'模板库',ref:true},
@@ -300,674 +416,395 @@ const BAGS=[
   {bag:'zipbp',nm:'经典拉链立体双肩背包',st:'前兜+兜盖+主拉链舱，13类裁片',vf:'模板库',ref:true},
   {bag:'boston',nm:'波士顿枕头包',st:'皮革五金拼接，高阶⭐⭐⭐⭐☆',vf:'模板库',ref:true},
 ];
-// ====== 各包型真实用料需求(cm²/cm)======
-// 不是拍脑袋编的数——直接来自纸样计算器 src/app.js 里 calculate() 每个包型的真实裁片清单
-// (每片的宽×高×数量，数量按裁片说明文字里"表布×2 里布×2"这类真实标注解析累加)：
-// total = 全部裁片总面积(cm²，按各自数量累加，6个矩形参数化包型代入标准成品尺寸STD+默认1cm缝份算出，
-//         其余7个曲线/模板库包型直接用源数据里写死的裁片尺寸)；
-// maxW/maxH = 全部裁片里"单片面积最大"的那一片的宽高(这一片必须能在布料上一次性放下，无法拼接)。
-// 这两个数字和纸样计算器"预估用料"卡片(app.js calculate() 里 estMaxW/estMaxH/estTotalArea)用的是同一套
-// 真实计算逻辑，这里只是把13个包型的结果预先算好、原样搬过来，没有另外编一套数据。
-// 30%排布损耗同样沿用计算器自己的口径(estSide=ceil(sqrt(total*1.3)))，不是这次新加的假设。
-const REQUIRED={
-  boxtote:{total:4983.5, maxW:23.0, maxH:29.0, maxName:'前后片'},
-  jointote:{total:8071.2, maxW:44.0, maxH:68.0, maxName:'包身里布'},
-  beartote:{total:4609.0, maxW:38.0, maxH:54.0, maxName:'连体里布'},
-  cardwallet:{total:810.0, maxW:14.0, maxH:21.0, maxName:'里布(风琴折叠)'},
-  foldtote:{total:4800.0, maxW:40.0, maxH:92.0, maxName:'包身主布'},
-  bucket:{total:5156.1, maxW:49.1, maxH:19.0, maxName:'桶身里布'},
-  crescent:{total:6013.9, maxW:11.5, maxH:73.3, maxName:'侧片'},
-  trianglepouch:{total:1236.4, maxW:28.1, maxH:11.0, maxName:'笔袋主体'},
-  jiaozi:{total:1584.0, maxW:16.0, maxH:24.0, maxName:'饺子包主体'},
-  saddle:{total:6283.4, maxW:30.5, maxH:29.2, maxName:'后下片'},
-  roundbp:{total:5988.9, maxW:27.0, maxH:27.0, maxName:'前后片(主体)'},
-  zipbp:{total:11450.3, maxW:23.3, maxH:28.2, maxName:'表布主片(前片)'},
-  boston:{total:1941.5, maxW:16.0, maxH:20.8, maxName:'前后身布料'},
-};
-// 用测到的两条边(e1/e2，谁长谁短不限，允许换向摆放)核对某个包型够不够用——
-// 和纸样计算器"预估用料"卡片一样，分两条真实标准：①能不能放下最大的那片裁片 ②总面积(含30%排布损耗)够不够，
-// 两条都过才算"够用"；没考虑布纹方向/多块拼接，是轻量判断，不是精确排料。
-function sufficiencyFor(bag, e1, e2){
-  const req=REQUIRED[bag];
-  if(!req || !(e1>0) || !(e2>0)) return null;
-  const measured=[Math.min(e1,e2), Math.max(e1,e2)];
-  const needPiece=[Math.min(req.maxW,req.maxH), Math.max(req.maxW,req.maxH)];
-  const fitsPiece = measured[0]>=needPiece[0] && measured[1]>=needPiece[1];
-  const measuredArea = e1*e2;
-  const needArea = req.total*1.3;
-  const fitsArea = measuredArea >= needArea;
-  return {sufficient: fitsPiece && fitsArea, fitsPiece, fitsArea, measuredArea, needArea, needPiece, maxName:req.maxName};
-}
-// ====== 拆解旧衣：按旧衣类型给的通用拆解提示（真实缝纫常识，不是AI识别结果）======
-const GARMENT_TYPES=[
-  {id:'pants',nm:'长裤/牛仔裤',tips:[
-    '先拆下拉链、纽扣、铆钉等五金，留着改造时复用',
-    '用拆线器挑开裤腿外侧缝的线迹，再沿缝线剪开摊平',
-    '裤裆弧线附近布料窄，量边时避开这一段',
-    '两条裤腿可以分开摊平，各自量一段最大可用宽度',
-  ]},
-  {id:'shirt',nm:'衬衫/T恤',tips:[
-    '先拆袖子（沿袖窿缝线），再拆两侧身缝',
-    '前门襟纽扣先拆下留用，扣眼位置的布不建议用在显眼的主片上',
-    '后背通常是最大一整块平整布料，优先量这里',
-    '带图案/印花的部分可以留出来做外袋等装饰片',
-  ]},
-  {id:'skirt',nm:'裙装',tips:[
-    '先拆开侧缝或后中缝（裙子通常只有一条主缝）',
-    '拉链先拆下留用，裙腰部分布料较厚可以单独裁小片',
-    '摊平后裙摆弧度较大，量边时取中间平直的一段',
-  ]},
-  {id:'jacket',nm:'外套/夹克',tips:[
-    '先拆下拉链、纽扣、五金配件，外套辅料通常质量更好，留用价值高',
-    '拆开袖子和身片的连接缝，衬里和面料可能需要分开处理',
-    '面料通常较厚挺，适合做需要立体支撑的包型（水桶包、托特包等）',
-    '口袋、内衬等部位布料较小，可以留作提手、补丁等小裁片',
-  ]},
-  {id:'flat',nm:'已经是平整布料',tips:[
-    '这种情况不用拆解，直接摊平量边就好',
-    '注意先确认布料没有明显破损、污渍集中在要用的这一块区域',
-  ]},
-];
+// 示例数据(仅供视觉展示丰富度，不是真实统计——按 bag 索引固定生成，保证每次打开数字一致)
+function demoNums(i){ return { like: 36+i*9, cmt: 4+i*2, col: 3+i }; }
 
-// ====== 屏4量边示意图：按旧衣类型给的真实简笔示意图，不是从用户照片里自动识别出来的 ======
-// Bedi 2026-08-30 指出：红线必须是"裁剪开的衣物实际具有代表性的两条边"，不能是固定位置的装饰线——
-// 但这个环境里没有真实的图像识别/关键点检测能力，没法在用户上传的任意照片上准确画出这两条边。
-// 诚实的折中做法：改成按②选的旧衣类型，画一张真实对应该类衣物结构的简笔示意图(不是照片，是示意图，
-// 每种类型的红线位置都对应这类衣物实际拆开摊平后真正有代表性的两条边)，用户自己上传的照片仍然完整展示、
-// 但不在上面画线，避免让人误以为是"系统从这张照片里量出来的"。
-const GARMENT_DIAGRAMS={
-  pants:{
-    edge1:'裆部下方一圈的最大宽度', edge2:'裤腿方向能用的最长一段',
-    svg:'<svg viewBox="0 0 200 190" xmlns="http://www.w3.org/2000/svg">'
-      +'<rect x="55" y="14" width="90" height="16" rx="3" fill="none" stroke="#9DA192" stroke-width="2"/>'
-      +'<rect x="58" y="30" width="40" height="138" rx="3" fill="none" stroke="#9DA192" stroke-width="2"/>'
-      +'<rect x="102" y="30" width="40" height="138" rx="3" fill="none" stroke="#9DA192" stroke-width="2"/>'
-      +'<line x1="50" y1="46" x2="150" y2="46" stroke="#C0392B" stroke-width="2.5"/>'
-      +'<circle cx="150" cy="46" r="9" fill="#C0392B"/><text x="150" y="50" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">①</text>'
-      +'<line x1="78" y1="48" x2="78" y2="164" stroke="#C0392B" stroke-width="2.5"/>'
-      +'<circle cx="78" cy="164" r="9" fill="#C0392B"/><text x="78" y="168" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">②</text>'
-      +'</svg>',
-  },
-  shirt:{
-    edge1:'后背最宽处的宽度', edge2:'后背方向的衣长',
-    svg:'<svg viewBox="0 0 200 190" xmlns="http://www.w3.org/2000/svg">'
-      +'<rect x="65" y="35" width="70" height="130" rx="4" fill="none" stroke="#9DA192" stroke-width="2"/>'
-      +'<rect x="35" y="35" width="30" height="50" rx="4" fill="none" stroke="#9DA192" stroke-width="2"/>'
-      +'<rect x="135" y="35" width="30" height="50" rx="4" fill="none" stroke="#9DA192" stroke-width="2"/>'
-      +'<line x1="65" y1="50" x2="135" y2="50" stroke="#C0392B" stroke-width="2.5"/>'
-      +'<circle cx="135" cy="50" r="9" fill="#C0392B"/><text x="135" y="54" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">①</text>'
-      +'<line x1="100" y1="37" x2="100" y2="163" stroke="#C0392B" stroke-width="2.5"/>'
-      +'<circle cx="100" cy="163" r="9" fill="#C0392B"/><text x="100" y="167" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">②</text>'
-      +'</svg>',
-  },
-  skirt:{
-    edge1:'裙摆展开后的最大宽度', edge2:'裙腰到裙摆的裙长',
-    svg:'<svg viewBox="0 0 200 190" xmlns="http://www.w3.org/2000/svg">'
-      +'<polygon points="85,20 115,20 150,165 50,165" fill="none" stroke="#9DA192" stroke-width="2"/>'
-      +'<line x1="58" y1="150" x2="142" y2="150" stroke="#C0392B" stroke-width="2.5"/>'
-      +'<circle cx="142" cy="150" r="9" fill="#C0392B"/><text x="142" y="154" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">①</text>'
-      +'<line x1="100" y1="22" x2="100" y2="148" stroke="#C0392B" stroke-width="2.5"/>'
-      +'<circle cx="100" cy="148" r="9" fill="#C0392B"/><text x="100" y="152" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">②</text>'
-      +'</svg>',
-  },
-  jacket:{
-    edge1:'后背整片最宽处的宽度', edge2:'后背方向的衣长',
-    svg:'<svg viewBox="0 0 200 190" xmlns="http://www.w3.org/2000/svg">'
-      +'<rect x="62" y="30" width="76" height="140" rx="4" fill="none" stroke="#9DA192" stroke-width="2"/>'
-      +'<rect x="28" y="30" width="34" height="70" rx="4" fill="none" stroke="#9DA192" stroke-width="2"/>'
-      +'<rect x="138" y="30" width="34" height="70" rx="4" fill="none" stroke="#9DA192" stroke-width="2"/>'
-      +'<line x1="62" y1="46" x2="138" y2="46" stroke="#C0392B" stroke-width="2.5"/>'
-      +'<circle cx="138" cy="46" r="9" fill="#C0392B"/><text x="138" y="50" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">①</text>'
-      +'<line x1="100" y1="32" x2="100" y2="168" stroke="#C0392B" stroke-width="2.5"/>'
-      +'<circle cx="100" cy="168" r="9" fill="#C0392B"/><text x="100" y="172" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">②</text>'
-      +'</svg>',
-  },
-  flat:{
-    edge1:'这块布最长的一边', edge2:'与长边垂直方向能用的最大宽度',
-    svg:'<svg viewBox="0 0 200 190" xmlns="http://www.w3.org/2000/svg">'
-      +'<rect x="40" y="35" width="120" height="130" rx="4" fill="none" stroke="#9DA192" stroke-width="2"/>'
-      +'<line x1="40" y1="50" x2="160" y2="50" stroke="#C0392B" stroke-width="2.5"/>'
-      +'<circle cx="160" cy="50" r="9" fill="#C0392B"/><text x="160" y="54" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">①</text>'
-      +'<line x1="60" y1="37" x2="60" y2="163" stroke="#C0392B" stroke-width="2.5"/>'
-      +'<circle cx="60" cy="163" r="9" fill="#C0392B"/><text x="60" y="167" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">②</text>'
-      +'</svg>',
-  },
-};
+function bagById(bag){ return BAGS.find(b=>b.bag===bag); }
 
-// state 声明放在这里(所有引用它的构造代码/事件处理函数之前)，避免顶层赋值在 const state 真正
-// 执行到之前就访问它触发暂时性死区(TDZ)报错——之前版本踩过这个坑，见交接文档。
-const state={photoDataUrl:null, photo2DataUrl:null, garmentType:null, edge1:null, edge2:null,
-  bag:null, bagName:null, style:null, freeform:'', creativeImgUrl:null, usedFallback:false,
-  aiGarmentType:null, aiMaterial:null, aiConfidence:null, aiIdentifying:false, aiIdentifyFailed:false,
-  userPickedGarmentType:false, imgHistory:[], selectedHistIdx:-1, projectId:null, projectCreatedAt:null};
-
-// ====== "我的改造"本地记录(IndexedDB) ======
-// 不依赖任何账号/服务器——纯粹存在用户这台设备的浏览器里，换设备/清缓存就看不到了，这一点在"我的"页面如实说明。
-// 用 IndexedDB 而不是 localStorage：这里要存完整分辨率的照片和生成图(base64 data URL，单条记录可能有几百KB到几MB)，
-// localStorage 单个来源通常只有 5~10MB 总容量上限，存不了几条就会写满；IndexedDB 没有这个量级限制，更适合这种场景。
-const ECO_DB_NAME='ecostitch', ECO_DB_VER=1, ECO_STORE='projects';
-function openProjectsDB(){
-  return new Promise((resolve,reject)=>{
-    const req=indexedDB.open(ECO_DB_NAME, ECO_DB_VER);
-    req.onupgradeneeded=()=>{ const db=req.result; if(!db.objectStoreNames.contains(ECO_STORE)) db.createObjectStore(ECO_STORE,{keyPath:'id'}); };
-    req.onsuccess=()=>resolve(req.result);
-    req.onerror=()=>reject(req.error);
+function renderFeed(){
+  const el = document.getElementById('feedList');
+  let html = '';
+  // 示例帖(照搬设计稿"社区流"那张真实截图，映射到真实的水桶包)
+  const followed = localStorage.getItem('ecostitch_demo_follow')==='1';
+  html += '<div class="feedcard">'
+    + '<div class="imgwrap" onclick="openDetail(\'demo\')"><img src="assets/demo-post-bag.jpg" alt="旧牛仔裤改的水桶包"></div>'
+    + '<div class="userrow"><div class="av" style="overflow:hidden;cursor:pointer" onclick="openProfile()"><img src="assets/demo-author-avatar.jpg" style="width:100%;height:100%;object-fit:cover"></div><div class="uinfo" style="cursor:pointer" onclick="openProfile()"><div class="uname">改造达人_Lin</div><div class="usub">340 粉丝 · 示例展示</div></div>'
+    + '<div class="followbtn'+(followed?' on':'')+'" onclick="toggleDemoFollow()">'+(followed?'已关注':'关注')+'</div></div>'
+    + '<div class="cap">旧牛仔裤改的水桶包，通勤刚好装下电脑～ 用了原来的后袋做装饰，超有味道</div>'
+    + '<div class="tagchip" onclick="openHowto(\'bucket\')">牛仔裤 → 水桶包</div>'
+    + '<div class="actrow">'
+      + '<span class="a'+(demoLiked?' liked':'')+'" onclick="toggleDemoLike(this)">'+(demoLiked?'<svg class="" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none" style="display:block"><path d="M12 20.3s-7.1-4.4-9.6-8.9C.7 8 2.2 4.5 5.7 3.9c2-.35 3.9.6 6.3 2.9 2.4-2.3 4.3-3.25 6.3-2.9 3.5.6 5 4.1 3.3 7.5-2.5 4.5-9.6 8.9-9.6 8.9z"/></svg>':'<svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.3s-7.1-4.4-9.6-8.9C.7 8 2.2 4.5 5.7 3.9c2-.35 3.9.6 6.3 2.9 2.4-2.3 4.3-3.25 6.3-2.9 3.5.6 5 4.1 3.3 7.5-2.5 4.5-9.6 8.9-9.6 8.9z"/></svg>')+' <span class="demoLikeNumTxt">'+demoLikeCount+'</span></span>'
+      + '<span class="a" onclick="notReady(\'评论\')"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21 12a8 8 0 0 1-8 8H7.3L3 23l.9-4.4A8 8 0 1 1 21 12z"/></svg> 24</span>'
+      + '<span class="a'+(isFav('bucket')?' saved':'')+'" onclick="toggleFav(\'bucket\')">'+(isFav('bucket')?'<svg class="" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none" style="display:block"><path d="M6.5 4h11a1 1 0 0 1 1 1v15l-6.5-4-6.5 4V5a1 1 0 0 1 1-1z"/></svg>':'<svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M6.5 4h11a1 1 0 0 1 1 1v15l-6.5-4-6.5 4V5a1 1 0 0 1 1-1z"/></svg>')+' <span>'+(isFav('bucket')?16:15)+'</span></span>'
+      + '<span class="a" onclick="notReady(\'分享\')" style="margin-left:auto"><svg class="" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21.5 2.5 10.8 13.2"/><path d="M21.5 2.5 14.8 21l-4-8-8-4z"/></svg> 分享</span>'
+    + '</div>'
+    + '<button class="ctabtn" onclick="openHowto(\'bucket\')">照着做同款</button>'
+    + '</div>';
+  // 13个真实模板库款式，同一套卡片视觉
+  BAGS.forEach((b,i)=>{
+    const n = demoNums(i);
+    const fav = isFav(b.bag);
+    html += '<div class="feedcard">'
+      + '<div class="imgwrap" onclick="openDetail(\'bag\',\''+b.bag+'\')"><div class="pill-tag">模板库参考</div><div class="tile">'+bagIcon(b.bag,60)+'</div></div>'
+      + '<div class="userrow"><div class="av"><svg class="" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4 15.5c3.2-4.2 8.3-6.3 12.6-3.2"/><circle cx="18.3" cy="7.3" r="2" /><path d="M16.8 5.8 5.5 17"/></svg></div><div class="uinfo"><div class="uname">EcoStitch 模板库</div><div class="usub">'+b.vf+' · 项目结构数据库</div></div></div>'
+      + '<div class="cap">'+b.nm+'：'+b.st+'</div>'
+      + '<div class="tagchip" onclick="openHowto(\''+b.bag+'\')">旧衣 → '+b.nm+'</div>'
+      + '<div class="actrow">'
+        + '<span class="a"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.3s-7.1-4.4-9.6-8.9C.7 8 2.2 4.5 5.7 3.9c2-.35 3.9.6 6.3 2.9 2.4-2.3 4.3-3.25 6.3-2.9 3.5.6 5 4.1 3.3 7.5-2.5 4.5-9.6 8.9-9.6 8.9z"/></svg> '+n.like+'</span>'
+        + '<span class="a" onclick="notReady(\'评论\')"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21 12a8 8 0 0 1-8 8H7.3L3 23l.9-4.4A8 8 0 1 1 21 12z"/></svg> '+n.cmt+'</span>'
+        + '<span class="a'+(fav?' saved':'')+'" onclick="toggleFav(\''+b.bag+'\')">'+(fav?'<svg class="" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none" style="display:block"><path d="M6.5 4h11a1 1 0 0 1 1 1v15l-6.5-4-6.5 4V5a1 1 0 0 1 1-1z"/></svg>':'<svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M6.5 4h11a1 1 0 0 1 1 1v15l-6.5-4-6.5 4V5a1 1 0 0 1 1-1z"/></svg>')+' '+(n.col+(fav?1:0))+'</span>'
+        + '<span class="a" onclick="notReady(\'分享\')" style="margin-left:auto"><svg class="" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21.5 2.5 10.8 13.2"/><path d="M21.5 2.5 14.8 21l-4-8-8-4z"/></svg> 分享</span>'
+      + '</div>'
+      + '<button class="ctabtn" onclick="openHowto(\''+b.bag+'\')">照着做同款</button>'
+      + '</div>';
   });
+  el.innerHTML = html;
 }
-async function dbPut(project){
-  const db=await openProjectsDB();
-  return new Promise((resolve,reject)=>{
-    const tx=db.transaction(ECO_STORE,'readwrite');
-    tx.objectStore(ECO_STORE).put(project);
-    tx.oncomplete=()=>resolve(); tx.onerror=()=>reject(tx.error);
-  });
+function toggleDemoFollow(){
+  const on = localStorage.getItem('ecostitch_demo_follow')==='1';
+  try{ localStorage.setItem('ecostitch_demo_follow', on?'0':'1'); }catch(e){}
+  if(currentView==='home') renderFeed();
+  else if(currentView==='detail') renderDetail();
+  else if(currentView==='profile') renderProfile();
 }
-async function dbGet(id){
-  const db=await openProjectsDB();
-  return new Promise((resolve,reject)=>{
-    const tx=db.transaction(ECO_STORE,'readonly');
-    const req=tx.objectStore(ECO_STORE).get(id);
-    req.onsuccess=()=>resolve(req.result||null); req.onerror=()=>reject(req.error);
-  });
+let demoLiked = false, demoLikeCount = 128;
+function toggleDemoLike(elA){
+  demoLiked = !demoLiked; demoLikeCount += demoLiked?1:-1;
+  elA.classList.toggle('liked', demoLiked);
+  const heartSvg = elA.querySelector('svg');
+  if(heartSvg) heartSvg.outerHTML = demoLiked ? iconFilled('heart',16) : icon('heart',16);
+  document.querySelectorAll('.demoLikeNumTxt').forEach(el=>el.textContent=demoLikeCount);
+  const profileLikesEl = document.getElementById('profileLikes');
+  if(profileLikesEl) profileLikesEl.textContent = demoLikeCount;
 }
-function garmentLabelOf(gid){
-  const g=GARMENT_TYPES.find(x=>x.id===gid);
-  return g?g.nm:'';
+function setHomeTab(k){
+  document.querySelectorAll('.hometabs .t').forEach(el=>el.classList.toggle('on', el.dataset.ht===k));
+  if(k!=='rec') notReady(k==='follow'?'关注流':'最新流');
 }
-// 记录/更新当前这次改造的进度——从⑤选包型之后每次切屏都调用一次，方便"我的改造"里看到"做到第几步"，
-// 也是"续做"能跳回正确位置的依据。选包型之前(还没决定做哪个包)不建立记录，避免产生大量"刚点开看了看"的空记录。
-async function upsertProject(statusOverride){
-  if(!state.bag) return;
-  if(!state.projectId){ state.projectId='p_'+Date.now()+'_'+Math.random().toString(36).slice(2,8); state.projectCreatedAt=Date.now(); }
-  const gLabel = garmentLabelOf(state.aiGarmentType||state.garmentType);
-  const title = (gLabel?gLabel+'→':'')+(state.bagName||'');
-  const project = {
-    id: state.projectId, title: title,
-    garmentType: state.aiGarmentType||state.garmentType, garmentTypeLabel: gLabel,
-    bag: state.bag, bagName: state.bagName, style: state.style, freeform: state.freeform,
-    edge1: state.edge1, edge2: state.edge2,
-    photoDataUrl: state.photoDataUrl, photo2DataUrl: state.photo2DataUrl,
-    creativeImgUrl: state.creativeImgUrl, imgHistory: state.imgHistory,
-    screen: cur,
-    status: statusOverride || 'in_progress',
-    createdAt: state.projectCreatedAt, updatedAt: Date.now(),
-  };
-  try{ await dbPut(project); }catch(e){ /* 本地存储写失败(比如隐私模式/存储已满)不影响主流程，静默跳过这次记录即可 */ }
-}
-// 从"我的改造"点"续做"跳转过来时(index.html?resume=xxx)，把存的进度读回来接着用。
-// 只恢复到两个经过验证、渲染逻辑纯粹依赖state、不依赖用户手动重新操作DOM控件的"安全落点"：
-// 已经生成过效果图的，直接回到屏⑧(renderResult()完全由state驱动)；只选到包型还没生成的，回到屏⑥确认理解重新确认。
-// 数据不够完整(比如包型都没选)的话，不勉强恢复，从头开始最不容易出错。
-async function tryResumeProject(){
-  const rid = new URLSearchParams(location.search).get('resume');
-  if(!rid) return;
-  let p; try{ p = await dbGet(rid); }catch(e){ return; }
-  if(!p) return;
-  Object.assign(state, {
-    photoDataUrl:p.photoDataUrl, photo2DataUrl:p.photo2DataUrl,
-    garmentType:p.garmentType, edge1:p.edge1, edge2:p.edge2,
-    bag:p.bag, bagName:p.bagName, style:p.style, freeform:p.freeform||'',
-    creativeImgUrl:p.creativeImgUrl, imgHistory:p.imgHistory||[], usedFallback:false,
-    selectedHistIdx:(p.imgHistory&&p.imgHistory.length)?p.imgHistory.length-1:-1,
-    projectId:p.id, projectCreatedAt:p.createdAt, userPickedGarmentType:true,
-  });
-  if(state.imgHistory && state.imgHistory.length){ renderResult(); showScreen(8); }
-  else if(state.bag){ renderSummary(); showScreen(6); }
-}
-let cur=1;
 
-const bagselEl=document.getElementById('bagsel');
-BAGS.forEach(b=>{
-  const d=document.createElement('div');
-  d.className='bagopt';
-  d.dataset.bag=b.bag;
-  d.innerHTML='<div class="nm">'+b.nm+'</div><div class="st">'+b.st+'</div><span class="vf'+(b.ref?' ref':'')+'">'+b.vf+'</span><span class="estbadge" id="estbadge-'+b.bag+'"></span>';
-  d.addEventListener('click',()=>{
-    document.querySelectorAll('.bagopt').forEach(x=>x.classList.remove('on'));
-    d.classList.add('on');
-    state.bag=b.bag; state.bagName=b.nm;
-    renderBagWarning();
-    updateMainBtn();
-  });
-  bagselEl.appendChild(d);
-});
+// ====== 搜索/发现 ======
+function renderTypeGrid(){
+  document.getElementById('typeGrid').innerHTML = BAGS.map(b=>
+    '<div class="tt" onclick="openHowto(\''+b.bag+'\')"><div class="ic">'+bagIcon(b.bag,26)+'</div><div class="nm">'+b.nm+'</div></div>'
+  ).join('');
+}
+function doSearch(){
+  const kw = document.getElementById('searchInput').value.trim();
+  if(!kw){ renderTypeGrid(); return; }
+  const hit = BAGS.filter(b=> (b.nm+b.st).includes(kw));
+  document.getElementById('typeGrid').innerHTML = hit.length ? hit.map(b=>
+    '<div class="tt" onclick="openHowto(\''+b.bag+'\')"><div class="ic">'+bagIcon(b.bag,26)+'</div><div class="nm">'+b.nm+'</div></div>'
+  ).join('') : '<div class="emptytip" style="grid-column:1/-1">没搜到匹配的款式，换个词试试</div>';
+}
 
-// "照着做"深链支持：从首页/发现点某个包型参考卡片跳转过来时(index.html?prefBag=xxx)，进到⑤选包型时
-// 直接预选好这个包型，用户依然可以点别的包型改掉，不锁死——和"AI识别/AI预选，人可以改"这一贯的设计原则一致。
-const __prefBag = new URLSearchParams(location.search).get('prefBag');
-if(__prefBag){
-  const __match = BAGS.find(b=>b.bag===__prefBag);
-  if(__match){
-    state.bag = __match.bag; state.bagName = __match.nm;
-    const __el = document.querySelector('.bagopt[data-bag="'+__match.bag+'"]');
-    if(__el) __el.classList.add('on');
+// ====== 怎么做同款(真实功能：适配我的旧衣→flow.html重新测量算纸样；直接用模板纸样→calculator.html用模板默认尺寸) ======
+let howtoBag = null, howtoFrom = 'home';
+function openHowto(bag){ howtoBag = bag; howtoFrom = currentView==='howto' ? howtoFrom : currentView; applyView('howto'); }
+function howtoGo(mode){
+  if(!howtoBag) return;
+  if(mode==='fit') location.href = 'flow.html?prefBag=' + encodeURIComponent(howtoBag);
+  else location.href = 'calculator.html?bag=' + encodeURIComponent(howtoBag);
+}
+
+// ====== 作品详情(12屏)：示例帖(照搬设计稿内容) 和 13个模板库款式(复用同一套卡片信息) 共用一套详情结构 ======
+let detailData = null, detailFrom = 'home';
+function openDetail(type, bag){
+  detailData = { type, bag };
+  detailFrom = (currentView==='detail') ? detailFrom : currentView;
+  applyView('detail');
+}
+function renderDetail(){
+  const el = document.getElementById('detailBody');
+  if(!detailData) return;
+  if(detailData.type==='demo'){
+    const followed = localStorage.getItem('ecostitch_demo_follow')==='1';
+    el.innerHTML = '<div class="feedcard" style="border-bottom:none;padding:0 18px 14px">'
+      + '<div class="detailimg"><img class="main" src="assets/demo-post-bag.jpg" alt="旧牛仔裤改的水桶包">'
+        + '<div class="beforewrap"><img src="assets/demo-post-before.jpg" alt="改造前"><span class="lbl">改造前</span></div></div>'
+      + '<div class="userrow"><div class="av" style="overflow:hidden;cursor:pointer" onclick="openProfile()"><img src="assets/demo-author-avatar.jpg" style="width:100%;height:100%;object-fit:cover"></div>'
+        + '<div class="uinfo" style="cursor:pointer" onclick="openProfile()"><div class="uname">改造达人_Lin</div><div class="usub">340 粉丝 · 示例展示</div></div>'
+        + '<div class="followbtn'+(followed?' on':'')+'" onclick="toggleDemoFollow()">'+(followed?'已关注':'关注')+'</div></div>'
+      + '<div class="cap">旧牛仔裤改的水桶包，通勤刚好装下电脑～ 用了原来的后袋做装饰，超有味道</div>'
+      + '<div class="tagchip" onclick="openHowto(\'bucket\')">牛仔裤 → 水桶包</div>'
+      + '<div class="actrow">'
+        + '<span class="a'+(demoLiked?' liked':'')+'" onclick="toggleDemoLike(this)">'+(demoLiked?'<svg class="" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none" style="display:block"><path d="M12 20.3s-7.1-4.4-9.6-8.9C.7 8 2.2 4.5 5.7 3.9c2-.35 3.9.6 6.3 2.9 2.4-2.3 4.3-3.25 6.3-2.9 3.5.6 5 4.1 3.3 7.5-2.5 4.5-9.6 8.9-9.6 8.9z"/></svg>':'<svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.3s-7.1-4.4-9.6-8.9C.7 8 2.2 4.5 5.7 3.9c2-.35 3.9.6 6.3 2.9 2.4-2.3 4.3-3.25 6.3-2.9 3.5.6 5 4.1 3.3 7.5-2.5 4.5-9.6 8.9-9.6 8.9z"/></svg>')+' <span class="demoLikeNumTxt">'+demoLikeCount+'</span></span>'
+        + '<span class="a" onclick="notReady(\'评论\')"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21 12a8 8 0 0 1-8 8H7.3L3 23l.9-4.4A8 8 0 1 1 21 12z"/></svg> 24</span>'
+        + '<span class="a'+(isFav('bucket')?' saved':'')+'" onclick="toggleFav(\'bucket\')">'+(isFav('bucket')?'<svg class="" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none" style="display:block"><path d="M6.5 4h11a1 1 0 0 1 1 1v15l-6.5-4-6.5 4V5a1 1 0 0 1 1-1z"/></svg>':'<svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M6.5 4h11a1 1 0 0 1 1 1v15l-6.5-4-6.5 4V5a1 1 0 0 1 1-1z"/></svg>')+' '+(isFav('bucket')?16:15)+'</span>'
+        + '<span class="a" onclick="notReady(\'分享\')" style="margin-left:auto"><svg class="" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21.5 2.5 10.8 13.2"/><path d="M21.5 2.5 14.8 21l-4-8-8-4z"/></svg> 分享</span>'
+      + '</div>'
+      + '<button class="ctabtn" onclick="openHowto(\'bucket\')">照着做同款</button>'
+      + '</div>';
+  } else {
+    const b = bagById(detailData.bag);
+    if(!b){ el.innerHTML=''; return; }
+    const n = demoNums(BAGS.indexOf(b));
+    const fav = isFav(b.bag);
+    el.innerHTML = '<div class="feedcard" style="border-bottom:none;padding:0 18px 14px">'
+      + '<div class="detailimg"><div class="pill-tag">模板库参考</div><div class="tile">'+bagIcon(b.bag,74)+'</div></div>'
+      + '<div class="userrow"><div class="av"><svg class="" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4 15.5c3.2-4.2 8.3-6.3 12.6-3.2"/><circle cx="18.3" cy="7.3" r="2" /><path d="M16.8 5.8 5.5 17"/></svg></div><div class="uinfo"><div class="uname">EcoStitch 模板库</div><div class="usub">'+b.vf+' · 项目结构数据库</div></div></div>'
+      + '<div class="cap">'+b.nm+'：'+b.st+'</div>'
+      + '<div class="tagchip" onclick="openHowto(\''+b.bag+'\')">旧衣 → '+b.nm+'</div>'
+      + '<div class="actrow">'
+        + '<span class="a"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.3s-7.1-4.4-9.6-8.9C.7 8 2.2 4.5 5.7 3.9c2-.35 3.9.6 6.3 2.9 2.4-2.3 4.3-3.25 6.3-2.9 3.5.6 5 4.1 3.3 7.5-2.5 4.5-9.6 8.9-9.6 8.9z"/></svg> '+n.like+'</span>'
+        + '<span class="a" onclick="notReady(\'评论\')"><svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21 12a8 8 0 0 1-8 8H7.3L3 23l.9-4.4A8 8 0 1 1 21 12z"/></svg> '+n.cmt+'</span>'
+        + '<span class="a'+(fav?' saved':'')+'" onclick="toggleFav(\''+b.bag+'\')">'+(fav?'<svg class="" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none" style="display:block"><path d="M6.5 4h11a1 1 0 0 1 1 1v15l-6.5-4-6.5 4V5a1 1 0 0 1 1-1z"/></svg>':'<svg class="" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M6.5 4h11a1 1 0 0 1 1 1v15l-6.5-4-6.5 4V5a1 1 0 0 1 1-1z"/></svg>')+' '+(n.col+(fav?1:0))+'</span>'
+        + '<span class="a" onclick="notReady(\'分享\')" style="margin-left:auto"><svg class="" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21.5 2.5 10.8 13.2"/><path d="M21.5 2.5 14.8 21l-4-8-8-4z"/></svg> 分享</span>'
+      + '</div>'
+      + '<button class="ctabtn" onclick="openHowto(\''+b.bag+'\')">照着做同款</button>'
+      + '</div>';
   }
 }
 
-// 风格选项（纯前端展示用，影响效果图 prompt 文案，不接入真实风格判断）
-const STYLES=['文艺','辣妹','机能','复古','简约','工装'];
-const styleChipsEl=document.getElementById('styleChips');
-STYLES.forEach((s,i)=>{
-  const c=document.createElement('span');
-  c.className='chip'+(i===0?' on':'');
-  c.textContent=s;
-  c.addEventListener('click',()=>{
-    document.querySelectorAll('#styleChips .chip').forEach(x=>x.classList.remove('on'));
-    c.classList.add('on');
-    state.style=s;
-  });
-  styleChipsEl.appendChild(c);
-});
-state.style=STYLES[0];
-
-// 拆解引导选项
-const gselEl=document.getElementById('gsel');
-GARMENT_TYPES.forEach(g=>{
-  const d=document.createElement('div');
-  d.className='gopt';
-  d.dataset.g=g.id;
-  d.textContent=g.nm;
-  d.addEventListener('click',()=>{
-    document.querySelectorAll('.gopt').forEach(x=>x.classList.remove('on'));
-    d.classList.add('on');
-    state.garmentType=g.id;
-    state.userPickedGarmentType=true; // 用户手动选过了，之后AI识别结果就不再自动覆盖这里
-    renderTips(g);
-    updateMainBtn();
-  });
-  gselEl.appendChild(d);
-});
-function renderTips(g){
-  document.getElementById('tipArea').innerHTML =
-    '<div class="tipcard"><div class="tt">🧵 '+g.nm+' 的拆解建议</div><ol>'
-    + g.tips.map(t=>'<li>'+t+'</li>').join('')
-    + '</ol></div>';
+// ====== 个人主页(24屏)：只有示例帖的示例作者"改造达人_Lin"能查看——项目没有真实多用户系统，其它作者不存在真实主页 ======
+let profileFrom = 'home', profileTab = 'works';
+function openProfile(){
+  profileFrom = (currentView==='profile') ? profileFrom : currentView;
+  applyView('profile');
 }
-
-// ====== AI 识别旧衣类型 + 材质（屏①上传照片后自动调用，结果用来预选屏②的类型，可手动改） ======
-const IDENTIFY_GARMENT_ENDPOINT = '/api/identify-garment'; // 部署时换成真实中转函数地址
-
-async function identifyGarment(photoDataUrl){
-  state.aiIdentifying=true;
-  state.aiIdentifyFailed=false;
-  renderAiIdentifyStatus();
-  try{
-    const resp = await fetch(IDENTIFY_GARMENT_ENDPOINT, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ photoDataUrl }),
-    });
-    if(!resp.ok) throw new Error('HTTP '+resp.status);
-    const data = await resp.json();
-    state.aiGarmentType = data.garmentType;
-    state.aiMaterial = data.material;
-    state.aiConfidence = data.confidence;
-  }catch(err){
-    state.aiGarmentType=null; state.aiMaterial=null; state.aiConfidence=null;
-    state.aiIdentifyFailed=true;
-  }
-  state.aiIdentifying=false;
-  // 只要用户还没有自己手动点过类型，就用AI识别结果预选一下（识别失败时这里 aiGarmentType 是 null，不会选）
-  if(!state.userPickedGarmentType && state.aiGarmentType){
-    const match = GARMENT_TYPES.find(x=>x.id===state.aiGarmentType);
-    if(match){
-      state.garmentType = match.id;
-      document.querySelectorAll('.gopt').forEach(x=>x.classList.toggle('on', x.dataset.g===match.id));
-      renderTips(match);
-      updateMainBtn();
-    }
-  }
-  renderAiIdentifyStatus();
+function renderProfile(){
+  const followed = localStorage.getItem('ecostitch_demo_follow')==='1';
+  const btn = document.getElementById('profileFollowBtn');
+  btn.className = 'followbtn2'+(followed?' on':'');
+  btn.textContent = followed?'已关注':'关注';
+  document.getElementById('profileLikes').textContent = demoLikeCount;
+  renderProfileGrid();
 }
-
-function renderAiIdentifyStatus(){
-  const el=document.getElementById('aiIdentifyStatus');
-  if(!el) return;
-  if(state.aiIdentifying){
-    el.innerHTML = '<div class="pill info"><span>🔍</span><span>AI 正在识别这件旧衣的类型和材质…</span></div>';
-  }else if(state.aiIdentifyFailed){
-    el.innerHTML = '<div class="pill info"><span>ℹ️</span><span>这次 AI 识别没有成功（可能是网络或服务暂时的问题），不影响继续使用——下面手动选一种旧衣类型就行。</span></div>';
-  }else if(state.aiGarmentType){
-    const nm = (GARMENT_TYPES.find(x=>x.id===state.aiGarmentType)||{}).nm || state.aiGarmentType;
-    el.innerHTML = '<div class="aicard"><div class="hd"><span class="lb">识别结果</span><span class="edit" onclick="showScreen(2)">✎ 编辑</span></div>'
-      + '<div class="rs">'+nm+' · '+state.aiMaterial+'</div></div>'
-      + '<div class="pill warn"><span>⚠️</span><span>识别不对？点上面"编辑"改一下'
-      + (state.aiConfidence==='low' ? '——这次识别把握不大，建议核对一下再继续' : '')
-      + '</span></div>';
-  }else{
-    el.innerHTML = '';
+function setProfileTab(k){
+  profileTab = k;
+  document.querySelectorAll('#profileTabs .ft').forEach(el=>el.classList.toggle('on', el.dataset.pt===k));
+  renderProfileGrid();
+}
+function renderProfileGrid(){
+  const grid = document.getElementById('profileGrid');
+  if(profileTab==='works'){
+    grid.innerHTML = '<div class="wt" onclick="openDetail(\'demo\')"><img src="assets/demo-post-bag.jpg"></div>';
+  } else if(profileTab==='sale'){
+    grid.innerHTML = '<div class="emptytip" style="grid-column:1/-1">这个版本没有真实的商城/在售系统</div>';
+  } else {
+    grid.innerHTML = '<div class="emptytip" style="grid-column:1/-1">这是示例账号，没有真实的收藏记录数据</div>';
   }
 }
 
-const SCREEN_ORDER=[1,2,3,4,5,6,7,8]; // 现在是纯线性流程，布料够不够在⑤选包型时就实时核对，不再需要单独的分支屏
-const titles={1:'上传旧衣',2:'拆解旧衣',3:'裁开后布料',4:'量两条边',5:'选方向',6:'确认理解',7:'生成中',8:'效果图'};
-
-function buildStepsBar(){
-  const bar=document.getElementById('stepsBar');
-  bar.innerHTML='';
-  SCREEN_ORDER.forEach(()=>{ const d=document.createElement('div'); bar.appendChild(d); });
+// ====== 消息(25屏)：root tab，"互动"是仿照设计稿的示例内容(如实标注)，"交易私信"和商城一起如实标注未做 ======
+let msgTab = 'interact';
+function setMsgTab(k){
+  msgTab = k;
+  document.querySelectorAll('#msgTabs .ft').forEach(el=>el.classList.toggle('on', el.dataset.mt===k));
+  renderMsgBody();
 }
-buildStepsBar();
-
-function updateMainBtn(){
-  if(cur===1){
-    resetFoot();
-    const btn=document.getElementById('mainBtn');
-    btn.textContent='下一步'; btn.disabled=!state.photoDataUrl;
-  }
-  else if(cur===2){
-    resetFootDual('已是平整布料，跳过','拆好了，下一步', ()=>{ state.garmentType='flat'; showScreen(3); }, ()=>{ if(state.garmentType) showScreen(3); });
-  }
-  else if(cur===3){
-    resetFoot();
-    const btn=document.getElementById('mainBtn');
-    btn.textContent='下一步'; btn.disabled=!state.photo2DataUrl;
-  }
-  else if(cur===4){
-    resetFoot();
-    const btn=document.getElementById('mainBtn');
-    btn.textContent='下一步：选包型'; btn.disabled=!(state.edge1>0 && state.edge2>0);
-  }
-  else if(cur===5){
-    resetFoot();
-    const btn=document.getElementById('mainBtn');
-    btn.textContent='确认改造方向'; btn.disabled=!state.bag;
-  }
-  else if(cur===6){
-    resetFootDual('改一下','就这样生成', ()=>showScreen(5), ()=>{ showScreen(7); startGenerate(); });
-  }
-  else if(cur===7){ document.getElementById('footArea').innerHTML=''; }
-  else if(cur===8){
-    // 照搬高保真06屏"选方案"的footer：只留一个主按钮，"重新生成"挪到内容区(见histSec里的regenbtn)
-    resetFoot();
-    document.getElementById('mainBtn').textContent='开始制作 → 生成纸样';
-    document.getElementById('mainBtn').onclick=()=>goToCalculator();
-  }
-}
-
-function resetFoot(){
-  const foot=document.getElementById('footArea');
-  foot.innerHTML='<button class="btn" id="mainBtn" onclick="nextScreen()">下一步</button>';
-}
-function resetFootDual(leftText,rightText,leftFn,rightFn){
-  const foot=document.getElementById('footArea');
-  foot.innerHTML='<div class="row2"><button class="btn sec2" id="leftBtn">'+leftText+'</button>'
-    +'<button class="btn wide" id="rightBtn">'+rightText+'</button></div>';
-  document.getElementById('leftBtn').addEventListener('click',leftFn);
-  document.getElementById('rightBtn').addEventListener('click',rightFn);
-  // screen2的"拆好了"按钮要在未选类型时禁用
-  if(cur===2){
-    document.getElementById('rightBtn').disabled=!state.garmentType;
-    document.getElementById('rightBtn').style.opacity=state.garmentType?1:.4;
-    document.getElementById('rightBtn').style.pointerEvents=state.garmentType?'auto':'none';
-  }
-}
-
-function showScreen(n){
-  cur=n;
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
-  document.getElementById('screen'+n).classList.add('on');
-  document.getElementById('screenTitle').textContent=titles[n];
-  const idx=SCREEN_ORDER.indexOf(n);
-  document.querySelectorAll('#stepsBar div').forEach((d,i)=>d.classList.toggle('on', idx>=0 && i<=idx));
-  if(n===4){ renderDiagram(); }
-  if(n===5){ refreshBagBadges(); renderBagWarning(); }
-  updateMainBtn();
-  upsertProject(); // 选了包型之后的每次切屏都顺手记一次进度，供"我的改造"续做用；没选包型时函数内部直接跳过
-}
-
-function prevScreen(){
-  if(cur===1){ location.href='home.html'; return; } // 屏①的"返回"回到首页(2026-09-02新增首页后，这里不再是死路)
-  if(cur===7) return; // 生成中不可返回
-  const idx=SCREEN_ORDER.indexOf(cur);
-  if(idx>0) showScreen(SCREEN_ORDER[idx-1]);
-}
-
-document.getElementById('fileInput').addEventListener('change', e=>{
-  const f=e.target.files[0];
-  if(!f) return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    state.photoDataUrl=ev.target.result;
-    const img=document.getElementById('upPreview');
-    img.src=state.photoDataUrl;
-    img.style.display='block';
-    document.getElementById('upbox').classList.add('has-img');
-    updateMainBtn();
-    // 换了张新照片，之前那次识别结果作废，重新识别一次
-    state.aiGarmentType=null; state.aiMaterial=null; state.aiConfidence=null;
-    state.aiIdentifyFailed=false; state.userPickedGarmentType=false;
-    identifyGarment(state.photoDataUrl);
-  };
-  reader.readAsDataURL(f);
-});
-
-document.getElementById('fileInput2').addEventListener('change', e=>{
-  const f=e.target.files[0];
-  if(!f) return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    state.photo2DataUrl=ev.target.result;
-    const img=document.getElementById('upPreview2');
-    img.src=state.photo2DataUrl;
-    img.style.display='block';
-    document.getElementById('upbox2').classList.add('has-img');
-    // 屏4会原样再展示一次这张照片(不叠线，仅供用户自己核对参考)
-    document.getElementById('measPhotoPreview').src=state.photo2DataUrl;
-    updateMainBtn();
-  };
-  reader.readAsDataURL(f);
-});
-
-// ====== 屏4：按旧衣类型渲染量边示意图 + 量两条边 ======
-function renderDiagram(){
-  const g=GARMENT_DIAGRAMS[state.garmentType] || GARMENT_DIAGRAMS.flat;
-  document.getElementById('diagramArea').innerHTML=g.svg;
-  document.getElementById('diagramCaption').textContent=
-    '这是"'+(GARMENT_TYPES.find(x=>x.id===state.garmentType)||{nm:'平整布料'}).nm+'"这类衣物拆开摊平后通常量的两条边示意图（不是从你的照片里识别出来的，是按这类衣物的真实结构画的参考图）——请对照你自己摊平的这块布料，量出对应的两条边：①'+g.edge1+'，②'+g.edge2+'，填在下面。';
-  document.getElementById('edge1Label').textContent=g.edge1+'（cm）';
-  document.getElementById('edge2Label').textContent=g.edge2+'（cm）';
-}
-
-function readEdges(){
-  state.edge1=parseFloat(document.getElementById('edge1Input').value)||null;
-  state.edge2=parseFloat(document.getElementById('edge2Input').value)||null;
-  const fb=document.getElementById('edgeFeedback');
-  if(state.edge1>0 && state.edge2>0){
-    const area=Math.round(state.edge1*state.edge2);
-    const okCount=BAGS.filter(b=>{ const c=sufficiencyFor(b.bag,state.edge1,state.edge2); return c&&c.sufficient; }).length;
-    fb.innerHTML='<div class="pill '+(okCount>0?'ok':'warn')+'"><span>'+(okCount>0?'✅':'⚠️')+'</span>'
-      +'<span>这块布料大约 '+area+' cm²，13个包型里有 <b>'+okCount+'</b> 个够用（下一步选包型时每个都会标出来）。</span></div>';
-  }else{
-    fb.innerHTML='';
-  }
-  updateMainBtn();
-}
-document.getElementById('edge1Input').addEventListener('input', readEdges);
-document.getElementById('edge2Input').addEventListener('input', readEdges);
-
-// 给屏5的包型卡片按真实测量的两条边标"够用/不够用"——这是真实核对（用sufficiencyFor两条真实标准算出），
-// 不是预估，所以不用"预估"这两个字
-function refreshBagBadges(){
-  BAGS.forEach(b=>{
-    const badge=document.getElementById('estbadge-'+b.bag);
-    if(!badge) return;
-    const chk=sufficiencyFor(b.bag, state.edge1, state.edge2);
-    if(!chk){ badge.textContent=''; badge.className='estbadge'; return; }
-    if(chk.sufficient){ badge.textContent='够用'; badge.className='estbadge good'; }
-    else{ badge.textContent='不够用'; badge.className='estbadge tight'; }
-  });
-}
-
-// 选中的包型如果布料不够，在网格下面显示具体原因 + 最多3个够用的替代包型（可以直接点着换选）
-function renderBagWarning(){
-  const el=document.getElementById('bagWarnArea');
-  if(!state.bag){ el.innerHTML=''; return; }
-  const chk=sufficiencyFor(state.bag, state.edge1, state.edge2);
-  if(!chk || chk.sufficient){ el.innerHTML=''; return; }
-  let reason;
-  if(!chk.fitsPiece){
-    reason='「'+state.bagName+'」最大的一块裁片（'+chk.maxName+'）需要 '+chk.needPiece[1].toFixed(1)+'×'+chk.needPiece[0].toFixed(1)+'cm 才能放下，你量到的两条边是 '+state.edge1+'×'+state.edge2+'cm，换个方向摆也放不下这块裁片。';
-  }else{
-    reason='「'+state.bagName+'」全部裁片加起来大概需要 '+Math.round(chk.needArea)+'cm²左右的总用料（已包含约30%排布损耗），你这块布大约 '+Math.round(chk.measuredArea)+'cm²，差了点。';
-  }
-  const alts=BAGS
-    .filter(b=>b.bag!==state.bag)
-    .map(b=>({b, c:sufficiencyFor(b.bag, state.edge1, state.edge2)}))
-    .filter(x=>x.c && x.c.sufficient)
-    .sort((x,y)=>REQUIRED[y.b.bag].total-REQUIRED[x.b.bag].total) // 从"最接近够用"到"最省布"
-    .slice(0,3);
-  let html='<div class="pill warn"><span>⚠️</span><span>'+reason+' 也可以不换，就按这个选——只是实际裁的时候会更紧张。</span></div>';
-  if(alts.length>0){
-    html+='<div class="sec" style="margin-top:12px">这些包型你这块布够用 ↓</div><div id="altListInline"></div>';
-  }
-  el.innerHTML=html;
-  if(alts.length>0){
-    const listEl=document.getElementById('altListInline');
-    alts.forEach(({b})=>{
-      const d=document.createElement('div');
-      d.className='altcard';
-      d.innerHTML='<div><div class="nm">'+b.nm+'</div><div class="st">'+b.st+'</div></div>'
-        +'<div class="need">总用料约<br>'+Math.round(REQUIRED[b.bag].total*1.3)+'cm²</div>';
-      d.addEventListener('click',()=>{
-        state.bag=b.bag; state.bagName=b.nm;
-        document.querySelectorAll('.bagopt').forEach(x=>x.classList.toggle('on', x.dataset.bag===b.bag));
-        renderBagWarning();
-        updateMainBtn();
-      });
-      listEl.appendChild(d);
-    });
-  }
-}
-
-function nextScreen(){
-  if(cur===1){ showScreen(2); }
-  else if(cur===3){ showScreen(4); }
-  else if(cur===4){ showScreen(5); }
-  else if(cur===5){
-    state.freeform=document.getElementById('freeform').value.trim();
-    renderSummary();
-    showScreen(6);
-  }
-}
-
-// ====== 屏6：确认理解 ======
-function renderSummary(){
-  const detailLine = state.freeform ? state.freeform : '（未填写，按包型默认结构生成）';
-  document.getElementById('sumCard').innerHTML =
-    '<div class="sumrow"><span class="ic">🧺</span><span>结构：<b>'+state.bagName+'</b></span></div>'
-    +'<div class="sumrow"><span class="ic">🎨</span><span>风格：<b>'+state.style+'</b></span></div>'
-    +'<div class="sumrow"><span class="ic">✨</span><span>细节：'+detailLine+'</span></div>';
-}
-
-// ====== 屏7：生成效果图 ======
-const CREATIVE_IMAGE_ENDPOINT = '/api/generate-creative-image'; // 部署时换成真实中转函数地址
-
-async function callCreativeImageAPI(photoDataUrl, bagName, style, freeform){
-  const resp = await fetch(CREATIVE_IMAGE_ENDPOINT, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      photoDataUrl: photoDataUrl,
-      bagName: bagName,
-      // 关键约束：提示词里必须明确限定"只能是这个已知包型的结构"，不能让模型自由发挥形状——
-      // 这样生成的效果图才能直接对应模板库里已验证的真实纸样。这次改用裁开摊平后的真实布料照片
-      // (state.photo2DataUrl)作为生成底图，而不是完整旧衣的照片，效果图里的面料/颜色/纹理更贴近
-      // 实际能做出来的样子。风格/细节是真实用户输入，一起拼进prompt。
-      prompt: '将这张照片里这块摊平的旧衣布料，改造成一个'+bagName+'。这张效果图必须让人一眼认出用的就是照片里这同一块布料——整个包身用到的每一块裁片，颜色深浅、水洗纹理、磨白/褪色的位置都必须和照片里这块布料完全一致，不能凭空发明照片里没有出现过的新颜色或新材质（比如照片是浅蓝牛仔布，就不能凭空生成深蓝、黑色或别的材质的拼接块）。允许做拼接/分区设计（比如利用这块布料本身深浅不均的水洗渐变、口袋/贴布等原有细节做出层次），但拼接用的必须是同一块布料本身真实存在的颜色和纹理，不是模型自己编出来的新色块。包型结构比例保持这个包型本身已知的样子不变，整体风格：'+style+'。'
-        + (freeform ? ('额外要求：'+freeform+'。') : '')
-        + '产品摄影风格，白底，效果要像这块真实布料被实际裁剪缝制成了这个包之后拍的照片，不是重新设计的插画或效果图。',
-    }),
-  });
-  if(!resp.ok) throw new Error('HTTP '+resp.status);
-  const data = await resp.json();
-  return data.imageDataUrl; // 中转函数返回 base64 图片
-}
-
-async function startGenerate(){
-  document.getElementById('loadingText').textContent='正在为你设计'+(state.bagName||'')+'…';
-  try{
-    const url = await callCreativeImageAPI(state.photo2DataUrl, state.bagName, state.style, state.freeform);
-    state.creativeImgUrl = url;
-    state.usedFallback = false;
-    // 每次成功生成都存进历史记录，方便用户后面点回之前某一张——不去重，
-    // 因为同样的图也可能是用户想比较的两次不同结果(哪怕看起来像,后端每次生成本身就有随机性)。
-    state.imgHistory.push({url:url, ts:Date.now()});
-    // 历史记录只是"回看/切换"用的，不需要无限增长——这里是纯前端内存里的 data URL 数组，
-    // 张数多了会很占内存，超过20张就把最老的丢掉(不影响已经在屏幕上看到过的最近生成)。
-    if(state.imgHistory.length>20){ state.imgHistory.splice(0, state.imgHistory.length-20); }
-    state.selectedHistIdx = state.imgHistory.length-1;
-  }catch(err){
-    await new Promise(r=>setTimeout(r,900));
-    state.creativeImgUrl = null;
-    state.usedFallback = true;
-  }
-  renderResult();
-  showScreen(8);
-}
-
-function renderResult(){
-  const card=document.getElementById('resultImgCard');
-  const note=document.getElementById('fallbackNote');
-  const noteText=document.getElementById('fallbackText');
-  if(state.creativeImgUrl){
-    card.innerHTML='<img src="'+state.creativeImgUrl+'">';
-    note.style.display='none';
-  }else{
-    card.innerHTML='<div class="placeholder"><div class="big">🧵 '+state.bagName+'</div>'
-      +'<div>效果图占位 · 真实 AI 生成图将显示在这里</div></div>';
-    note.style.display='flex';
-    noteText.textContent='这一步需要一个真实的后端中转服务来调用 Gemini 生成图片（key 出于安全考虑不能放进这份前端文件，只能放在服务端）——这份 MVP 演示文件本身没有部署那个后端，所以这里用占位图代替，不是没写完。正式部署、服务端配好中转服务后，这一步会显示真实生成的效果图。';
-  }
-  document.getElementById('pieceNote').textContent='布料够不够裁「'+state.bagName+'」在选包型那一步已经按你实测的两条边核对过了，这里满意的话就可以直接开始制作——跳转到已验证的纸样计算器，直接预选好这个包型，拿到真实、可1:1打印裁剪的纸样。';
-  renderHistoryGrid();
-}
-
-// 生成历史缩略图网格：每行4张，点哪张就把哪张切回上面的主图区域(不重新调API，纯前端切换)，
-// 方便用户"生成了好几次，发现还是前面某一张更满意"的时候直接用那张继续制作，不用再重新生成。
-function renderHistoryGrid(){
-  const sec=document.getElementById('histSec');
-  const grid=document.getElementById('histGrid');
-  const regenTxt=document.getElementById('regenBtnTxt');
-  if(!state.imgHistory.length){
-    sec.style.display='none'; grid.innerHTML='';
-    if(regenTxt) regenTxt.textContent='重新生成一次';
+function renderMsgBody(){
+  const el = document.getElementById('msgBody');
+  if(msgTab==='trade'){
+    el.innerHTML = '<div class="emptytip">这个版本没有真实的商城/交易系统，"交易私信"和商城一起暂未开放，等以后接了真实交易功能再一起做</div>';
     return;
   }
-  sec.style.display='block';
-  if(regenTxt) regenTxt.textContent='都不满意，重新生成';
-  // 照搬06屏"方案1/方案2..."的卡片视觉，编号按真实生成顺序来(第几次成功生成就是"方案几")，不是并发的4个候选
-  grid.innerHTML = state.imgHistory.map((h,i)=>{
-    const sel = (!state.usedFallback && i===state.selectedHistIdx);
-    return '<div class="plancard'+(sel?' sel':'')+'" onclick="selectHistoryImage('+i+')">'
-      +'<span class="tag">方案'+(i+1)+(sel?'✓':'')+'</span>'
-      +'<img src="'+h.url+'">'
-      +'</div>';
+  el.innerHTML = '<div class="pill info" style="margin-top:14px"><span><svg class="inline-ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.3"/><circle cx="12" cy="8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span>下面这组互动通知是仿照设计稿展示效果的示例内容——项目没有真实的多用户后端，不存在别的真实用户来点赞/评论/关注你，不是真实通知。</span></div>'
+    + '<div class="msgrow" onclick="notReady(\'互动详情\')"><div class="mav"><svg class="" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.3s-7.1-4.4-9.6-8.9C.7 8 2.2 4.5 5.7 3.9c2-.35 3.9.6 6.3 2.9 2.4-2.3 4.3-3.25 6.3-2.9 3.5.6 5 4.1 3.3 7.5-2.5 4.5-9.6 8.9-9.6 8.9z"/></svg></div><div class="mtx"><div class="t1">赞和收藏</div><div class="t2">12 个新互动</div></div></div>'
+    + '<div class="msgrow" onclick="notReady(\'关注详情\')"><div class="mav"><svg class="" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><circle cx="9" cy="8.3" r="3.2"/><path d="M2.3 20a6.7 6.7 0 0 1 13.4 0"/><path d="M18 7.5v6M15 10.5h6"/></svg></div><div class="mtx"><div class="t1">新增关注</div><div class="t2">3 人关注了你</div></div></div>'
+    + '<div class="msgrow" onclick="notReady(\'私信\')"><div class="mav"><svg class="" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><circle cx="12" cy="8.3" r="3.5"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></div><div class="mtx"><div class="t1">@手作阿May</div><div class="t2">评论了你：这个太实用了！</div></div></div>'
+    + '<div class="msgrow" onclick="notReady(\'私信\')"><div class="mav"><svg class="" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><circle cx="12" cy="8.3" r="3.5"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></div><div class="mtx"><div class="t1">@旧物新生</div><div class="t2">收藏了你的水桶包</div></div></div>'
+    + '<div class="msgrow" onclick="notReady(\'系统通知详情\')"><div class="mav"><svg class="" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 3a5 5 0 0 0-5 5v3.3c0 1-.4 2-1.1 2.7L4.5 16h15l-1.4-2c-.7-.7-1.1-1.7-1.1-2.7V8a5 5 0 0 0-5-5z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg></div><div class="mtx"><div class="t1">系统通知</div><div class="t2">你的作品被推荐到首页</div></div></div>';
+}
+
+// ====== 我的改造 ======
+let pjFilterStatus = 'all';
+const STATUS_LABEL = {in_progress:'制作中', done:'已生成纸样', archived:'已归档'};
+function fmtTime(ts){
+  const d = new Date(ts), now = new Date();
+  const sameDay = d.toDateString()===now.toDateString();
+  const pad = n=>String(n).padStart(2,'0');
+  if(sameDay) return '今天 '+pad(d.getHours())+':'+pad(d.getMinutes());
+  return (d.getMonth()+1)+'月'+d.getDate()+'日';
+}
+async function renderProjects(){
+  const filterEl = document.getElementById('pjFilter');
+  const filters = [['all','全部'],['in_progress','进行中'],['done','已完成'],['archived','已归档']];
+  filterEl.innerHTML = filters.map(([k,l])=>'<div class="ft'+(pjFilterStatus===k?' on':'')+'" onclick="setPjFilter(\''+k+'\')">'+l+'</div>').join('');
+
+  let all = [];
+  try{ all = await dbGetAll(); }catch(e){ all = []; }
+  all.sort((a,b)=>b.updatedAt-a.updatedAt);
+  const shown = pjFilterStatus==='all' ? all : all.filter(p=>p.status===pjFilterStatus);
+
+  const listEl = document.getElementById('pjList');
+  if(!shown.length){
+    listEl.innerHTML = '<div class="emptytip">'+(all.length? '这个分类下还没有记录' : '还没有改造记录——点右下角<svg class="inline-ic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.2" cy="6.5" r="2.2"/><circle cx="6.2" cy="17.5" r="2.2"/><path d="M8 8 20 19M8 16 20 5"/></svg>开始第一次改造，选好包型之后这里就会自动出现记录')+'</div>';
+    return;
+  }
+  listEl.innerHTML = shown.map(p=>{
+    const thumb = p.creativeImgUrl ? '<img src="'+p.creativeImgUrl+'">' : (p.photo2DataUrl ? '<img src="'+p.photo2DataUrl+'">' : '<svg class="" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><circle cx="6.2" cy="6.5" r="2.2"/><circle cx="6.2" cy="17.5" r="2.2"/><path d="M8 8 20 19M8 16 20 5"/></svg>');
+    const acts = [];
+    if(p.status!=='archived'){ acts.push('<div class="actbtn" onclick="resumeProject(\''+p.id+'\')">'+(p.status==='done'?'查看':'续做')+'</div>'); }
+    else { acts.push('<div class="actbtn" onclick="toggleArchive(\''+p.id+'\')">恢复</div>'); }
+    if(p.status!=='archived'){ acts.push('<div class="actbtn2" onclick="toggleArchive(\''+p.id+'\')">归档</div>'); }
+    acts.push('<div class="actbtn2" onclick="removeProject(\''+p.id+'\')">删除</div>');
+    return '<div class="pjcard">'
+      + '<div class="thumb">'+thumb+'</div>'
+      + '<div class="info"><div class="ttl">'+(p.title||p.bagName||'改造项目')+'</div>'
+      + '<div class="meta"><span class="dot '+p.status+'"></span>'+(STATUS_LABEL[p.status]||p.status)+' · '+fmtTime(p.updatedAt)+'</div></div>'
+      + '<div class="acts">'+acts.join('')+'</div>'
+      + '</div>';
   }).join('');
 }
-
-function selectHistoryImage(idx){
-  const h = state.imgHistory[idx];
-  if(!h) return;
-  state.creativeImgUrl = h.url;
-  state.usedFallback = false;
-  state.selectedHistIdx = idx;
-  renderResult();
+function setPjFilter(k){ pjFilterStatus=k; renderProjects(); }
+function resumeProject(id){ location.href = 'flow.html?resume=' + encodeURIComponent(id); }
+async function toggleArchive(id){
+  const all = await dbGetAll();
+  const p = all.find(x=>x.id===id);
+  if(!p) return;
+  p.status = p.status==='archived' ? 'in_progress' : 'archived';
+  p.updatedAt = Date.now();
+  await dbPut(p);
+  renderProjects();
+  if(document.getElementById('tab-me').classList.contains('on')) renderMeHead();
+  showToast(p.status==='archived' ? '已归档' : '已取消归档');
+}
+async function removeProject(id){
+  await dbDelete(id);
+  renderProjects();
+  if(document.getElementById('tab-me').classList.contains('on')) renderMeHead();
+  showToast('已删除');
 }
 
-async function goToCalculator(){
-  // 跳走之前先把这次记录标成"已生成纸样"，"我的改造"列表里能看到这条完成了(不是真的"缝完了"，
-  // 是"已经拿到真实纸样"这个更早、更确定的完成节点——真正缝没缝完这台设备上没法知道，不装作知道)
-  await upsertProject('done');
-  // 同目录、纯英文文件名的计算器副本，不依赖任何中文路径能否被正确解压/识别
-  location.href = 'calculator.html?bag=' + encodeURIComponent(state.bag);
+// ====== 我的 ======
+function getNickname(){ try{ return localStorage.getItem('ecostitch_nickname') || '改造达人'; }catch(e){ return '改造达人'; } }
+function editNickname(){
+  const cur = getNickname();
+  const next = prompt('怎么称呼你？(只保存在这台设备本地)', cur==='改造达人'?'':cur);
+  if(next===null) return;
+  const v = next.trim() || '改造达人';
+  try{ localStorage.setItem('ecostitch_nickname', v); }catch(e){}
+  renderMeHead();
+}
+let meWorksTab = 'works';
+function setMeWorksTab(k){ meWorksTab=k; document.querySelectorAll('#meWorksTab .ft').forEach(el=>el.classList.toggle('on', el.dataset.mt===k)); renderMeWorks(); }
+async function renderMeHead(){
+  document.getElementById('meNickname').innerHTML = getNickname()+' <span class="edit" onclick="editNickname()">改称呼</span>';
+  let all = [];
+  try{ all = await dbGetAll(); }catch(e){ all = []; }
+  const total = all.length;
+  document.getElementById('meSub').textContent = total+' 作品 · 340 粉丝(示例数字)';
+  window._meProjectsCache = all;
+}
+async function renderMeWorks(){
+  const all = window._meProjectsCache || (window._meProjectsCache = await dbGetAll().catch(()=>[]));
+  const grid = document.getElementById('meWorksGrid');
+  if(meWorksTab==='works'){
+    const done = all.filter(p=>p.creativeImgUrl);
+    if(!done.length){ grid.innerHTML = '<div class="emptytip" style="grid-column:1/-1">还没有生成过效果图的作品——去首页选一个款式"照着做"吧</div>'; return; }
+    grid.innerHTML = done.map(p=>'<div class="wt" onclick="resumeProject(\''+p.id+'\')"><img src="'+p.creativeImgUrl+'"></div>').join('');
+  } else {
+    const favs = getFavs();
+    if(!favs.length){ grid.innerHTML = '<div class="emptytip" style="grid-column:1/-1">还没有收藏——在首页信息流卡片右下角点<svg class="inline-ic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 4h11a1 1 0 0 1 1 1v15l-6.5-4-6.5 4V5a1 1 0 0 1 1-1z"/></svg>收藏喜欢的款式</div>'; return; }
+    grid.innerHTML = favs.map(bag=>{ const b=bagById(bag); if(!b) return ''; return '<div class="wt" onclick="openHowto(\''+bag+'\')">'+bagIcon(b.bag,26)+'</div>'; }).join('');
+  }
 }
 
-// 初始化：显式走一遍 showScreen(1)，保证步骤条高亮、footer按钮状态和屏幕标题从一开始就正确，
-// 不依赖静态HTML里"screen1 on"这个初始class巧合对上。
-showScreen(1);
-// 如果是从"我的改造"点"续做"跳转过来的(带 ?resume=xxx)，这里会异步把进度读回来、跳到正确的屏——
-// 放在 showScreen(1) 之后调用，即使读取失败/没有resume参数，也已经有一个正确的默认屏可看，不会卡在空白页。
-tryResumeProject();
+// ====== 视图管理：root tab(首页/我的) + pushed 页面(我的改造/搜索/怎么做同款) ======
+let currentView = 'home';
+function applyView(v){
+  currentView = v;
+  const isPush = (v==='projects' || v==='search' || v==='howto' || v==='detail' || v==='profile');
+  document.getElementById('gnav').style.display = isPush ? 'none' : 'flex';
+  document.getElementById('pushhead').classList.toggle('on', isPush);
+  document.getElementById('hometabs').style.display = (v==='home') ? 'flex' : 'none';
+  document.getElementById('methead').style.display = (v==='me') ? 'flex' : 'none';
+  document.getElementById('msghead').style.display = (v==='messages') ? 'flex' : 'none';
+  document.querySelectorAll('.tabpane').forEach(el=>el.classList.remove('on'));
+  document.querySelectorAll('.overlay').forEach(el=>el.classList.remove('on'));
+  document.querySelectorAll('.botnav .item[data-tab]').forEach(el=>el.classList.toggle('on', el.dataset.tab===(v==='projects'?'me':v)));
+
+  if(v==='home'){ document.getElementById('tab-home').classList.add('on'); renderFeed(); }
+  else if(v==='me'){ document.getElementById('tab-me').classList.add('on'); renderMeHead().then(renderMeWorks); }
+  else if(v==='messages'){ document.getElementById('tab-messages').classList.add('on'); renderMsgBody(); }
+  else if(v==='projects'){ document.getElementById('tab-projects').classList.add('on'); document.getElementById('pushTitle').textContent='我的改造'; renderProjects(); }
+  else if(v==='search'){ document.getElementById('ov-search').classList.add('on'); document.getElementById('pushTitle').textContent='搜索 / 发现'; renderTypeGrid(); document.getElementById('searchInput').value=''; }
+  else if(v==='howto'){ document.getElementById('ov-howto').classList.add('on'); document.getElementById('pushTitle').textContent='怎么做同款'; }
+  else if(v==='detail'){ document.getElementById('ov-detail').classList.add('on'); document.getElementById('pushTitle').textContent=(detailData&&detailData.type==='demo')?'作品详情':'模板详情'; renderDetail(); }
+  else if(v==='profile'){ document.getElementById('ov-profile').classList.add('on'); document.getElementById('pushTitle').textContent='个人主页'; renderProfile(); }
+}
+function goBackPush(){
+  if(currentView==='howto') applyView(howtoFrom||'home');
+  else if(currentView==='projects') applyView('me');
+  else if(currentView==='detail') applyView(detailFrom||'home');
+  else if(currentView==='profile') applyView(profileFrom||'home');
+  else applyView('home');
+}
+// showTab(t) 保留作为对外的兼容入口(底部导航/旧调用都走这个)
+function showTab(t){ if(t==='projects') howtoFrom='me'; applyView(t); }
+
+let toastTimer=null;
+function showToast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('on'), 1600);
+}
+function notReady(name){ showToast(name+'这个版本还没做'); }
+
+// ====== 改造小助手(浮动入口+提示气泡+聊天) ======
+const AI_ASSISTANT_ENDPOINT = '/api/assistant-chat';
+let aiwHistory = [];
+let aiwOpened = false;
+function aiwContext(){ return { stepLabel: '正在看首页' }; }
+function aiwGreeting(){ return '你好~我能解答改造、缝纫和用法问题，有什么想问的都可以说～'; }
+function aiwQuickChips(){
+  return '<div class="aiw-quickrow">'
+    + '<div class="aiw-quickchip" onclick="document.getElementById(\'aiwInput\').focus()">我还有别的问题</div>'
+    + '<div class="aiw-quickchip" onclick="aiwClose()">先不问了</div>'
+    + '</div>';
+}
+function aiwRenderMsgs(){
+  const box = document.getElementById('aiwMsgs');
+  let html = aiwHistory.map(h=>{
+    const cls = h.role==='user' ? 'me' : (h.role==='err' ? 'bot err' : 'bot');
+    return '<div class="aiw-bub '+cls+'">'+String(h.text).replace(/</g,'&lt;')+'</div>';
+  }).join('');
+  const last = aiwHistory[aiwHistory.length-1];
+  if(last && last.role==='model' && !last._typing) html += aiwQuickChips();
+  box.innerHTML = html;
+  box.scrollTop = box.scrollHeight;
+}
+function aiwOpen(){
+  document.getElementById('aiwPanel').classList.add('on');
+  document.getElementById('aiwTip').classList.remove('on');
+  if(!aiwOpened){ aiwOpened=true; aiwHistory.push({role:'model', text: aiwGreeting()}); aiwRenderMsgs(); }
+}
+function aiwClose(){ document.getElementById('aiwPanel').classList.remove('on'); }
+async function aiwSend(){
+  const input = document.getElementById('aiwInput');
+  const msg = input.value.trim();
+  if(!msg) return;
+  input.value = '';
+  aiwHistory.push({role:'user', text: msg});
+  aiwHistory.push({role:'model', text:'…', _typing:true});
+  aiwRenderMsgs();
+  const btn = document.getElementById('aiwSendBtn'); btn.disabled = true;
+  try{
+    const resp = await fetch(AI_ASSISTANT_ENDPOINT, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        message: msg,
+        history: aiwHistory.filter(h=>!h._typing && h.role!=='err').map(h=>({role:h.role, text:h.text})),
+        context: aiwContext(),
+      }),
+    });
+    aiwHistory.pop();
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const data = await resp.json();
+    aiwHistory.push({role:'model', text: data.reply || '这次没拿到回复，换个问法再试试？'});
+  }catch(e){
+    aiwHistory.pop();
+    aiwHistory.push({role:'err', text:'这次没答上，可能是网络问题，过一会儿再试一次～'});
+  }
+  btn.disabled = false;
+  aiwRenderMsgs();
+}
+
+// 支持 index.html?view=xxx 直接打开某个视图(比如从 flow.html 顶部搜索图标跳过来直接进搜索页)
+const __initView = new URLSearchParams(location.search).get('view');
+applyView(['home','me','search','projects','messages'].includes(__initView) ? __initView : 'home');
+setTimeout(()=>{ if(!aiwOpened) document.getElementById('aiwTip').classList.add('on'); }, 2200);
+setTimeout(()=>{ document.getElementById('aiwTip').classList.remove('on'); }, 7500);
 </script>
 </body></html>

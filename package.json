@@ -3,5 +3,5 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "EcoStitch MVP流程的 Vercel 部署包：静态页面(index.html/calculator.html) + /api/generate-creative-image 云函数(转发 Gemini API 调用)"
+  "description": "EcoStitch MVP流程的 Vercel 部署包：静态页面(index.html首页/flow.html核心改造流程/calculator.html纸样计算器) + /api/generate-creative-image 云函数(转发 Gemini API 调用)"
 }
