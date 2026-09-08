@@ -44,6 +44,15 @@ const CONF_LABELS={high:'把握较高',medium:'把握一般',low:'把握较低'}
 const MATERIAL_OPTIONS=['牛仔布','棉布','涤纶','麻','羊毛','皮革','看不清楚材质'];
 let identifying=false;
 let editingField=null;
+let measurements={shoulder:'',chest:''};
+let selectedDirection=null;
+const DIRECTIONS={
+  tote:{name:'拼接底托特包',level:'初级',time:'约 3 小时',note:'结构简单、用料省，做旧质感的面料效果最好。',patternTitle:'拼接底托特包',cutStep:{title:'先拆开侧缝',desc:'使用拆线器从下摆向腋下逐段拆开，不要直接剪掉缝份。'},sewStep:{title:'缝合底部裁片',desc:'正面相对，沿已标记的缝线从中央向两侧缝合，起止处各回针 1 cm。'},photoIdx:14},
+  crossbody:{name:'月牙斜挎包',level:'中级',time:'约 5 小时',note:'需要更多裁片拼接，适合面料充足、想要更精致造型的旧衣。',patternTitle:'月牙斜挎包',cutStep:{title:'先拆下衣身主片',desc:'沿肩线和侧缝拆开，尽量保留最大面积的完整布片，用于月牙形裁剪。'},sewStep:{title:'缝合月牙弧形边',desc:'弧形边先用疏缝固定弧度，再沿标记线正式缝合，避免打褶。'},photoIdx:16},
+  pouch:{name:'拉链收纳包',level:'初级',time:'约 1.5 小时',note:'用料少，适合小面积或薄型面料，新手友好。',patternTitle:'拉链收纳包',cutStep:{title:'裁出前后片和拉链条',desc:'前后片对齐裁剪，拉链条另外裁一条，四周预留 1 cm 缝份。'},sewStep:{title:'装拉链',desc:'拉链正面朝下与布边对齐车缝，翻回正面熨烫定型。'},photoIdx:17},
+  patchwork:{name:'拼布坐垫罩',level:'中级',time:'约 4 小时',note:'适合较厚或边角料较多的面料，可以自由拼接不同区域。',patternTitle:'拼布坐垫罩',cutStep:{title:'裁出拼接方块',desc:'按坐垫尺寸裁出若干等大方块，四周预留缝份。'},sewStep:{title:'拼接方块并缝合边框',desc:'方块两两缝合成条状，再拼接成整片，最后缝合四周边框。'},photoIdx:15}
+};
+const GARMENT_DIRECTIONS={pants:['tote','crossbody'],shirt:['pouch','patchwork'],skirt:['crossbody','tote'],jacket:['tote','patchwork'],flat:['patchwork','pouch']};
 function fileToDataUrl(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(file);});}
 function resizePhotoDataUrl(file,maxDim=1280,quality=0.85){
   return new Promise((resolve,reject)=>{
@@ -100,7 +109,8 @@ async function startGeneration(){
       const pctEl=document.querySelector('#screenRoot .card b:last-child');if(pctEl)pctEl.textContent=Math.round(pct)+'%';
     }
   },400);
-  const prompt='把照片里这块'+(identifyResult&&identifyResult.material?identifyResult.material:'旧衣')+'布料改造设计成极简通勤风格的拼接底托特包，保留原有面料的真实纹理和做旧质感，商品摄影风格、白色背景、单个成品居中展示。';
+  const dirName1=(DIRECTIONS[selectedDirection]||DIRECTIONS.tote).name;
+  const prompt='把照片里这块'+(identifyResult&&identifyResult.material?identifyResult.material:'旧衣')+'布料改造设计成极简通勤风格的'+dirName1+'，保留原有面料的真实纹理和做旧质感，商品摄影风格、白色背景、单个成品居中展示。';
   try{
     const r=await fetch(API_BASE+'/api/generate-creative-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photoDataUrl:uploadedPhotoDataUrl,prompt})});
     clearInterval(timer);
@@ -114,7 +124,8 @@ async function regenerate(){
   if(regenerating)return;
   if(!uploadedPhotoDataUrl){showToast('请先回到第一步上传旧衣照片');return;}
   regenerating=true;render();
-  const prompt='把照片里这块'+(identifyResult&&identifyResult.material?identifyResult.material:'旧衣')+'布料改造设计成拼接底托特包的另一种创意方向，保留原有面料的真实纹理，商品摄影风格、白色背景。';
+  const dirName2=(DIRECTIONS[selectedDirection]||DIRECTIONS.tote).name;
+  const prompt='把照片里这块'+(identifyResult&&identifyResult.material?identifyResult.material:'旧衣')+'布料改造设计成'+dirName2+'的另一种创意方向，保留原有面料的真实纹理，商品摄影风格、白色背景。';
   try{
     const r=await fetch(API_BASE+'/api/generate-creative-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photoDataUrl:uploadedPhotoDataUrl,prompt})});
     if(r.ok){const data=await r.json();creativeHistory.push(data.imageDataUrl);historyIndex=creativeHistory.length-1;}
@@ -140,8 +151,14 @@ const SCREENS={
   const materialChips=editingField==='material'?`<div class="chips">${MATERIAL_OPTIONS.map(mm=>`<span class="chip ${identifyResult&&identifyResult.material===mm?'on':''}" data-setfield="material:${mm}">${mm}</span>`).join('')}</div>`:'';
   return `${header('识别结果',true)}<div class="progress"><i style="width:25%"></i></div><div class="content"><div class="eyebrow">STEP 2 · 确认信息</div><h1 class="title">我们识别到这些</h1><div class="card gradient"><div class="row"><b>AI 衣物识别</b>${icon('sparkles.svg')}</div><div class="chips"><span class="chip on">${g}</span><span class="chip on">${m}</span>${c?`<span class="chip">识别${c}</span>`:''}</div><p class="small">真实 AI 调用结果，如果不准确可以在下面手动改。</p>${(!identifyResult&&lastIdentifyError)?`<p class="small" style="color:#c0392b;word-break:break-all;background:#fff3f2;border-radius:8px;padding:8px;margin-top:8px">调试信息：${lastIdentifyError}</p>`:''}</div><div class="field" data-editfield="type"><span>衣物类型</span><b>${g} ${editingField==='type'?'︿':'›'}</b></div>${typeChips}<div class="field" data-editfield="material"><span>主要面料</span><b>${m} ${editingField==='material'?'︿':'›'}</b></div>${materialChips}</div><div class="bottomcta"><button class="btn" data-go="07">确认并继续</button></div>`;
 }},
-'07':{name:'输入衣物尺寸',body:()=>`${header('衣物尺寸',true)}<div class="progress"><i style="width:36%"></i></div><div class="content"><div class="eyebrow">STEP 3 · 测量</div><h1 class="title">量一下关键尺寸</h1><div class="pattern"><svg viewBox="0 0 300 220"><path d="M90 45 120 25h60l30 20 42 42-30 28-20-22v105H98V93l-20 22-30-28z" fill="#d7dfdc" stroke="#25332c" stroke-width="2"/><path d="M120 25q30 45 60 0M98 95h104M75 80l150 0" fill="none" stroke="#6abd94" stroke-dasharray="5 5"/><text x="128" y="88" font-size="12">肩宽</text><text x="130" y="112" font-size="12">胸围</text></svg></div><div class="field"><span>肩宽</span><b>42 cm</b></div><div class="field"><span>胸围（一圈）</span><b>104 cm</b></div></div><div class="bottomcta"><button class="btn" data-go="08">保存尺寸</button></div>`},
-'08':{name:'选择改造方向',body:()=>`${header('改造方向',true)}<div class="progress"><i style="width:46%"></i></div><div class="content"><div class="eyebrow">STEP 4 · 选择方向</div><h1 class="title">这件旧衣适合做什么？</h1><div class="card"><div class="row"><div><b>拼接底托特包</b><p class="small">初级 · 约 3 小时</p></div></div><p class="sub">面料面积充足，牛仔的挺度很适合这个结构。</p></div><div class="card"><div class="row"><div><b>月牙斜挎包</b><p class="small">中级 · 约 5 小时</p></div><span class="tag">布料可能不足</span></div></div><h3>选择风格</h3><div class="chips"><span class="chip on">极简</span><span class="chip">复古</span><span class="chip on">通勤</span><span class="chip">拼色</span></div></div><div class="bottomcta"><button class="btn" data-go="09">生成创意方案</button></div>`},
+'07':{name:'输入衣物尺寸',body:()=>`${header('衣物尺寸',true)}<div class="progress"><i style="width:36%"></i></div><div class="content"><div class="eyebrow">STEP 3 · 测量</div><h1 class="title">量一下关键尺寸</h1><p class="sub">拿软尺量好之后填进去，后面的纸样会按这个尺寸做参考。</p><div class="pattern"><svg viewBox="0 0 300 220"><path d="M90 45 120 25h60l30 20 42 42-30 28-20-22v105H98V93l-20 22-30-28z" fill="#d7dfdc" stroke="#25332c" stroke-width="2"/><path d="M120 25q30 45 60 0M98 95h104M75 80l150 0" fill="none" stroke="#6abd94" stroke-dasharray="5 5"/><text x="128" y="88" font-size="12">肩宽</text><text x="130" y="112" font-size="12">胸围</text></svg></div><div class="field"><span>肩宽 (cm)</span><input data-measure="shoulder" type="number" inputmode="decimal" value="${measurements.shoulder}" placeholder="如 42" style="border:0;outline:0;text-align:right;font-size:17px;font-weight:700;width:90px;background:transparent;color:#141615"></div><div class="field"><span>胸围一圈 (cm)</span><input data-measure="chest" type="number" inputmode="decimal" value="${measurements.chest}" placeholder="如 104" style="border:0;outline:0;text-align:right;font-size:17px;font-weight:700;width:90px;background:transparent;color:#141615"></div></div><div class="bottomcta"><button class="btn" data-go="08">保存尺寸</button></div>`},
+'08':{name:'选择改造方向',body:()=>{
+  const gt=identifyResult&&identifyResult.garmentType&&GARMENT_DIRECTIONS[identifyResult.garmentType]?identifyResult.garmentType:'pants';
+  const dirIds=GARMENT_DIRECTIONS[gt];
+  if(!selectedDirection||!dirIds.includes(selectedDirection))selectedDirection=dirIds[0];
+  const cards=dirIds.map(id=>{const d=DIRECTIONS[id];const on=selectedDirection===id;return `<div class="card" data-selectdir="${id}" style="cursor:pointer;${on?'outline:2px solid #141615;outline-offset:-2px':''}"><div class="row"><div><b>${d.name}</b><p class="small">${d.level} · ${d.time}</p></div>${on?'<span class="tag">已选择</span>':''}</div><p class="sub">${d.note}</p></div>`;}).join('');
+  return `${header('改造方向',true)}<div class="progress"><i style="width:46%"></i></div><div class="content"><div class="eyebrow">STEP 4 · 选择方向</div><h1 class="title">这件${GARMENT_LABELS[gt]||'旧衣'}适合做什么？</h1>${cards}<h3>选择风格</h3><div class="chips"><span class="chip on">极简</span><span class="chip">复古</span><span class="chip on">通勤</span><span class="chip">拼色</span></div></div><div class="bottomcta"><button class="btn" data-go="09">生成创意方案</button></div>`;
+}},
 '09':{name:'AI 正在生成',body:()=>`${header('生成创意',true)}<div class="content gradient" style="height:100%;padding:40px 22px"><div class="complete" style="background:#ffffff99">${icon('sparkles.svg')}</div><h1 class="title" style="text-align:center">正在构思你的<br>旧衣新模样</h1><p class="sub" style="text-align:center">正在调用真实 AI，保留原有面料纹理，尝试极简通勤结构…</p><div class="card" style="margin-top:36px"><div class="row"><b>生成进度</b><b>8%</b></div><div class="progress" style="margin-top:12px;border-radius:4px"><i style="width:8%"></i></div></div><p class="small" style="text-align:center">真实调用 Gemini 生成中，请稍候几秒</p></div>`},
 '10':{name:'创意方案',body:()=>{
   const total=creativeHistory.length;
@@ -152,11 +169,11 @@ const SCREENS={
   ${total>0?`<div class="eyebrow" style="margin-top:22px">生成记录</div><div style="display:flex;gap:10px;overflow-x:auto;padding:6px 2px 10px">${creativeHistory.map((u,i)=>`<div data-pick="${i}" style="flex:0 0 64px;width:64px;height:64px;border-radius:14px;overflow:hidden;position:relative;cursor:pointer;${i===historyIndex?'outline:3px solid #141615;outline-offset:-2px':''}"><img src="${u}" style="width:100%;height:100%;object-fit:cover;display:block"></div>`).join('')}</div>`:''}
   </div><div class="bottomcta"><button class="btn" data-go="11" style="${total===0?'opacity:.5;pointer-events:none':''}">用这个方案开始制作</button></div>`;
 }},
-'11':{name:'剪裁展开引导',body:()=>`${header('展开旧衣',true)}<div class="progress"><i style="width:64%"></i></div><div class="content"><div class="eyebrow">精准制作 · 1 / 4</div><h1 class="title">先拆开侧缝</h1>${img(photos[14],'heroimg')}<div class="card step"><span class="num">1</span><div><b>找到衣身两侧原有缝线</b><p class="sub">使用拆线器从下摆向腋下逐段拆开，不要直接剪掉缝份。</p></div></div><div class="warn">沿线慢慢拆，避开拉链、纽扣与厚接缝区域。</div><div class="small" style="text-align:center;margin-top:12px;color:#4d9d75;text-decoration:underline;cursor:pointer" data-go="12">材料好像不太够？查看备选方案</div></div><div class="bottomcta"><button class="btn" data-go="13">完成这一步</button></div>`},
+'11':{name:'剪裁展开引导',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;return `${header('展开旧衣',true)}<div class="progress"><i style="width:64%"></i></div><div class="content"><div class="eyebrow">精准制作 · 1 / 4 · ${d.name}</div><h1 class="title">${d.cutStep.title}</h1>${img(photos[d.photoIdx],'heroimg')}<div class="card step"><span class="num">1</span><div><b>按标记线小心拆开</b><p class="sub">${d.cutStep.desc}</p></div></div><div class="warn">沿线慢慢拆，避开拉链、纽扣与厚接缝区域。</div><div class="small" style="text-align:center;margin-top:12px;color:#4d9d75;text-decoration:underline;cursor:pointer" data-go="12">材料好像不太够？查看备选方案</div></div><div class="bottomcta"><button class="btn" data-go="13">完成这一步</button></div>`;}},
 '12':{name:'布料不足 Plan B',body:()=>`${header('调整方案',true)}<div class="content"><div class="eyebrow">材料检查</div><h1 class="title">现有布料还差一点</h1><p class="sub">主裁片宽度预计少 8 cm。以下方案都可以继续完成作品。</p><div class="card"><div class="row"><b>方案 A · 加入拼布</b><span class="tag">推荐</span></div><p class="sub">加入一条浅色棉布侧片，保留原方案容量。</p></div><div class="card"><b>方案 B · 缩小 12%</b><p class="sub">无需额外材料，成品更轻巧。</p></div><div class="card"><b>方案 C · 切换模板</b><p class="sub">改为扁平小包，难度降低为初级。</p></div></div><div class="bottomcta"><button class="btn mint" data-go="13">采用拼布方案</button></div>`},
-'13':{name:'纸样展示',body:()=>`${header('裁剪纸样',true,icon('document.circle.svg'))}<div class="content"><div class="row"><div><div class="eyebrow">拼接底托特包</div><h1 class="title">1:1 裁片</h1></div></div><div class="pattern"><svg viewBox="0 0 310 250"><path d="M30 30h150v180H30zM205 30h70v180h-70z" fill="#eff5f1" stroke="#24332c" stroke-width="2"/><path d="M42 42h126v156H42zM217 42h46v156h-46z" fill="none" stroke="#63b98d" stroke-dasharray="7 5"/><path d="M80 60v120M125 60v120M230 60v120" stroke="#aebbb4" stroke-dasharray="3 4"/><text x="75" y="125">主裁片 A</text><text x="214" y="125" transform="rotate(90 214 125)">侧片 B</text></svg></div><div class="chips"><span class="chip on">含 1 cm 缝份</span><span class="chip">A4 · 8 页</span><span class="chip">校准方格</span></div><button class="btn light" data-toast="原型演示：正式版可下载 1:1 纸样 PDF">下载 A4 PDF</button></div><div class="bottomcta"><button class="btn" data-go="14">进入制作教程</button></div>`},
-'14':{name:'制作教程',body:()=>`${header('制作教程',true)}<div class="content"><div class="eyebrow">步骤 2 / 8 · 约 8 分钟</div><h1 class="title">缝合底部裁片</h1>${img(photos[15],'heroimg')}<div class="tools"><div class="tool">${icon('sewing_machine.svg')}家用缝纫机</div><div class="tool">${icon('Vector-10.svg')}90/14 号针</div><div class="tool">${icon('ruler.svg')}1 cm 缝份</div></div><div class="card"><b>操作要点</b><p class="sub">正面相对，沿已标记的缝线从中央向两侧缝合，起止处各回针 1 cm。</p></div><div class="warn">布边起毛时，先使用 Z 字线迹锁边。</div></div><div class="bottomcta"><button class="btn" data-go="15">标记完成并继续</button></div>`},
-'15':{name:'改造完成',body:()=>`${header('完成',true)}<div class="content"><div class="complete">${icon('checkmark.circle.fill.svg')}</div><h1 class="title" style="text-align:center">你的旧衣完成新生</h1><p class="sub" style="text-align:center">本次共完成 8 个步骤，旧牛仔被重新使用。</p>${img(photos[4],'heroimg')}<div class="card row"><div><b>获得 120 绿缝积分</b><p class="small">估算减少 0.6 kg 纺织废弃物</p></div><span class="tag">+120</span></div></div><div class="bottomcta"><button class="btn mint" data-gohome="1">发布我的作品</button></div>`},
+'13':{name:'纸样展示',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;return `${header('裁剪纸样',true,icon('document.circle.svg'))}<div class="content"><div class="row"><div><div class="eyebrow">${d.patternTitle}</div><h1 class="title">1:1 裁片</h1></div></div><div class="pattern"><svg viewBox="0 0 310 250"><path d="M30 30h150v180H30zM205 30h70v180h-70z" fill="#eff5f1" stroke="#24332c" stroke-width="2"/><path d="M42 42h126v156H42zM217 42h46v156h-46z" fill="none" stroke="#63b98d" stroke-dasharray="7 5"/><path d="M80 60v120M125 60v120M230 60v120" stroke="#aebbb4" stroke-dasharray="3 4"/><text x="75" y="125">主裁片 A</text><text x="214" y="125" transform="rotate(90 214 125)">侧片 B</text></svg></div><div class="chips"><span class="chip on">含 1 cm 缝份</span><span class="chip">A4 · 8 页</span><span class="chip">校准方格</span></div><button class="btn light" data-downloadpattern="1">下载 A4 PDF</button></div><div class="bottomcta"><button class="btn" data-go="14">进入制作教程</button></div>`;}},
+'14':{name:'制作教程',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;return `${header('制作教程',true)}<div class="content"><div class="eyebrow">步骤 2 / 8 · 约 8 分钟 · ${d.name}</div><h1 class="title">${d.sewStep.title}</h1>${img(photos[d.photoIdx],'heroimg')}<div class="tools"><div class="tool">${icon('sewing_machine.svg')}家用缝纫机</div><div class="tool">${icon('Vector-10.svg')}90/14 号针</div><div class="tool">${icon('ruler.svg')}1 cm 缝份</div></div><div class="card"><b>操作要点</b><p class="sub">${d.sewStep.desc}</p></div><div class="warn">布边起毛时，先使用 Z 字线迹锁边。</div></div><div class="bottomcta"><button class="btn" data-go="15">标记完成并继续</button></div>`;}},
+'15':{name:'改造完成',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;const gname=identifyResult?(GARMENT_LABELS[identifyResult.garmentType]||'旧衣'):'旧衣';return `${header('完成',true)}<div class="content"><div class="complete">${icon('checkmark.circle.fill.svg')}</div><h1 class="title" style="text-align:center">你的旧衣完成新生</h1><p class="sub" style="text-align:center">本次共完成 8 个步骤，${gname}被改造成了${d.name}。</p>${img(photos[4],'heroimg')}<div class="card row"><div><b>获得 120 绿缝积分</b><p class="small">估算减少 0.6 kg 纺织废弃物</p></div><span class="tag">+120</span></div></div><div class="bottomcta"><button class="btn mint" data-gohome="1">发布我的作品</button></div>`;}},
 '16':{name:'消息中心',body:()=>`${header('消息')}<div class="content"><div class="chips"><span class="chip on">全部</span><span class="chip">订单</span><span class="chip">审核</span><span class="chip">活动</span></div><div class="list"><div class="li" data-toast="示例通知，暂无详情页">${icon('cart.circle.fill.svg')}<div class="grow"><h4>你的订单已发货</h4><p>拼布托特包预计 9 月 10 日送达</p></div><span class="small">10:24</span></div><div class="li" data-toast="示例通知，暂无详情页">${icon('checkmark.circle.fill.svg')}<div class="grow"><h4>作品审核通过</h4><p>“旧牛仔的新生活”已公开发布</p></div><span class="small">昨天</span></div><div class="li" data-go="17">${img(photos[6],'avatar')}<div class="grow"><h4>Rita</h4><p>教程在我的主页第 3 条～</p></div><span class="small">周一</span></div></div></div>`,tab:'msg'},
 '17':{name:'私信会话',body:()=>`${header('Rita',true)}<div class="content"><div class="card seller" data-go="21">${img(photos[3],'thumb')}<div><b>拼布托特包</b><div class="price">¥189</div></div><span class="tag" style="margin-left:auto">查看商品</span></div><div style="margin-top:90px"><div class="card" style="max-width:78%;margin-left:auto;background:#dff4e8">你好，请问可以调整肩带长度吗？</div><div class="card" style="max-width:78%">可以的，下单后告诉我希望的长度就好。</div></div></div><div class="bottomcta"><div class="field"><span>输入消息…</span>${icon('Vector-24.svg')}</div></div>`},
 '18':{name:'个人主页',body:()=>`${header('我的',false,`<span data-go="20">${icon('Vector-13.svg')}</span>`)}<div class="content"><div class="profile">${img(photos[5],'avatar')}<h2>Lin 的循环衣橱</h2><p class="small">把旧衣留下，也把故事留下。</p><div class="stats"><div><b>128</b><span>关注</span></div><div><b>3.2k</b><span>粉丝</span></div><div><b>26k</b><span>获赞收藏</span></div></div></div><div class="tools"><div class="tool" data-go="19">${icon('scissors.svg')}改造历史</div><div class="tool" data-toast="作品集演示中未启用">${icon('book_and_pencil.svg')}作品集</div><div class="tool" data-toast="绿缝积分演示中未启用">${icon('sparkles.svg')}绿缝积分</div></div><div class="tabs" style="margin-top:14px"><b>作品</b><span>收藏</span><span>在售</span></div><div class="gridphotos">${[0,3,2,10,7,9].map(i=>`<span data-toast="作品详情演示中未启用">${img(photos[i])}</span>`).join('')}</div></div>`,tab:'me'},
@@ -187,13 +204,41 @@ function showToast(msg){
   clearTimeout(t._h);
   t._h=setTimeout(()=>t.classList.remove('show'),1700);
 }
+function downloadPatternPdf(){
+  const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;
+  function draw(){
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({unit:'mm',format:'a4'});
+    doc.setFontSize(18);doc.text('EcoStitch 裁剪纸样',15,20);
+    doc.setFontSize(13);doc.text(d.patternTitle,15,30);
+    doc.setFontSize(10);doc.text('肩宽：'+(measurements.shoulder||'—')+' cm　胸围：'+(measurements.chest||'—')+' cm',15,38);
+    doc.rect(15,50,80,100);doc.text('主裁片 A',42,102);
+    doc.rect(105,50,40,100);doc.text('侧片 B',112,102);
+    doc.setFontSize(9);doc.text('示意纸样，含 1 cm 缝份，实际裁剪请结合面料门幅调整。',15,165);
+    doc.save('EcoStitch-'+d.patternTitle+'-纸样.pdf');
+  }
+  if(window.jspdf){draw();return;}
+  showToast('正在准备纸样文件…');
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  s.onload=draw;
+  s.onerror=()=>showToast('纸样文件加载失败，请检查网络');
+  document.head.appendChild(s);
+}
+document.querySelector('.phone').addEventListener('input',e=>{
+  const t=e.target.closest('[data-measure]');
+  if(!t)return;
+  measurements[t.dataset.measure]=t.value;
+});
 document.querySelector('.phone').addEventListener('click',e=>{
-  const t=e.target.closest('[data-go],[data-tabgo],[data-toast],[data-pick],[data-gohome],[data-realupload],[data-regen],[data-editfield],[data-setfield]');
+  const t=e.target.closest('[data-go],[data-tabgo],[data-toast],[data-pick],[data-gohome],[data-realupload],[data-regen],[data-editfield],[data-setfield],[data-selectdir],[data-downloadpattern]');
   if(!t)return;
   if(t.dataset.realupload!==undefined){document.getElementById('realPhotoInput').click();return;}
   if(t.dataset.regen!==undefined){regenerate();return;}
   if(t.dataset.pick!==undefined){historyIndex=+t.dataset.pick;render();return;}
   if(t.dataset.editfield){editingField=editingField===t.dataset.editfield?null:t.dataset.editfield;render();return;}
+  if(t.dataset.selectdir){selectedDirection=t.dataset.selectdir;render();return;}
+  if(t.dataset.downloadpattern!==undefined){downloadPatternPdf();return;}
   if(t.dataset.setfield){
     const idx=t.dataset.setfield.indexOf(':');
     const f=t.dataset.setfield.slice(0,idx),v=t.dataset.setfield.slice(idx+1);
@@ -218,6 +263,9 @@ document.getElementById('realPhotoInput').addEventListener('change',async e=>{
   }catch(err){
     uploadedPhotoDataUrl=await fileToDataUrl(file);
   }
+  measurements={shoulder:'',chest:''};
+  selectedDirection=null;
+  creativeHistory=[];historyIndex=-1;
   go('06');
   runIdentify();
 });
