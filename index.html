@@ -338,7 +338,8 @@ async function triggerRealPatternDownload(){
       showToast('纸样计算器还没准备好，请稍等再试');return;
     }
     patternDownloaded=true;
-    render();
+    openTutStep=0;
+    go('14');
     showToast('纸样已下载，可以开始制作啦');
   }catch(err){
     showToast('纸样下载失败，请检查网络后重试');
