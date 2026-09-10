@@ -7837,7 +7837,7 @@ if(new URLSearchParams(location.search).get('preview')==='1'){
       if(typeof calculate==='function') calculate();
     }catch(e){}
     const infoEl=document.getElementById('previewInfo');
-    if(!infoEl)return;
+    if(!infoEl){ window.__previewReady=true; return; }
     infoEl.style.display='block';
     try{
       const info=await downloadPattern(true);
@@ -7848,6 +7848,9 @@ if(new URLSearchParams(location.search).get('preview')==='1'){
         infoEl.style.display='none';
       }
     }catch(e){ infoEl.style.display='none'; }
+    // 标记预览内容已经算完、可以量高度了——主应用(index.html)靠这个信号去掉预览框里空出来的
+    // 一截空白，把 iframe 的高度收缩到刚好贴合内容(见 setupPatternPreviewResize)。
+    window.__previewReady=true;
   });
 }
 </script>
