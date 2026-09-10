@@ -7661,6 +7661,34 @@ window._NOTO_B64="AAEAAAAQAQAABAAAQkFTRULjT+4AB1DMAAAA3kdQT1NaxsSbAAdRrAAAFdJHU1
 // (font handled by pdf-lib)
 </script>
 <style>
+/* embed 模式：被 EcoStitch 主应用用 iframe 内嵌展示时(index.html 纸样展示屏)，去掉这里自带的
+   手机外框/状态栏/返回按钮/包型选择区——这些在主应用里都已经有一份了，嵌进去会变成"手机里套手机"。
+   通过 <html> 上的 .embed class 生效(见 body 顶部的检测脚本)，不影响独立打开这个页面时的原有样式。 */
+.embed body{background:#fff;padding:0;align-items:stretch;display:block}
+.embed .hint{display:none}
+.embed .ph{width:100%;max-width:100%;height:auto;min-height:0;border-radius:0;box-shadow:none;background:transparent}
+.embed .statusbar{display:none}
+.embed .bar{display:none}
+.embed #bagsel{display:none}
+.embed #input .sec:first-of-type{display:none}
+.embed #wxhint{display:none!important}
+/* preview 模式：在 embed 基础上，进一步把输入表单、AI 小助手、底部栏都隐藏，只留计算结果里的
+   "整体预览"图，用于主应用纸样展示页里 chips 下方的纸样预览区域。通过 <html> 上的 .preview-mode
+   class 生效，配合 URL 参数 preview=1，并会在页面 load 后自动调用一次 calculate()。 */
+.preview-mode #input{display:none}
+.preview-mode .aiw-tip,.preview-mode .aiw-fab,.preview-mode .aiw-panel,.preview-mode .foot{display:none!important}
+.preview-mode #result{margin-top:0}
+.preview-mode .restabs{margin-top:0}
+/* preview 模式下只保留"整体预览"图本身，预估用料/裁剪清单文字/说明这些主应用里
+   材料清单/制作步骤页已经有类似信息了，这里不用重复堆一遍，保持预览区域紧凑。
+   2026-09-10 Bedi 反馈：这里不应该看起来像"嵌了一个计算器"——连整体预览/A4分页的切换
+   标签、"下载纸样清单"提示文字都不要露出来，只留纸样图本身，下面换成我们自己算好的
+   "共几张A4、需不需要拼接"提示，见 #previewInfo。 */
+.preview-mode #checkBox,.preview-mode #cutList,.preview-mode #result>.sec,.preview-mode #note,.preview-mode #tutorialSec,.preview-mode .restabs,.preview-mode #a4preview{display:none}
+.preview-mode #diagram{padding:0}
+.preview-info{font-size:12px;color:var(--ink-2,#6D6D6D);text-align:center;margin-top:10px;line-height:1.6}
+.preview-info.loading{color:var(--ink-3,#9DA192)}
+
 :root{--green:#3AB54A;--green-core:#3AB54A;--green-soft:#F2F8EE;--ink:#1C1E18;--ink-2:#6D6D6D;
 --nav-off:#B5B5B5;--card:#FFFFFF;--bg:#F3F3F3;--line:#EDEEE9;--line-2:#E2E4DC;--warn:#B08A2E;--warn-soft:#FBF6E9;
 --font:'PingFang SC','Noto Sans CJK SC',-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;}
@@ -7796,8 +7824,33 @@ padding:8px 12px;font-size:12px;color:var(--ink-2,#6D6D6D);box-shadow:0 4px 16px
 align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0}
 .aiw-sendbtn[disabled]{opacity:.4;pointer-events:none}
 
-</style></head>
-<body>
+.statusbar{height:38px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;color:var(--ink);flex-shrink:0;background:var(--card)}.statusbar .sb-left{display:flex;align-items:center;gap:5px}.statusbar .sb-time{font-size:15px;font-weight:700;letter-spacing:-.02em}.statusbar .sb-moon{width:12px;height:12px}.statusbar .sb-moon svg,.statusbar .sb-signal svg{width:100%;height:100%;display:block}.statusbar .sb-right{display:flex;align-items:center;gap:5px}.statusbar .sb-signal{width:16px;height:11px}.statusbar .sb-g{font-size:13px;font-weight:700}.statusbar .sb-batt{display:flex;align-items:center}.statusbar .sb-batt-pill{background:var(--ink);color:#fff;font-size:11px;font-weight:800;border-radius:7px;padding:2.5px 6px 3px;line-height:1;min-width:20px;text-align:center}.statusbar .sb-batt-nub{width:2px;height:7px;border-radius:0 2px 2px 0;background:var(--nav-off);margin-left:1px}</style></head>
+<link rel="stylesheet" href="theme-overrides.css"><body>
+<script>
+if(new URLSearchParams(location.search).get('embed')==='1'){
+  document.documentElement.classList.add('embed');
+}
+if(new URLSearchParams(location.search).get('preview')==='1'){
+  document.documentElement.classList.add('preview-mode');
+  window.addEventListener('load',async function(){
+    try{
+      if(typeof calculate==='function') calculate();
+    }catch(e){}
+    const infoEl=document.getElementById('previewInfo');
+    if(!infoEl)return;
+    infoEl.style.display='block';
+    try{
+      const info=await downloadPattern(true);
+      if(info&&typeof info.pageCount==='number'&&info.pageCount>0){
+        infoEl.classList.remove('loading');
+        infoEl.textContent='共 '+info.pageCount+' 张 A4 纸样，请仔细查看纸样说明'+(info.pageCount>1?'，部分裁片需要跨页拼接后使用':'')+'。';
+      }else{
+        infoEl.style.display='none';
+      }
+    }catch(e){ infoEl.style.display='none'; }
+  });
+}
+</script>
 <div id="wxhint" style="display:none;position:fixed;top:0;left:0;right:0;z-index:999;background:#1C1E18;color:#fff;padding:12px 16px;font-size:13px;line-height:1.6;text-align:center">
   当前在微信内打开，下载纸样可能受限。请点右上角 <b>···</b> → <b>在浏览器打开</b>，即可正常下载 PDF。
   <span onclick="document.getElementById('wxhint').style.display='none'" style="margin-left:8px;opacity:.6"><svg class="" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></span>
@@ -7810,7 +7863,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
 
 <div class="hint">真实可用的纸样计算器 · 公式经 <b>Bedi 实物验证校准</b> · 输入尺寸，真的算出每片布怎么裁</div>
 <div class="ph">
-  <div class="sb"><span class="t">9:41</span></div><!-- 2026-09-03：按新版Figma设计稿移除🏠🔍85角标行 -->
+  <div class="statusbar"><div class="sb-left"><span class="sb-time">9:41</span><span class="sb-moon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span></div><div class="sb-right"><span class="sb-signal"><svg viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg></span><span class="sb-g">G</span><span class="sb-batt"><span class="sb-batt-pill">91</span><span class="sb-batt-nub"></span></span></div></div><!-- 2026-09-03：按新版Figma设计稿移除🏠🔍85角标行 -->
   <div class="bar"><div class="rbtn" onclick="goBackCalc()"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style=""><path d="M15 6l-6 6l6 6"/></svg></div><span class="ttl">纸样计算器</span></div>
   <div class="body">
     <!-- INPUT -->
@@ -7865,7 +7918,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <div id="checkBox"></div>
       <div class="sec" style="margin-top:2px">裁剪清单（已含缝份，直接照此裁布）</div>
       <div class="rcard" id="cutList"></div>
-      <div class="restabs"><div class="rt on" id="resTabPreview" onclick="switchResTab('preview')">整体预览</div><div class="rt" id="resTabA4" onclick="switchResTab('a4')">A4分页</div></div><div class="diagram" id="diagram"></div><div class="a4preview" id="a4preview"><svg class="inline-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2"/><path d="M9 9l1 0"/><path d="M9 13l6 0"/><path d="M9 17l6 0"/></svg> A4分页的可视化预览这一版还没做——点下面"下载纸样清单"拿到的PDF本身已经是按A4自动分好页、带对齐标记的，可以直接打印，只是这里还看不到分页后的样子。</div>
+      <div class="restabs"><div class="rt on" id="resTabPreview" onclick="switchResTab('preview')">整体预览</div><div class="rt" id="resTabA4" onclick="switchResTab('a4')">A4分页</div></div><div class="diagram" id="diagram"></div><div class="preview-info loading" id="previewInfo" style="display:none">正在计算纸样页数…</div><div class="a4preview" id="a4preview"><svg class="inline-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2"/><path d="M9 9l1 0"/><path d="M9 13l6 0"/><path d="M9 17l6 0"/></svg> A4分页的可视化预览这一版还没做——点下面"下载纸样清单"拿到的PDF本身已经是按A4自动分好页、带对齐标记的，可以直接打印，只是这里还看不到分页后的样子。</div>
       <div class="small" id="note"></div>
       <div id="tutorialSec"></div>
     </div>
@@ -8444,11 +8497,12 @@ async function _getFont(doc){
   return await doc.embedFont(bytes,{subset:false});
 }
 
-async function downloadPattern(){
+async function downloadPattern(dryRun){
   if(!window.PDFLib||!window.fontkit){
+    if(dryRun)return null;
     alert('PDF 组件未加载，请联网后重试（打印组件需从网络加载）');return;
   }
-  const P=window._pattern; if(!P){alert('请先计算');return;}
+  const P=window._pattern; if(!P){if(dryRun)return null;alert('请先计算');return;}
   const { PDFDocument, rgb, LineCapStyle } = PDFLib;
   const doc=await PDFDocument.create();
   doc.registerFontkit(window.fontkit);
@@ -9906,6 +9960,7 @@ async function downloadPattern(){
     drawZipBPPocketPage();
   }
   if(P.bagType==='boston'){ drawBostonBodyPage(); drawBostonGussetPage(); }
+  if(dryRun){ return { pageCount: doc.getPageCount() }; }
   const pdfBytes=await doc.save();
   const blob=new Blob([pdfBytes],{type:'application/pdf'});
   const url=URL.createObjectURL(blob);
