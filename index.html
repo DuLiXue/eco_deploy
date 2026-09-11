@@ -81,6 +81,16 @@ let creativeHistory=[];
 let historyIndex=-1;
 let myWorks=[];
 let myListings=[];
+let ecoPoints=2860;
+let viewingWorkDetail=null;
+const PROFILE_DEMO_WORKS=[
+  {photoIdx:0,title:'月牙单肩包',calcBag:'crescent',desc:'旧针织衫边角料拼接而成，弧形挎包内搭撞色里衬，手感软糯。'},
+  {photoIdx:3,title:'三段拼接托特包',calcBag:'beartote',desc:'混搭几种牛仔色差布料拼接主体，做旧配色耐脏又耐用。'},
+  {photoIdx:2,title:'拼接底手提托特包',calcBag:'jointote',desc:'印花衬衫拼接牛仔裤裤腿做底，日常通勤耐造。'},
+  {photoIdx:10,title:'三段拼接托特包',calcBag:'beartote',desc:'旧夹克与碎花布料拼接改造，穿搭感更强。'},
+  {photoIdx:7,title:'方底托特包',calcBag:'boxtote',desc:'AI 生成的海浪波纹图案，牛仔布手工描线后车缝上色。'},
+  {photoIdx:9,title:'三角笔袋',calcBag:'trianglepouch',desc:'格纹拼接小巧笔袋，边角料也能物尽其用。'}
+];
 let generating=false;
 let regenerating=false;
 const GARMENT_LABELS={pants:'长裤/牛仔裤',shirt:'衬衫/T恤',skirt:'裙装',jacket:'外套/夹克',flat:'平整布料'};
@@ -394,8 +404,8 @@ const SCREENS={
   const tabsHtml=`<div class="tabs" style="margin-top:14px">${tabHtml('works','作品')}${tabHtml('fav','收藏')}${tabHtml('selling','在售')}</div>`;
   let bodyHtml='';
   if(profileTab==='works'){
-    const realWorksHtml=myWorks.map(w=>`<span data-toast="${w.title}"><img class="photo" src="${w.img}" alt="我的作品"></span>`).join('');
-    const demoWorksHtml=[0,3,2,10,7,9].map(i=>`<span data-toast="作品详情演示中未启用">${img(photos[i])}</span>`).join('');
+    const realWorksHtml=myWorks.map((w,i)=>`<span data-workdetail="my-${i}"><img class="photo" src="${w.img}" alt="我的作品"></span>`).join('');
+    const demoWorksHtml=PROFILE_DEMO_WORKS.map((w,i)=>`<span data-workdetail="demo-${i}">${img(photos[w.photoIdx])}</span>`).join('');
     bodyHtml=`<div class="gridphotos">${realWorksHtml}${demoWorksHtml}</div>`;
   }else if(profileTab==='fav'){
     const favKeys=Object.keys(favoritedProducts).filter(k=>favoritedProducts[k]);
@@ -405,12 +415,27 @@ const SCREENS={
     const realListingsHtml=myListings.map(l=>`<article class="card" style="margin:0;padding:0;overflow:hidden" data-toast="${l.title}"><img class="heroimg" src="${l.img}" alt="我上架的商品"><div style="padding:10px 12px 12px"><h3 style="margin:0 0 8px">${l.title}</h3><div class="row"><b class="price">¥${l.price}</b><span class="tag">审核中</span></div></div></article>`).join('');
     bodyHtml=`<div class="results" style="margin-top:14px">${realListingsHtml}<article class="card" style="margin:0;padding:0;overflow:hidden" data-go="21" data-productkey="totebag">${img(photos[prod.heroIdx],'heroimg')}<div style="padding:10px 12px 12px"><h3 style="margin:0 0 8px">${prod.name}</h3><div class="row"><b class="price">¥${prod.price}</b><span class="tag">在售中</span></div></div></article></div>`;
   }
-  return `${header('我的',false,`<span data-go="20">${icon('Vector-13.svg')}</span>`)}<div class="content"><div class="profile">${img(photos[5],'avatar')}<h2>Lin 的循环衣橱</h2><p class="small">把旧衣留下，也把故事留下。</p><div class="stats"><div data-toast="关注列表演示中未启用"><b>128</b><span>关注</span></div><div data-toast="粉丝列表演示中未启用"><b>3.2k</b><span>粉丝</span></div><div data-toast="获赞收藏明细演示中未启用"><b>26k</b><span>获赞收藏</span></div></div></div><div class="tools"><div class="tool" data-go="19">${icon('scissors.svg')}改造历史</div><div class="tool" data-toast="绿缝积分演示中未启用">${icon('sparkles.svg')}绿缝积分</div></div>${tabsHtml}${bodyHtml}</div>`;
+  return `${header('我的',false,`<span data-go="20">${icon('Vector-13.svg')}</span>`)}<div class="content"><div class="profile">${img(photos[5],'avatar')}<h2>Lin 的循环衣橱</h2><p class="small">把旧衣留下，也把故事留下。</p><div class="stats"><div data-toast="关注列表演示中未启用"><b>128</b><span>关注</span></div><div data-toast="粉丝列表演示中未启用"><b>3.2k</b><span>粉丝</span></div><div data-toast="获赞收藏明细演示中未启用"><b>26k</b><span>获赞收藏</span></div></div></div><div class="tools"><div class="tool" data-go="19">${icon('scissors.svg')}改造历史</div><div class="tool" data-toast="累计获得 ${ecoPoints} 绿缝积分，兑换商城开发中">${icon('sparkles.svg')}绿缝积分<b style="display:block;margin-top:2px;font-size:14px">${ecoPoints}</b></div></div>${tabsHtml}${bodyHtml}</div>`;
 },tab:'me'},
 '19':{name:'改造历史',body:()=>`${header('改造历史',true)}<div class="content"><div class="chips"><span class="chip on">进行中</span><span class="chip">已完成</span><span class="chip">草稿</span></div><div class="timeline"><div class="event"><b>牛仔外套 → 拼接托特包</b><p class="small">今天 14:20 · 教程 2/8</p><div class="card row" data-go="11">${img(photos[0],'thumb')}<div><b>继续制作</b><p class="small">下一步：缝合侧片</p></div><span>›</span></div></div><div class="event"><b>针织衫 → 月牙包</b><p class="small">9 月 5 日 · 已选择创意方案</p></div><div class="event"><b>衬衫 → 三角笔袋</b><p class="small">8 月 28 日 · 已完成</p></div></div></div>`,tab:'me'},
 '20':{name:'上架售卖',body:()=>`${header('上架好物',true)}<div class="content"><div class="eyebrow" style="margin-top:0">让作品遇见下一位主人</div><div class="card">${listingPhotoDataUrl?`<div class="upload" style="height:140px;margin:0;border-style:solid;padding:0;overflow:hidden;position:relative" data-listingupload="1"><img src="${listingPhotoDataUrl}" style="width:100%;height:100%;object-fit:cover"><span style="position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:4px 10px;border-radius:20px">重新选择</span></div>`:`<div class="upload" style="height:140px;margin:0" data-listingupload="1">${icon('camera.circle.fill.svg')}<b>添加实拍图</b></div>`}</div><div class="field"><span>商品标题</span><b>拼布托特包</b></div><div class="field"><span>价格</span><b>¥ 189</b></div><div class="field"><span>库存</span><b>1 件</b></div><div class="field"><span>发货时效</span><b>72 小时内 ›</b></div><div class="card"><span>✓ 我已确认符合 EcoStitch 二手再造品安全标准</span></div></div><div class="bottomcta"><button class="btn" data-go="submit20">提交审核</button></div>`},
 '21':{name:'商品详情与购买',body:()=>{const prod=PRODUCTS[viewingProductKey];const isFav=!!favoritedProducts[viewingProductKey];return `${header('好物详情',true,`<span data-cart="1" style="cursor:pointer;display:flex;color:${addedToCart?'#3fae6a':'#141615'}">${cartIcon(addedToCart)}</span>`)}<div class="content">${img(photos[prod.heroIdx],'heroimg')}<div class="card"><div class="row"><div><div class="price">¥${prod.price}</div><b>${prod.name} · ${prod.tag}</b></div><span class="tag">${prod.tag}</span></div><p class="sub">${prod.desc}</p><div class="seller">${img(photos[prod.sellerAvatar],'avatar')}<div><b>${prod.sellerName}</b><div class="small">${prod.sold}</div></div></div></div></div><div class="bottomcta"><div style="display:flex;gap:10px"><button class="btn light" style="width:96px;white-space:nowrap;${isFav?'color:#e0555a;border-color:#e0555a;font-size:13px':''}" data-favorite="${viewingProductKey}">${isFav?'♥ 已收藏':'♡ 收藏'}</button><button class="btn" style="flex:1" data-go="22">立即购买</button></div></div>`;}},
-'22':{name:'订单确认',body:()=>{const prod=PRODUCTS[viewingProductKey];return `${header('确认订单',true)}<div class="content"><div class="card"><div class="row" style="align-items:center"><b>收货地址</b><span data-toast="编辑收货地址演示中未启用" style="cursor:pointer;color:#77817b;display:flex"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.475 5.408l2.117 2.117M12.11 9.27l5.727-5.726a1.847 1.847 0 012.612 2.612L14.72 11.88c-.296.296-.671.497-1.081.579L11 13l.53-2.648c.082-.41.283-.786.579-1.082z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 15v3a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div><p class="sub">林予安　138****6621<br>上海市徐汇区衡山路 88 号</p></div><div class="order">${img(photos[prod.heroIdx],'photo')}<h3>${prod.name} · ${prod.tag}</h3><div class="row"><span class="small">数量 × 1</span><b class="price">¥${prod.price}</b></div></div><div class="card"><div class="row"><span>商品金额</span><b>¥${prod.price}</b></div><div class="row" style="margin-top:12px"><span>运费</span><b>¥0</b></div></div></div><div class="bottomcta"><button class="btn" data-go="submitorder">提交订单 · ¥${prod.price}</button></div>`;}}
+'22':{name:'订单确认',body:()=>{const prod=PRODUCTS[viewingProductKey];return `${header('确认订单',true)}<div class="content"><div class="card"><div class="row" style="align-items:center"><b>收货地址</b><span data-toast="编辑收货地址演示中未启用" style="cursor:pointer;color:#77817b;display:flex"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.475 5.408l2.117 2.117M12.11 9.27l5.727-5.726a1.847 1.847 0 012.612 2.612L14.72 11.88c-.296.296-.671.497-1.081.579L11 13l.53-2.648c.082-.41.283-.786.579-1.082z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 15v3a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div><p class="sub">林予安　138****6621<br>上海市徐汇区衡山路 88 号</p></div><div class="order">${img(photos[prod.heroIdx],'photo')}<h3>${prod.name} · ${prod.tag}</h3><div class="row"><span class="small">数量 × 1</span><b class="price">¥${prod.price}</b></div></div><div class="card"><div class="row"><span>商品金额</span><b>¥${prod.price}</b></div><div class="row" style="margin-top:12px"><span>运费</span><b>¥0</b></div></div></div><div class="bottomcta"><button class="btn" data-go="submitorder">提交订单 · ¥${prod.price}</button></div>`;}},
+'23':{name:'作品详情',body:()=>{
+  let w;
+  if(viewingWorkDetail&&viewingWorkDetail.indexOf('my-')===0){
+    const mw=myWorks[+viewingWorkDetail.slice(3)]||{};
+    w={img:mw.img,title:mw.title||'我的作品',calcBag:mw.calcBag,desc:'你亲手上传照片、AI 生成创意图并完成教程做出来的改造作品。',mine:true};
+  }else{
+    const idx=viewingWorkDetail?+viewingWorkDetail.slice(5):0;
+    const demo=PROFILE_DEMO_WORKS[idx]||PROFILE_DEMO_WORKS[0];
+    w={img:null,photoIdx:demo.photoIdx,title:demo.title,calcBag:demo.calcBag,desc:demo.desc,mine:false};
+  }
+  const tut=TUTORIALS[w.calcBag];
+  const dInfo=Object.values(DIRECTIONS).find(x=>x.calcBag===w.calcBag);
+  const heroHtml=w.img?`<img class="heroimg" src="${w.img}" alt="作品图片">`:img(photos[w.photoIdx],'heroimg');
+  return `${header('作品详情',true)}<div class="content">${heroHtml}<div class="eyebrow" style="margin-top:14px">${tut?tut.difficulty:(dInfo?dInfo.level:'')} ${tut?'· 预计 '+tut.time:(dInfo?'· 预计 '+dInfo.time:'')}${w.mine?' · 我亲手做的':''}</div><h1 class="title">${w.title}</h1><p class="sub">${w.desc}</p>${tut?`<div class="card"><b>工具清单</b><p class="sub">${tut.tools}</p></div>`:''}${tut&&tut.accessories&&tut.accessories.length?`<div class="card"><b>辅料清单</b>${tut.accessories.map(a=>`<div class="row" style="align-items:flex-start;margin-top:8px;gap:10px"><b style="font-size:13px;flex:0 0 auto">${a.name}</b><span class="small" style="color:#77817b;text-align:right;flex:1">${a.spec} · ${a.qty}</span></div>`).join('')}</div>`:''}</div>`;
+}}
 };
 
 let stack=['01'];
@@ -525,11 +550,12 @@ document.querySelector('.phone').addEventListener('input',e=>{
   measurements[t.dataset.measure]=t.value;
 });
 document.querySelector('.phone').addEventListener('click',e=>{
-  const t=e.target.closest('[data-go],[data-tabgo],[data-toast],[data-pick],[data-gohome],[data-realupload],[data-regen],[data-regenflow],[data-editfield],[data-setfield],[data-selectdir],[data-downloadpattern],[data-togglestyle],[data-saveimg],[data-tutstep],[data-feedtab],[data-searchtag],[data-favorite],[data-msgfilter],[data-msgitem],[data-gofeedtab],[data-like],[data-fav],[data-comment],[data-forward],[data-postcomment],[data-cart],[data-listingupload],[data-profiletab]');
+  const t=e.target.closest('[data-go],[data-tabgo],[data-toast],[data-pick],[data-gohome],[data-realupload],[data-regen],[data-regenflow],[data-editfield],[data-setfield],[data-selectdir],[data-downloadpattern],[data-togglestyle],[data-saveimg],[data-tutstep],[data-feedtab],[data-searchtag],[data-favorite],[data-msgfilter],[data-msgitem],[data-gofeedtab],[data-like],[data-fav],[data-comment],[data-forward],[data-postcomment],[data-cart],[data-listingupload],[data-profiletab],[data-workdetail]');
   if(!t)return;
   if(t.dataset.cart!==undefined){addedToCart=!addedToCart;showToast(addedToCart?'已加入购物车':'已移出购物车');render(true);return;}
   if(t.dataset.listingupload!==undefined){document.getElementById('listingPhotoInput').click();return;}
   if(t.dataset.profiletab){profileTab=t.dataset.profiletab;render(true);return;}
+  if(t.dataset.workdetail){viewingWorkDetail=t.dataset.workdetail;go('23');return;}
   if(t.dataset.like){const pi=getPI(t.dataset.like);pi.liked=!pi.liked;render(true);return;}
   if(t.dataset.fav){const pi=getPI(t.dataset.fav);pi.favorited=!pi.favorited;showToast(pi.favorited?'已收藏':'已取消收藏');render(true);return;}
   if(t.dataset.forward){const pi=getPI(t.dataset.forward);pi.forwarded=!pi.forwarded;if(pi.forwarded)showToast('已转发');render(true);return;}
@@ -577,7 +603,7 @@ document.querySelector('.phone').addEventListener('click',e=>{
   if(t.dataset.gohome!==undefined){
     const dPub=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;
     const heroSrcPub=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;
-    if(heroSrcPub)myWorks.unshift({img:heroSrcPub,title:dPub.name});
+    if(heroSrcPub){myWorks.unshift({img:heroSrcPub,title:dPub.name,calcBag:dPub.calcBag});ecoPoints+=120;}
     showToast('已发布到首页动态');setTimeout(()=>goReset('01'),700);return;
   }
   if(t.dataset.go==='back'){goBack();return;}
