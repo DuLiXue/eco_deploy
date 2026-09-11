@@ -79,6 +79,8 @@ let identifyResult=null;
 let lastIdentifyError=null;
 let creativeHistory=[];
 let historyIndex=-1;
+let myWorks=[];
+let myListings=[];
 let generating=false;
 let regenerating=false;
 const GARMENT_LABELS={pants:'长裤/牛仔裤',shirt:'衬衫/T恤',skirt:'裙装',jacket:'外套/夹克',flat:'平整布料'};
@@ -371,8 +373,8 @@ const SCREENS={
   const MSGS=[
     {cat:'订单',iconName:'cart.circle.fill.svg',title:'你的订单已发货',body:'拼布托特包预计 9 月 10 日送达',time:'10:24'},
     {cat:'订单',iconName:'cart.circle.fill.svg',title:'月牙斜挎包正在备货',body:'预计 2 个工作日内发货，请耐心等待',time:'9 月 6 日'},
-    {cat:'审核',iconName:'checkmark.circle.fill.svg',title:'作品审核通过',body:'"旧牛仔的新生活"已公开发布',time:'昨天'},
-    {cat:'审核',iconName:'exclamationmark.circle.fill.svg',title:'作品资料待补充',body:'"格纹小包教程"缺少尺寸信息，请补充后重新提交',time:'3 天前'},
+    {cat:'审核',iconName:'checkmark.circle.fill.svg',title:'作品审核通过',body:'“旧牛仔的新生活”已公开发布',time:'昨天'},
+    {cat:'审核',iconName:'exclamationmark.circle.fill.svg',title:'作品资料待补充',body:'“格纹小包教程”缺少尺寸信息，请补充后重新提交',time:'3 天前'},
     {cat:'活动',conv:'rita',avatar:6,title:'Rita',body:'可以的，下单后告诉我希望的长度就好。',time:'周一'},
     {cat:'活动',conv:'taozi',avatar:18,title:'阿桃的碎布铺子',body:'现货哦，今天下单 48 小时内就能发出～',time:'上周五'}
   ];
@@ -392,18 +394,21 @@ const SCREENS={
   const tabsHtml=`<div class="tabs" style="margin-top:14px">${tabHtml('works','作品')}${tabHtml('fav','收藏')}${tabHtml('selling','在售')}</div>`;
   let bodyHtml='';
   if(profileTab==='works'){
-    bodyHtml=`<div class="gridphotos">${[0,3,2,10,7,9].map(i=>`<span data-toast="作品详情演示中未启用">${img(photos[i])}</span>`).join('')}</div>`;
+    const realWorksHtml=myWorks.map(w=>`<span data-toast="${w.title}"><img class="photo" src="${w.img}" alt="我的作品"></span>`).join('');
+    const demoWorksHtml=[0,3,2,10,7,9].map(i=>`<span data-toast="作品详情演示中未启用">${img(photos[i])}</span>`).join('');
+    bodyHtml=`<div class="gridphotos">${realWorksHtml}${demoWorksHtml}</div>`;
   }else if(profileTab==='fav'){
     const favKeys=Object.keys(favoritedProducts).filter(k=>favoritedProducts[k]);
     bodyHtml=favKeys.length?`<div class="results" style="margin-top:14px">${favKeys.map(k=>{const prod=PRODUCTS[k];return `<article class="card" style="margin:0;padding:0;overflow:hidden" data-go="21" data-productkey="${k}">${img(photos[prod.heroIdx],'heroimg')}<div style="padding:10px 12px 12px"><h3 style="margin:0 0 8px">${prod.name}</h3><div class="row"><b class="price">¥${prod.price}</b><span class="tag">已收藏</span></div></div></article>`;}).join('')}</div>`:`<p class="sub" style="text-align:center;margin-top:24px">还没有收藏的好物，去逛逛吧</p>`;
   }else{
     const prod=PRODUCTS.totebag;
-    bodyHtml=`<div class="results" style="margin-top:14px"><article class="card" style="margin:0;padding:0;overflow:hidden" data-go="21" data-productkey="totebag">${img(photos[prod.heroIdx],'heroimg')}<div style="padding:10px 12px 12px"><h3 style="margin:0 0 8px">${prod.name}</h3><div class="row"><b class="price">¥${prod.price}</b><span class="tag">在售中</span></div></div></article></div>`;
+    const realListingsHtml=myListings.map(l=>`<article class="card" style="margin:0;padding:0;overflow:hidden" data-toast="${l.title}"><img class="heroimg" src="${l.img}" alt="我上架的商品"><div style="padding:10px 12px 12px"><h3 style="margin:0 0 8px">${l.title}</h3><div class="row"><b class="price">¥${l.price}</b><span class="tag">审核中</span></div></div></article>`).join('');
+    bodyHtml=`<div class="results" style="margin-top:14px">${realListingsHtml}<article class="card" style="margin:0;padding:0;overflow:hidden" data-go="21" data-productkey="totebag">${img(photos[prod.heroIdx],'heroimg')}<div style="padding:10px 12px 12px"><h3 style="margin:0 0 8px">${prod.name}</h3><div class="row"><b class="price">¥${prod.price}</b><span class="tag">在售中</span></div></div></article></div>`;
   }
-  return `${header('我的',false,`<span data-go="20">${icon('Vector-13.svg')}</span>`)}<div class="content"><div class="profile">${img(photos[5],'avatar')}<h2>Lin 的循环衣橱</h2><p class="small">把旧衣留下，也把故事留下。</p><div class="stats"><div data-toast="关注列表演示中未启用"><b>128</b><span>关注</span></div><div data-toast="粉丝列表演示中未启用"><b>3.2k</b><span>粉丝</span></div><div data-toast="获赞收藏明细演示中未启用"><b>26k</b><span>获赞收藏</span></div></div></div><div class="tools"><div class="tool" data-go="19">${icon('scissors.svg')}改造历史</div><div class="tool" data-toast="作品集演示中未启用">${icon('book_and_pencil.svg')}作品集</div><div class="tool" data-toast="绿缝积分演示中未启用">${icon('sparkles.svg')}绿缝积分</div></div>${tabsHtml}${bodyHtml}</div>`;
+  return `${header('我的',false,`<span data-go="20">${icon('Vector-13.svg')}</span>`)}<div class="content"><div class="profile">${img(photos[5],'avatar')}<h2>Lin 的循环衣橱</h2><p class="small">把旧衣留下，也把故事留下。</p><div class="stats"><div data-toast="关注列表演示中未启用"><b>128</b><span>关注</span></div><div data-toast="粉丝列表演示中未启用"><b>3.2k</b><span>粉丝</span></div><div data-toast="获赞收藏明细演示中未启用"><b>26k</b><span>获赞收藏</span></div></div></div><div class="tools"><div class="tool" data-go="19">${icon('scissors.svg')}改造历史</div><div class="tool" data-toast="绿缝积分演示中未启用">${icon('sparkles.svg')}绿缝积分</div></div>${tabsHtml}${bodyHtml}</div>`;
 },tab:'me'},
 '19':{name:'改造历史',body:()=>`${header('改造历史',true)}<div class="content"><div class="chips"><span class="chip on">进行中</span><span class="chip">已完成</span><span class="chip">草稿</span></div><div class="timeline"><div class="event"><b>牛仔外套 → 拼接托特包</b><p class="small">今天 14:20 · 教程 2/8</p><div class="card row" data-go="11">${img(photos[0],'thumb')}<div><b>继续制作</b><p class="small">下一步：缝合侧片</p></div><span>›</span></div></div><div class="event"><b>针织衫 → 月牙包</b><p class="small">9 月 5 日 · 已选择创意方案</p></div><div class="event"><b>衬衫 → 三角笔袋</b><p class="small">8 月 28 日 · 已完成</p></div></div></div>`,tab:'me'},
-'20':{name:'上架售卖',body:()=>`${header('上架好物',true)}<div class="content"><h1 class="title">让作品遇见<br>下一位主人</h1><div class="card">${listingPhotoDataUrl?`<div class="upload" style="height:140px;margin:0;border-style:solid;padding:0;overflow:hidden;position:relative" data-listingupload="1"><img src="${listingPhotoDataUrl}" style="width:100%;height:100%;object-fit:cover"><span style="position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:4px 10px;border-radius:20px">重新选择</span></div>`:`<div class="upload" style="height:140px;margin:0" data-listingupload="1">${icon('camera.circle.fill.svg')}<b>添加实拍图</b></div>`}</div><div class="field"><span>商品标题</span><b>拼布托特包</b></div><div class="field"><span>价格</span><b>¥ 189</b></div><div class="field"><span>库存</span><b>1 件</b></div><div class="field"><span>发货时效</span><b>72 小时内 ›</b></div><div class="card"><span>✓ 我已确认符合 EcoStitch 二手再造品安全标准</span></div></div><div class="bottomcta"><button class="btn" data-go="submit20">提交审核</button></div>`},
+'20':{name:'上架售卖',body:()=>`${header('上架好物',true)}<div class="content"><div class="eyebrow" style="margin-top:0">让作品遇见下一位主人</div><div class="card">${listingPhotoDataUrl?`<div class="upload" style="height:140px;margin:0;border-style:solid;padding:0;overflow:hidden;position:relative" data-listingupload="1"><img src="${listingPhotoDataUrl}" style="width:100%;height:100%;object-fit:cover"><span style="position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:4px 10px;border-radius:20px">重新选择</span></div>`:`<div class="upload" style="height:140px;margin:0" data-listingupload="1">${icon('camera.circle.fill.svg')}<b>添加实拍图</b></div>`}</div><div class="field"><span>商品标题</span><b>拼布托特包</b></div><div class="field"><span>价格</span><b>¥ 189</b></div><div class="field"><span>库存</span><b>1 件</b></div><div class="field"><span>发货时效</span><b>72 小时内 ›</b></div><div class="card"><span>✓ 我已确认符合 EcoStitch 二手再造品安全标准</span></div></div><div class="bottomcta"><button class="btn" data-go="submit20">提交审核</button></div>`},
 '21':{name:'商品详情与购买',body:()=>{const prod=PRODUCTS[viewingProductKey];const isFav=!!favoritedProducts[viewingProductKey];return `${header('好物详情',true,`<span data-cart="1" style="cursor:pointer;display:flex;color:${addedToCart?'#3fae6a':'#141615'}">${cartIcon(addedToCart)}</span>`)}<div class="content">${img(photos[prod.heroIdx],'heroimg')}<div class="card"><div class="row"><div><div class="price">¥${prod.price}</div><b>${prod.name} · ${prod.tag}</b></div><span class="tag">${prod.tag}</span></div><p class="sub">${prod.desc}</p><div class="seller">${img(photos[prod.sellerAvatar],'avatar')}<div><b>${prod.sellerName}</b><div class="small">${prod.sold}</div></div></div></div></div><div class="bottomcta"><div style="display:flex;gap:10px"><button class="btn light" style="width:96px;white-space:nowrap;${isFav?'color:#e0555a;border-color:#e0555a;font-size:13px':''}" data-favorite="${viewingProductKey}">${isFav?'♥ 已收藏':'♡ 收藏'}</button><button class="btn" style="flex:1" data-go="22">立即购买</button></div></div>`;}},
 '22':{name:'订单确认',body:()=>{const prod=PRODUCTS[viewingProductKey];return `${header('确认订单',true)}<div class="content"><div class="card"><div class="row" style="align-items:center"><b>收货地址</b><span data-toast="编辑收货地址演示中未启用" style="cursor:pointer;color:#77817b;display:flex"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.475 5.408l2.117 2.117M12.11 9.27l5.727-5.726a1.847 1.847 0 012.612 2.612L14.72 11.88c-.296.296-.671.497-1.081.579L11 13l.53-2.648c.082-.41.283-.786.579-1.082z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 15v3a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div><p class="sub">林予安　138****6621<br>上海市徐汇区衡山路 88 号</p></div><div class="order">${img(photos[prod.heroIdx],'photo')}<h3>${prod.name} · ${prod.tag}</h3><div class="row"><span class="small">数量 × 1</span><b class="price">¥${prod.price}</b></div></div><div class="card"><div class="row"><span>商品金额</span><b>¥${prod.price}</b></div><div class="row" style="margin-top:12px"><span>运费</span><b>¥0</b></div></div></div><div class="bottomcta"><button class="btn" data-go="submitorder">提交订单 · ¥${prod.price}</button></div>`;}}
 };
@@ -569,9 +574,17 @@ document.querySelector('.phone').addEventListener('click',e=>{
   }
   if(t.dataset.toast){showToast(t.dataset.toast);return;}
   if(t.dataset.tabgo){goReset(t.dataset.tabgo);return;}
-  if(t.dataset.gohome!==undefined){showToast('已发布到首页动态');setTimeout(()=>goReset('01'),700);return;}
+  if(t.dataset.gohome!==undefined){
+    const dPub=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;
+    const heroSrcPub=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;
+    if(heroSrcPub)myWorks.unshift({img:heroSrcPub,title:dPub.name});
+    showToast('已发布到首页动态');setTimeout(()=>goReset('01'),700);return;
+  }
   if(t.dataset.go==='back'){goBack();return;}
-  if(t.dataset.go==='submit20'){showToast('已提交审核，通常 1 个工作日内完成');setTimeout(()=>go('18'),900);return;}
+  if(t.dataset.go==='submit20'){
+    if(listingPhotoDataUrl)myListings.unshift({img:listingPhotoDataUrl,title:'拼布托特包',price:189});
+    showToast('已提交审核，通常 1 个工作日内完成');setTimeout(()=>go('18'),900);return;
+  }
   if(t.dataset.go==='submitorder'){showToast('下单成功！');setTimeout(()=>goReset('02'),900);return;}
   if(t.dataset.go==='09'){go('09');startGeneration();return;}
   if(t.dataset.go==='13'){openTutStep=0;go('13');return;}
