@@ -1,0 +1,30 @@
+/* EcoStitch UI 规范主题覆盖：不改动业务逻辑，仅统一视觉层。 */
+:root{
+  --green:#8ED7B2;--green-core:#3B8B68;--green-soft:#E2F5EA;
+  --ink:#111613;--ink-2:#303833;--ink-3:#849089;--nav-off:#9AA69E;
+  --card:#FFFFFF;--bg:#F5F7F5;--line:#E5EBE7;--line-2:#D9E4DC;
+  --warn:#9B741D;--warn-soft:#FFF6DE;--red:#C94A45;
+}
+
+/* 与参考文件 EcoStitch新视觉设计提案_v1.0.html 逐项对齐的顶部状态栏 */
+.statusbar{height:38px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;color:var(--ink);flex-shrink:0;background:var(--card)}
+.statusbar .sb-left{display:flex;align-items:center;gap:5px}.statusbar .sb-time{font-size:15px;font-weight:700;letter-spacing:-.02em}
+.statusbar .sb-moon{width:12px;height:12px;flex-shrink:0}.statusbar .sb-moon svg,.statusbar .sb-signal svg{width:100%;height:100%;display:block}
+.statusbar .sb-right{display:flex;align-items:center;gap:5px}.statusbar .sb-signal{width:16px;height:11px;flex-shrink:0}
+.statusbar .sb-g{font-size:13px;font-weight:700;letter-spacing:-.01em}.statusbar .sb-batt{display:flex;align-items:center}
+.statusbar .sb-batt-pill{background:var(--ink);color:#fff;font-size:11px;font-weight:800;border-radius:7px;padding:2.5px 6px 3px;line-height:1;min-width:20px;text-align:center;font-variant-numeric:tabular-nums}
+.statusbar .sb-batt-nub{width:2px;height:7px;border-radius:0 2px 2px 0;background:var(--nav-off);margin-left:1px}
+
+body{background:#EEF2EF}.ph{border-radius:44px;border:8px solid #101110;box-shadow:0 20px 50px rgba(28,30,24,.16);background:var(--card)}
+.body{padding-left:18px;padding-right:18px;padding-bottom:46px}.hometabs{padding-left:18px;padding-right:18px;gap:22px}.hometabs .t{font-size:14px}.hometabs .t.on{color:var(--ink);border-bottom:2px solid var(--ink);padding-bottom:8px}
+.feedcard{border-bottom:10px solid var(--bg);padding-bottom:16px}.feedcard .imgwrap{border-radius:20px;background:var(--soft)}.feedcard .pill-tag{border-radius:14px;background:rgba(17,22,19,.72)}.feedcard .pill-buy{border-radius:14px}
+.feedcard .userrow{margin-top:10px}.feedcard .followbtn{color:var(--green-core);padding:8px 10px;min-height:40px}.feedcard .actrow{gap:22px}.feedcard .tagchip{background:var(--green-soft);color:var(--green-core);border-radius:12px}
+.ctabtn,.btn{border-radius:16px;font-weight:700;min-height:48px}.ctabtn{background:var(--ink)}.btn{background:var(--ink)}.btn.sec2{background:var(--soft);color:var(--ink)}
+.upbox{border-radius:22px;border-color:#B8CBC0;background:linear-gradient(145deg,#EFF7F2,#FAFCFA);min-height:230px}.bagopt{border-radius:18px;border-color:var(--line-2);padding:14px}.bagopt.on{border-color:var(--green-core);background:var(--green-soft)}
+.overlay,.aiw-panel{background:var(--card)}.overlay .obody{padding:18px}.searchbox{border-radius:15px;background:var(--soft)}.filchip{border-radius:14px;padding:9px 14px;border-color:var(--line-2)}.filchip.on{border-color:var(--green-core);background:var(--green-soft)}
+.howtocard{border-radius:20px;padding:17px}.howtocard.rec{border-color:var(--green-core);background:var(--green-soft)}.pjcard{border-radius:18px}.metiles .mt{border-radius:18px}.worksgrid .wt{border-radius:12px}
+.botnav{border-top:1px solid var(--line);background:var(--card)}.botnav .item{min-height:60px;padding:9px 0 10px;gap:4px;border:0;background:transparent;font-family:var(--font)}.botnav .item.on{color:var(--ink)}.botnav .fabwrap .circ{width:54px;height:54px;border-radius:18px;background:var(--mint);color:var(--ink);margin-top:-22px;box-shadow:0 10px 22px rgba(59,139,104,.24)}
+.aiw-fab{background:var(--green-core);box-shadow:0 10px 24px rgba(59,139,104,.28)}.aiw-tip{border-radius:18px 18px 4px 18px}.aiw-bub.me{background:var(--green-core)}.aiw-sendbtn{background:var(--green-core)}
+.detailimg{background:var(--soft)}.detailimg .pill-tag{border-radius:14px}.profilehead .followbtn2{background:var(--green-core);border-radius:16px}.profilehead .followbtn2.on{background:var(--soft)}
+.toast{border-radius:14px;background:rgba(17,22,19,.92)}
+@media(max-width:430px){body{padding:0}.ph{border-radius:0;border-left:0;border-right:0;width:100%;max-width:390px}}

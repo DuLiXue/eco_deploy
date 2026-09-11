@@ -8244,10 +8244,29 @@ function calculate(){
   const vf = curBag==="boxtote" ? "<span class=\"pill v\">✓ 已验证</span>" : (curBag==="crescent"||curBag==="trianglepouch") ? "<span class=\"pill v\">✓ 曲线纸样复刻</span>" : "<span class=\"pill r\">模板库·建议先小样</span>"; // roundbp 走模板库分支,同 saddle/jiaozi
   document.getElementById('cutList').innerHTML=`<div class="rh"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style=""><circle cx="7" cy="6.8" r="2.4"/><circle cx="7" cy="17.2" r="2.4"/><path d="M9.2 8.1 20.5 15.6M9.2 15.9 20.5 8.4"/></svg>裁片清单 ${vf}</div>`+rows;
 
-  // simple diagram (proportional boxes)
-  const maxW=Math.max(...pieces.map(p=>p[1])), sc=120/maxW;
-  let dg=pieces.slice(0,3).map(p=>`<div style="display:inline-block;margin:4px;text-align:center"><div style="width:${Math.max(p[1]*sc,20)}px;height:${Math.max(p[2]*sc*0.5,24)}px;border:1.5px solid var(--nav-off);border-radius:3px;background:#fff"></div><div style="font-size:9px;color:var(--ink-3,#9DA192);margin-top:3px">${p[0]}</div></div>`).join('');
-  document.getElementById('diagram').innerHTML='<div style="font-size:11px;color:var(--ink-2);margin-bottom:8px">裁片示意（比例缩放）</div>'+dg;
+  // simple diagram (proportional boxes) —— 2026-09-11 Bedi 反馈：之前只挑前3片、高度还用一个*0.5的经验系数
+  // 硬压扁，图不准也不好看；主应用(index.html)纸样展示屏嵌入这个预览时，片数太少导致卡片留出一大截空白，
+  // 外层还会先露出一截原生滚动条(根因是 iframe 初始高度写死220px，内容一旦比它高就先出滚动条，等主应用的
+  // setupPatternPreviewResize 量完真实高度才会消失，慢网络下这段过渡更明显，见 index.html 对应注释)。这里改成：
+  // ①展示全部裁片而不是只挑3个，用自动换行的网格排布，片数多的包型(比如13片的经典拉链双肩包)自然占更多
+  // 高度，正好把主应用那块空白基本填起来；②宽高都按真实厘米比例等比缩放(不再单独把高度打5折)，长条形裁片
+  // (比如背带、侧片)保留真实的又长又窄的视觉比例，更真实；③每个裁片下方标真实厘米尺寸，信息量更够，不用
+  // 靠堆数量凑排版。
+  // 2026-09-11 加固：iframe 嵌进主应用后，可用宽度只有约320px(#diagram在preview模式下没有左右
+  // padding，但父级.body还留了20px+20px)，卡片项目宽度定太大(104px)三列放不下会挤成两列，行数变多、
+  // 整体偏高，在稍矮一点的真机屏幕上可能连着下面的文字提示一起被 .phone 的 overflow:hidden 切掉看不见。
+  // 缩小单项宽度到能稳定三列排布(实测全库能连到这个预览的4种包型里最多5片，三列即2行，比两列3行矮
+  // 不少)，同时把每项内居中用的高度从112px降到76px，进一步压缩整体高度，在保留真实比例的前提下让内容
+  // 更有把握在一屏内完整显示，不需要额外滚动。
+  const maxDim=Math.max(...pieces.flatMap(p=>[p[1],p[2]])), scale=62/maxDim;
+  const dg=pieces.map(p=>{
+    let w=Math.max(p[1]*scale,12), h=Math.max(p[2]*scale,12);
+    const capSide=72;
+    if(h>capSide){ const r=capSide/h; h=capSide; w=Math.max(w*r,8); }
+    if(w>capSide){ const r=capSide/w; w=capSide; h=Math.max(h*r,8); }
+    return `<div style="display:flex;flex-direction:column;align-items:center;width:92px"><div style="width:100%;height:76px;display:flex;align-items:center;justify-content:center"><div style="width:${w.toFixed(1)}px;height:${h.toFixed(1)}px;border:1.5px solid var(--green);border-radius:5px;background:var(--green-soft)"></div></div><div style="font-size:10.5px;font-weight:600;color:var(--ink);margin-top:4px;text-align:center;line-height:1.25">${p[0]}</div><div style="font-size:9.5px;color:var(--ink-3,#9DA192);text-align:center">${p[1]}×${p[2]}cm</div></div>`;
+  }).join('');
+  document.getElementById('diagram').innerHTML='<div style="font-size:11px;color:var(--ink-2);margin-bottom:8px;text-align:left">裁片示意（比例缩放，共 '+pieces.length+' 片）</div><div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center">'+dg+'</div>';
 
   document.getElementById('note').textContent=notes;
   renderTutorial(curBag);
