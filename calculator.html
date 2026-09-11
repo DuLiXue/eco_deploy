@@ -8258,15 +8258,20 @@ function calculate(){
   // 缩小单项宽度到能稳定三列排布(实测全库能连到这个预览的4种包型里最多5片，三列即2行，比两列3行矮
   // 不少)，同时把每项内居中用的高度从112px降到76px，进一步压缩整体高度，在保留真实比例的前提下让内容
   // 更有把握在一屏内完整显示，不需要额外滚动。
-  const maxDim=Math.max(...pieces.flatMap(p=>[p[1],p[2]])), scale=62/maxDim;
-  const dg=pieces.map(p=>{
-    let w=Math.max(p[1]*scale,12), h=Math.max(p[2]*scale,12);
-    const capSide=72;
-    if(h>capSide){ const r=capSide/h; h=capSide; w=Math.max(w*r,8); }
-    if(w>capSide){ const r=capSide/w; w=capSide; h=Math.max(h*r,8); }
-    return `<div style="display:flex;flex-direction:column;align-items:center;width:92px"><div style="width:100%;height:76px;display:flex;align-items:center;justify-content:center"><div style="width:${w.toFixed(1)}px;height:${h.toFixed(1)}px;border:1.5px solid var(--green);border-radius:5px;background:var(--green-soft)"></div></div><div style="font-size:10.5px;font-weight:600;color:var(--ink);margin-top:4px;text-align:center;line-height:1.25">${p[0]}</div><div style="font-size:9.5px;color:var(--ink-3,#9DA192);text-align:center">${p[1]}×${p[2]}cm</div></div>`;
-  }).join('');
-  document.getElementById('diagram').innerHTML='<div style="font-size:11px;color:var(--ink-2);margin-bottom:8px;text-align:left">裁片示意（比例缩放，共 '+pieces.length+' 片）</div><div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center">'+dg+'</div>';
+  // 2026-09-11(第二次调整) Bedi 反馈：不需要展示这个"按比例列出所有裁片"的示意图了，
+  // 改成直接展示纸样 PDF 第一页(也就是"纸样说明"那一页:标题+打印必读+校验方框+纸样说明+
+  // 符号含义+缝份建议+裁片清单)的缩略图，让预览区看起来就是"这份纸样文档长什么样"，而不是
+  // 一堆抽象方块。这里没有引入 pdf.js 去真的栅格化生成好的 PDF(纯前端加一个渲染库对一个小预览
+  // 图来说代价偏大)，而是用同样的真实数据(包型/尺寸/缝份/裁片清单)搭一个还原第一页版式的
+  // 缩略卡片，视觉上是"文档缩略图"该有的样子(标题区+高亮提示框+分隔的说明区+清单区)，数据也
+  // 是真的，不是随便摆的占位块。
+  const thumbBagName=(document.querySelector('.bagopt.on .nm')||{}).textContent||'';
+  const thumbDim=(W&&H)?(W+'×'+H+(D?('×'+D):'')+'cm'):'';
+  const thumbSa=(sa||1)+'cm';
+  const thumbMaxRows=5;
+  const thumbRows=pieces.slice(0,thumbMaxRows).map(p=>`<div style="display:flex;justify-content:space-between;gap:4px;font-size:6.3px;line-height:1.6;color:var(--ink);padding:1px 0;border-bottom:1px solid #eee"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p[0]}</span><span style="color:var(--ink-3,#9DA192);flex-shrink:0">${p[1]}×${p[2]}</span></div>`).join('');
+  const thumbMore=pieces.length>thumbMaxRows?`<div style="font-size:6px;color:var(--ink-3,#9DA192);text-align:center;margin-top:2px">...共 ${pieces.length} 片</div>`:'';
+  document.getElementById('diagram').innerHTML=`<div style="display:flex;justify-content:center"><div style="width:172px;aspect-ratio:210/297;background:#fff;border:1px solid var(--line,#E2E4DC);border-radius:6px;box-shadow:0 4px 14px rgba(28,30,24,.08);padding:9px 10px;display:flex;flex-direction:column;gap:4px;overflow:hidden"><div style="font-size:8.5px;font-weight:800;color:var(--ink)">EcoStitch 裁剪纸样</div><div style="font-size:5.5px;color:var(--ink-3,#9DA192)">包型：${thumbBagName}　成品 ${thumbDim}　缝份 ${thumbSa}</div><div style="border:1px solid var(--green);border-radius:3px;padding:3px 4px;display:flex;align-items:center;gap:5px;margin-top:2px"><div style="flex:1;min-width:0"><div style="font-size:5px;font-weight:700;color:var(--green)">⚠ 打印请选"实际大小/100%"</div><div style="height:1.5px;background:#e9ece9;margin-top:2px;border-radius:1px"></div><div style="height:1.5px;background:#e9ece9;margin-top:1.5px;width:65%;border-radius:1px"></div></div><div style="width:13px;height:13px;border:1px solid var(--ink);flex-shrink:0"></div></div><div style="font-size:6px;font-weight:700;color:var(--ink);margin-top:2px">纸样说明</div><div style="display:flex;flex-direction:column;gap:1.5px"><div style="height:1.5px;background:#eee;border-radius:1px;width:96%"></div><div style="height:1.5px;background:#eee;border-radius:1px;width:90%"></div><div style="height:1.5px;background:#eee;border-radius:1px;width:98%"></div><div style="height:1.5px;background:#eee;border-radius:1px;width:80%"></div></div><div style="font-size:6px;font-weight:700;color:var(--ink);margin-top:3px">裁片清单</div><div style="flex:1;min-height:0;overflow:hidden">${thumbRows}${thumbMore}</div></div></div>`;
 
   document.getElementById('note').textContent=notes;
   renderTutorial(curBag);
