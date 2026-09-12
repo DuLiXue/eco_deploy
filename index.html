@@ -107,6 +107,14 @@ let extraIdentifyErrors=[];
 // 额外旧衣卡片的"编辑衣物类型/材质"展开状态，主图的编辑状态仍然用下面已有的 editingField。
 let extraEditingField=null;
 let creativeHistory=[];
+// 2026-09-12 新增：creativeDirections 和 creativeHistory 一一对应，记录"生成记录"里每一张图当时用的
+// 是哪个包型(selectedDirection)。原因见 regenerate()——之前"重新生成"只会在同一个包型内部换细节
+// (口袋/背带这些)，包型本身从头到尾锁死不变，Bedi 反馈这样几次生成看起来太像同一个款式；现在改成
+// "重新生成"也会真正换一个包型(除非是"参考此作品改造"进来的、需要保持和参考帖同一个包型的情况)，
+// 但纸样/教程(屏13/14/15)必须严格对应"用户最终选中的那一张图"用的是哪个包型，不能用一个全局共享、
+// 会被后续重新生成不断覆盖的 selectedDirection——所以每张图各自的包型单独存一份，用户切换查看/选中
+// 哪张图(见下面 data-pick 处理)时，同步把 selectedDirection 换回那张图对应的包型。
+let creativeDirections=[];
 let historyIndex=-1;
 let myWorks=[];
 let myListings=[];
@@ -187,6 +195,9 @@ function pickBestDirection(gt,meas,material){
   // 算进候选，最后从这些真正够料的选项里随机选一个。这样同一件旧衣、同样的尺寸测好几次，也能
   // 看到不同的包型，不会像套死的模板一样每次都出同款。GARMENT_DIRECTIONS 不再用来收窄候选，
   // 只在别处(如 330 行)当"这是不是一个认得出的衣物类型"来用。
+  // 2026-09-12(第三次调整) Bedi 反馈：可以生成同样的包型，只是不能太密集——不需要强制排除刚才用过
+  // 的那个包型，在"布料面积够用"的候选范围内做真正的随机就够了，偶尔随机到同一个包型是正常的，不用
+  // 特意规避。之前加过一版 exclude 参数强制每次必须换一个不同包型，现在按这次反馈去掉，改回单纯随机。
   let candidates=Object.keys(DIRECTIONS);
   const nums=Object.values(meas||{}).map(v=>parseFloat(v)).filter(v=>!isNaN(v)&&v>0);
   const sizeProxy=nums.length?Math.max(...nums):80;
@@ -308,23 +319,47 @@ async function startGeneration(){
   try{
     const r=await fetch(API_BASE+'/api/generate-creative-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photoDataUrls:uploadedPhotos,prompt})});
     clearInterval(timer);
-    if(r.ok){const data=await r.json();creativeHistory.push(data.imageDataUrl);historyIndex=creativeHistory.length-1;}
+    if(r.ok){const data=await r.json();creativeHistory.push(data.imageDataUrl);creativeDirections.push(selectedDirection);historyIndex=creativeHistory.length-1;}
     else{showToast('AI 生成没有成功，请重试');}
   }catch(e){clearInterval(timer);showToast('AI 生成没有成功，请检查网络');}
   generating=false;
   if(currentId()==='09')goReplace('10');
 }
+// 2026-09-12 Bedi 反馈：多次点"重新生成"，出来的包型款式几乎一样，看不出变化规律。根因是原来的 prompt
+// 每次发的都是同一句空泛的"另一种创意方向"，没有给模型任何具体的、不同的改变指令，模型很容易每次都收敛
+// 到同一个视觉上最"安全"的结果。改法：①准备一组具体的结构变化方向，每次重新生成时按顺序真正挑一条不同
+// 的要求(这次换口袋位置、下次换背带宽度…)，用 creativeHistory.length 做轮转下标，天然跟着已生成过几张
+// 走、不需要额外状态、也会在 creativeHistory 重置时一起归零；②后端 generationConfig 里加大 temperature，
+// 提高采样随机性，降低多次调用撞到同一个结果的概率(见 generate-creative-image.js)。
+const REGEN_VARIATIONS=[
+  '这一次请调整口袋的数量、形状或位置（比如从前袋改成侧袋，或者增减一个口袋）',
+  '这一次请改变背带/提手的宽度、长度或背负方式（比如从单肩改成双肩背带，或者调整提手长度和位置）',
+  '这一次请改变整体轮廓比例（比如从方正改成圆润的月牙形，或者调整包身的高宽比例）',
+  '这一次请改变面料拼接的分割方式（比如把原来的整片改成明显的分色块拼接，调整拼接线的走向）',
+  '这一次请改变五金/配件的样式或位置（比如拉链改成扣袢，或者调整装饰配件的摆放）',
+  '这一次请改变包身的开合方式或顶部设计（比如从拉链改成翻盖扣合，或者调整袋口形状）'
+];
 async function regenerate(){
   if(regenerating)return;
   if(!uploadedPhotoDataUrl){showToast('请先回到第一步上传旧衣照片');return;}
   regenerating=true;render(true);
+  // 2026-09-12 Bedi 反馈"重新生成几次都是同一个包型"：包型(selectedDirection)原来从进入生成流程起就
+  // 锁死不变，"重新生成"只在同一个包型内部换细节(口袋/背带这些)，所以看起来总是同一个款式。这里改成
+  // 每次"重新生成"都在"布料面积够用"的候选范围内重新随机一次包型——除非是"参考此作品改造"(referenceBagDir
+  // 有值)进来的，那种情况用户就是想复刻参考帖那个具体包型，包型必须保持不变，只在细节上变化。
+  // (第三次调整：按 Bedi 反馈，不强制排除刚才用过的包型——随机到同一个包型是正常的，不用刻意规避，
+  // 只要是在真正随机、不是每次都锁死同一个即可，见 pickBestDirection 里去掉的 exclude 逻辑。)
+  if(!referenceBagDir){
+    selectedDirection=pickBestDirection(null,measurements,identifyResult&&identifyResult.material);
+  }
   const dirName2=(DIRECTIONS[selectedDirection]||DIRECTIONS.tote).name;
   const styleText2=styleHintText();
   const mat2=identifyResult&&identifyResult.material?identifyResult.material:'旧衣';
-  const prompt='把照片中这件旧衣的'+mat2+'面料，改造设计成'+styleText2+dirName2+'的另一种创意方向（可以变化的是包型结构、拼接方式、细节设计），但必须严格保持与原图相同的面料颜色、水洗纹理、磨损细节和五金配色，不要生成看起来像换了一块不同面料的效果。商品摄影风格、纯白背景、单个成品居中展示、不出现人物。'+multiPhotoPromptSuffix();
+  const variation=REGEN_VARIATIONS[creativeHistory.length%REGEN_VARIATIONS.length];
+  const prompt='把照片中这件旧衣的'+mat2+'面料，改造设计成'+styleText2+dirName2+'。'+variation+'。必须严格保持与原图相同的面料颜色、水洗纹理、磨损细节和五金配色，不要生成看起来像换了一块不同面料的效果，也不要生成和之前几乎一样的款式。商品摄影风格、纯白背景、单个成品居中展示、不出现人物。'+multiPhotoPromptSuffix();
   try{
     const r=await fetch(API_BASE+'/api/generate-creative-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photoDataUrls:uploadedPhotos,prompt})});
-    if(r.ok){const data=await r.json();creativeHistory.push(data.imageDataUrl);historyIndex=creativeHistory.length-1;}
+    if(r.ok){const data=await r.json();creativeHistory.push(data.imageDataUrl);creativeDirections.push(selectedDirection);historyIndex=creativeHistory.length-1;}
     else{showToast('AI 生成没有成功，请重试');}
   }catch(e){showToast('AI 生成没有成功，请检查网络');}
   regenerating=false;render(true);
@@ -430,7 +465,12 @@ const SCREENS={
 '10':{name:'创意方案',body:()=>{
   const total=creativeHistory.length;
   const current=historyIndex>=0?creativeHistory[historyIndex]:null;
+  // 2026-09-12 新增：显示当前这张方案对应的包型名字。之前"重新生成"只在同一个包型内部换细节，包型本身
+  // 全程不显示也看不出变化；现在"重新生成"会真正换包型(见 regenerate())，这里显示出来能让用户直接看到
+  // 变化，而不用自己盯着图猜是不是换了款式。
+  const currentDirName=current?(DIRECTIONS[selectedDirection]||DIRECTIONS.tote).name:'';
   return `${header('选择方案',true)}<div class="content"><div class="eyebrow">${total>0?`已生成 ${total} 个方案`:'创意结果'}</div>
+  ${currentDirName?`<div class="chips" style="margin:0 0 10px"><span class="chip on">当前款式：${currentDirName}</span></div>`:''}
   <div class="result wide" style="height:340px;${regenerating?'opacity:.5':''}">${current?`<img src="${current}" style="width:100%;height:100%;object-fit:cover;display:block;-webkit-touch-callout:default" oncontextmenu="return true">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#eef2ef;color:#77817b;font-size:12px;text-align:center;padding:16px">AI 生成没有成功<br>可点击下方按钮重试</div>`}<span class="ai-note">AI 创意效果</span></div>
   ${current?`<p class="small" style="text-align:center;color:#77817b;margin-top:8px">长按图片可直接保存到相册，也可以点击下方按钮保存</p><button class="btn light" style="margin-top:8px" data-saveimg="1">保存图片到相册</button>`:''}
   <button class="btn light" style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:6px${regenerating?';opacity:.6;pointer-events:none':''}" data-regen="1">${icon('sparkles.svg')} ${regenerating?'正在生成…（约需几秒）':(total>0?'重新生成':'重试生成')}</button>
@@ -680,13 +720,19 @@ document.querySelector('.phone').addEventListener('click',e=>{
   }
   if(t.dataset.confirmphotos!==undefined){
     if(!uploadedPhotos.length){showToast('请先上传至少一张旧衣照片');return;}
-    measurements={};selectedDirection=null;selectedStyles=['极简','通勤'];creativeHistory=[];historyIndex=-1;patternDownloaded=false;publishedIndices={};
+    measurements={};selectedDirection=null;selectedStyles=['极简','通勤'];creativeHistory=[];creativeDirections=[];historyIndex=-1;patternDownloaded=false;publishedIndices={};
     go('06');runIdentify();return;
   }
   if(t.dataset.saveimg!==undefined){saveImageToPhotos(historyIndex>=0?creativeHistory[historyIndex]:null);return;}
   if(t.dataset.tutstep!==undefined){const i=+t.dataset.tutstep;openTutStep=(openTutStep===i)?-1:i;render(true);return;}
   if(t.dataset.regen!==undefined){regenerate();return;}
-  if(t.dataset.pick!==undefined){historyIndex=+t.dataset.pick;render(true);return;}
+  if(t.dataset.pick!==undefined){
+    historyIndex=+t.dataset.pick;
+    // 切换查看"生成记录"里的某一张历史图时，包型也要跟着切回那张图当时用的包型(见 creativeDirections
+    // 的说明)，不然后面的纸样/教程会对不上用户实际选中的这张图。
+    if(creativeDirections[historyIndex])selectedDirection=creativeDirections[historyIndex];
+    render(true);return;
+  }
   if(t.dataset.editfield){editingField=editingField===t.dataset.editfield?null:t.dataset.editfield;render(true);return;}
   if(t.dataset.editextrafield){
     const [idxStr,field]=t.dataset.editextrafield.split(':');
@@ -720,7 +766,7 @@ document.querySelector('.phone').addEventListener('click',e=>{
   if(t.dataset.tabgo){referenceBagDir=null;goReset(t.dataset.tabgo);return;}
   if(t.dataset.referencebag){
     referenceBagDir=FEED_POST_DIR[t.dataset.referencebag]||null;
-    measurements={};selectedDirection=null;selectedStyles=['极简','通勤'];creativeHistory=[];historyIndex=-1;patternDownloaded=false;publishedIndices={};
+    measurements={};selectedDirection=null;selectedStyles=['极简','通勤'];creativeHistory=[];creativeDirections=[];historyIndex=-1;patternDownloaded=false;publishedIndices={};
     go('05');return;
   }
   if(t.dataset.publishnow!==undefined){
