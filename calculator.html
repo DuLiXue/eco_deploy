@@ -7664,7 +7664,8 @@ window._NOTO_B64="AAEAAAAQAQAABAAAQkFTRULjT+4AB1DMAAAA3kdQT1NaxsSbAAdRrAAAFdJHU1
 /* embed 模式：被 EcoStitch 主应用用 iframe 内嵌展示时(index.html 纸样展示屏)，去掉这里自带的
    手机外框/状态栏/返回按钮/包型选择区——这些在主应用里都已经有一份了，嵌进去会变成"手机里套手机"。
    通过 <html> 上的 .embed class 生效(见 body 顶部的检测脚本)，不影响独立打开这个页面时的原有样式。 */
-.embed body{background:#fff;padding:0;align-items:stretch;display:block}
+.embed{background:#fff;min-height:100%}
+.embed body{background:#fff;padding:0;align-items:stretch;display:block;min-height:100vh}
 .embed .hint{display:none}
 .embed .ph{width:100%;max-width:100%;height:auto;min-height:0;border-radius:0;box-shadow:none;background:transparent}
 .embed .statusbar{display:none}
@@ -7693,6 +7694,7 @@ window._NOTO_B64="AAEAAAAQAQAABAAAQkFTRULjT+4AB1DMAAAA3kdQT1NaxsSbAAdRrAAAFdJHU1
 --nav-off:#B5B5B5;--card:#FFFFFF;--bg:#F3F3F3;--line:#EDEEE9;--line-2:#E2E4DC;--warn:#B08A2E;--warn-soft:#FBF6E9;
 --font:'PingFang SC','Noto Sans CJK SC',-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{color-scheme:light;background:#fff}
 body{background:#E9EAE5;font-family:var(--font);color:var(--ink);letter-spacing:-.01em;line-height:1.5;
 display:flex;flex-direction:column;align-items:center;padding:30px 16px 60px;-webkit-font-smoothing:antialiased}
 .ic{display:block;flex-shrink:0}
