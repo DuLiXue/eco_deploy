@@ -379,7 +379,7 @@ const SCREENS={
   const thumbs=uploadedPhotos.map((p,i)=>`<div style="position:relative;width:${thumbSize}px;height:${thumbSize}px;border-radius:14px;overflow:hidden;flex:0 0 auto"><img src="${p}" style="width:100%;height:100%;object-fit:cover">${i===0?`<span style="position:absolute;left:4px;bottom:4px;background:rgba(20,22,21,.65);color:#fff;font-size:9px;padding:2px 6px;border-radius:8px">主图</span>`:''}<span data-removephoto="${i}" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:12px;line-height:18px;text-align:center;cursor:pointer">✕</span></div>`).join('');
   const addBox=n<3?`<div data-addphoto="1" style="width:${thumbSize}px;height:${thumbSize}px;border-radius:14px;border:1.5px dashed #4d9d75;display:flex;align-items:center;justify-content:center;color:#4d9d75;font-size:28px;font-weight:300;cursor:pointer;flex:0 0 auto">+</div>`:'';
   const photoRow=n?`<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">${thumbs}${addBox}</div><p class="small" style="margin-top:8px">最多上传 3 张图片</p>`:'';
-  return `${header('开始改造',stack.length>1)}<div class="progress"><i style="width:12%"></i></div><div class="content"><div class="eyebrow">STEP 1 · 上传</div><p class="sub">保持衣物平整、背景干净，能帮助我们更准确地识别轮廓与面料。</p>${n===0?`<div class="upload" data-realupload="1">${icon('camera.circle.fill.svg')}<div><b>拍照或从相册选择</b><p class="small">JPG、PNG、HEIC · 不超过 10 MB</p></div></div>`:photoRow}<div class="card"><b>拍摄小提示</b><p class="sub">自然光下平铺拍摄，画面中保留完整衣物边缘。这一步的照片会真的发给 AI 识别。</p></div></div>${n?`<div class="bottomcta"><button class="btn mint" data-confirmphotos="1">确认</button></div>`:''}`;
+  return `${header('开始改造',stack.length>1)}<div class="progress"><i style="width:12%"></i></div><div class="content"><div class="eyebrow">STEP 1 · 上传</div><p class="sub">保持衣物平整、背景干净，能帮助我们更准确地识别轮廓与面料。</p>${n===0?`<div class="upload" data-realupload="1">${icon('camera.circle.fill.svg')}<div><b>拍照或从相册选择</b><p class="small">JPG、PNG、HEIC · 不超过 10 MB</p></div></div>`:''}<div class="card"><b>拍摄小提示</b><p class="sub">自然光下平铺拍摄，画面中保留完整衣物边缘。这一步的照片会真的发给 AI 识别。</p></div>${photoRow}</div>${n?`<div class="bottomcta"><button class="btn mint" data-confirmphotos="1">确认</button></div>`:''}`;
 },tab:'make'},
 '06':{name:'AI 识别确认',body:()=>{
   if(identifying){
@@ -551,7 +551,16 @@ function render(keepScroll){
     document.querySelector('.phone').appendChild(ctaSlot);
   }
   ctaSlot.innerHTML='';
-  if(cta)ctaSlot.appendChild(cta);
+  if(cta){
+    // 2026-09-12 Bedi 反馈：屏05新加的"确认"按钮完全看不见。根因是这一屏同时有底部导航栏(tab:'make')
+    // 和 .bottomcta——两者都是 position:absolute 贴底，.bottomcta 默认 bottom:28px，正好整个落在
+    // 底部导航栏(高85px、纯白底、z-index:2)的区域内，导航栏 z-index 比 .bottomcta 高，把按钮完全
+    // 盖住了(点上去点到的其实是导航栏)。这个问题不只影响屏05——任何屏只要同时用 tab 和 bottomcta
+    // 就会撞在一起。修法：渲染时如果这一屏同时有导航栏，就把 .bottomcta 的 bottom 往上抬
+    // 85(导航栏高度)+28(原来的间距)=113px，让按钮稳稳露在导航栏上方，不再被盖住。
+    if(entry.tab)cta.style.bottom='113px';
+    ctaSlot.appendChild(cta);
+  }
   document.getElementById('navSlot').innerHTML=entry.tab?nav(entry.tab):'';
   document.getElementById('screenLabel').textContent=id+' '+entry.name;
   if(id==='13')setupPatternPreviewResize();
