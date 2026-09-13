@@ -69,13 +69,40 @@ const ORDERS={
 };
 let viewingOrderKey='totebag';
 let historyTab='进行中';
+// 2026-09-13 Bedi 反馈"这个保存的草稿封面的图应该和上传的衣物匹配"：原来"进行中"列表第一条
+// (牛仔外套→拼接托特包)是写死的演示数据，封面用的是固定的库存图片(photos[0])，和用户当次真实
+// 上传的旧衣照片完全没关系——凑巧她这次也传了件牛仔外套，才会觉得"封面该配上传的衣服"。
+// 根本修法：这条"进行中"记录不再写死，改成 currentInProgressEntry() 按真实会话状态实时算出来，
+// 封面直接用 uploadedPhotoDataUrl(真实上传的照片)，标题/进度也跟着识别结果、选的改造方向、教程
+// 进度走。还没真正传过旧衣照片时不显示这条动态记录，只保留下面的演示数据做占位。
 const HISTORY=[
-  {tab:'进行中',title:'牛仔外套 → 拼接托特包',time:'今天 14:20 · 教程 2/8',cta:{go:'11',thumbIdx:0,label:'继续制作',sub:'下一步：缝合侧片'}},
   {tab:'进行中',title:'针织衫 → 月牙包',time:'9 月 5 日 · 已选择创意方案'},
   {tab:'已完成',title:'衬衫 → 三角笔袋',time:'8 月 28 日 · 已完成'},
   {tab:'已完成',title:'旧牛仔的新生活',time:'昨天 · 审核通过，已公开发布',status:'✓ 审核通过'},
   {tab:'草稿',title:'格纹小包教程',time:'3 天前 · 缺少尺寸信息，请补充后重新提交',status:'⚠ 待补充资料'}
 ];
+function currentInProgressEntry(){
+  if(!uploadedPhotoDataUrl)return null;
+  const gt=identifyResult&&GARMENT_LABELS[identifyResult.garmentType]?identifyResult.garmentType:null;
+  const gLabel=gt?GARMENT_LABELS[gt]:'旧衣';
+  const d=selectedDirection?DIRECTIONS[selectedDirection]:null;
+  let resumeGo,sub,title;
+  if(!d){
+    title=`${gLabel} · 还没选改造方向`;
+    resumeGo='08';sub='继续选择改造方向';
+  }else{
+    title=`${gLabel} → ${d.name}`;
+    const tut=TUTORIALS[d.calcBag];
+    const stepTotal=(tut&&tut.steps&&tut.steps.length)?tut.steps.length:8;
+    if(historyIndex>=0&&creativeHistory[historyIndex]){
+      const curStepTitle=(tut&&tut.steps&&tut.steps[openTutStep])?tut.steps[openTutStep].title:'继续教程';
+      resumeGo='14';sub=`下一步：${curStepTitle}（教程 ${Math.min(openTutStep+1,stepTotal)}/${stepTotal}）`;
+    }else{
+      resumeGo='11';sub='继续裁剪展开';
+    }
+  }
+  return {tab:'进行中',title,time:'刚刚',cta:{go:resumeGo,thumb:uploadedPhotoDataUrl,label:'继续制作',sub}};
+}
 const CONVERSATIONS={
   rita:{name:'Rita',avatar:6,productKey:'moonbag',messages:[
     {from:'me',text:'你好，请问可以调整肩带长度吗？'},
@@ -87,6 +114,7 @@ const CONVERSATIONS={
   ]}
 };
 let activeConversation='rita';
+let chatDraft='';
 
 const API_BASE='https://eco-deploy-nu.vercel.app';
 // 2026-09-12 新增：多件旧衣拼合。uploadedPhotos 是统一的旧衣照片数组(最多3张，数据URL)，第一张
@@ -145,6 +173,8 @@ let editingField=null;
 let measurements={};
 let selectedDirection=null;
 let openTutStep=0;
+let pendingPublishTitle=null;
+let pendingPublishDesc=null;
 let patternDownloaded=false;
 let lastDownloadError=null;
 // 2026-09-13 新增：Bedi 反馈"下载的纸样找不到，能不能点'纸样已下载'重新保存一次"。生成好的 PDF 数据本来
@@ -229,6 +259,8 @@ function pickBestDirection(gt,meas,material){
   candidates.sort((a,b)=>DIRECTION_FABRIC_NEED[a]-DIRECTION_FABRIC_NEED[b]);
   return candidates[0];
 }
+function escHtml(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escAttr(s){return escHtml(s).replace(/"/g,'&quot;');}
 const GARMENT_CUT_STEPS={
   pants:{title:'先拆开裤子两侧缝',desc:'从裤脚向上用拆线器逐段拆开两侧缝线，裤袋和门襟保留完整，注意避开厚接缝区域。',photoIdx:14},
   shirt:{title:'先拆开肩缝和侧缝',desc:'从下摆开始拆开两侧缝线，再拆开肩缝和袖窿，尽量保留衣身最大的一块完整布片。',photoIdx:14},
@@ -445,6 +477,14 @@ function measureBlockHtml(label,gt,valuesObj,extraIdx){
   }).join('');
   return `${label?`<div class="eyebrow" style="margin-top:${extraIdx===null?'0':'26px'}">${label}</div>`:''}<div class="pattern"><svg viewBox="${mc.viewBox||'0 0 300 220'}">${mc.svg}</svg></div>${fieldsHtml}`;
 }
+// 2026-09-13 Bedi 反馈"拆解衣物没有和衣服数量匹配，只有一件衣服"：屏11(剪裁展开引导)原来只看
+// identifyResult(第一张主图的识别结果)，只画一张照片+一张拆解步骤卡，多传几件旧衣时后面几件完全
+// 没有出现在这一屏。做法和屏07的 measureBlockHtml 一致——每件旧衣各自一块"照片+拆解提示卡"，第一件
+// (主图)决定后面纸样/教程用哪件的拆法，其余几件只是提供各自的拆解提示供用户参考，不影响后面流程。
+function cutStepBlockHtml(label,cs,photoSrc){
+  const heroHtml=photoSrc?`<img class="heroimg" src="${photoSrc}" alt="你上传的旧衣照片">`:img(photos[cs.photoIdx],'heroimg');
+  return `${label?`<div class="eyebrow" style="margin-top:18px">${label}</div>`:''}${heroHtml}<div class="card step" style="margin-top:10px"><span class="num">1</span><div><b>${cs.title}</b><p class="sub">${cs.desc}</p></div></div>`;
+}
 // 2026-09-12 新增：诊断"多张照片时 AI 生成没有成功"。Vercel 云函数(Node.js runtime)官方文档写明单次
 // 请求体硬性上限约 4.5MB，这是平台层限制、代码本身绕不过去——2-3 张真实旧衣照片(尤其牛仔布/毛线这种
 // 细节多、压缩率差的面料)哪怕客户端已经缩小到 1280px，转成 base64 叠加后仍可能逼近甚至超过这个上限，
@@ -555,17 +595,39 @@ const SCREENS={
 }},
 '11':{name:'剪裁展开引导',body:()=>{
   const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;
-  const gt=identifyResult&&GARMENT_CUT_STEPS[identifyResult.garmentType]?identifyResult.garmentType:'pants';
-  const cs=GARMENT_CUT_STEPS[gt];
-  return `${header('展开旧衣',true)}<div class="progress"><i style="width:64%"></i></div><div class="content"><div class="eyebrow">精准制作 · 1 / 4 · ${GARMENT_LABELS[gt]||'旧衣'} → ${d.name}</div><h1 class="title">${cs.title}</h1>${uploadedPhotoDataUrl?`<img class="heroimg" src="${uploadedPhotoDataUrl}" alt="你上传的旧衣照片">`:img(photos[cs.photoIdx],'heroimg')}<div class="card step"><span class="num">1</span><div><b>按标记线小心拆开</b><p class="sub">${cs.desc}</p></div></div><div class="warn">沿线慢慢拆，避开拉链、纽扣与厚接缝区域。</div><div class="small" style="text-align:center;margin-top:12px;color:#4d9d75;text-decoration:underline;cursor:pointer" data-go="12">材料好像不太够？查看备选方案</div></div><div class="bottomcta"><button class="btn" data-go="13">拆解完成</button></div>`;
+  const n=uploadedPhotos.length;
+  const primaryGt=identifyResult&&GARMENT_CUT_STEPS[identifyResult.garmentType]?identifyResult.garmentType:'pants';
+  const primaryCs=GARMENT_CUT_STEPS[primaryGt];
+  const primaryLabel=n>1?`旧衣照片 1（主图，决定后面纸样与教程） · ${GARMENT_LABELS[primaryGt]||'旧衣'}`:null;
+  let blocksHtml=cutStepBlockHtml(primaryLabel,primaryCs,uploadedPhotoDataUrl);
+  uploadedPhotos.slice(1).forEach((p,i)=>{
+    const r=extraIdentifyResults[i];
+    const gt=r&&GARMENT_CUT_STEPS[r.garmentType]?r.garmentType:'pants';
+    const cs=GARMENT_CUT_STEPS[gt];
+    blocksHtml+=cutStepBlockHtml(`旧衣照片 ${i+2} · ${GARMENT_LABELS[gt]||'旧衣'}`,cs,p);
+  });
+  const extraNote=n>1?'（多件旧衣时，后面的纸样与制作教程仍然只按第一张主图这件的拆法来——其余几件请对照各自的拆解提示单独拆开备用，处理完之后再点击下方"拆解完成"继续。）':'';
+  return `${header('展开旧衣',true)}<div class="progress"><i style="width:64%"></i></div><div class="content"><div class="eyebrow">精准制作 · 1 / 4 · ${GARMENT_LABELS[primaryGt]||'旧衣'} → ${d.name}</div><h1 class="title">${n>1?'按标记线小心拆开每一件旧衣':primaryCs.title}</h1>${blocksHtml}${extraNote?`<p class="small" style="margin-top:10px">${extraNote}</p>`:''}<div class="warn" style="margin-top:14px">沿线慢慢拆，避开拉链、纽扣与厚接缝区域。</div><div class="small" style="text-align:center;margin-top:12px;color:#4d9d75;text-decoration:underline;cursor:pointer" data-go="12">材料好像不太够？查看备选方案</div></div><div class="bottomcta"><button class="btn" data-go="13">拆解完成</button></div>`;
 }},
 '12':{name:'布料不足 Plan B',body:()=>`${header('调整方案',true)}<div class="content"><div class="eyebrow">材料检查</div><p class="sub">主裁片宽度预计少 8 cm。以下方案都可以继续完成作品。</p><div class="card"><div class="row"><b>方案 A · 加入拼布</b><span class="tag">推荐</span></div><p class="sub">加入一条浅色棉布侧片，保留原方案容量。</p></div><div class="card"><b>方案 B · 缩小 12%</b><p class="sub">无需额外材料，成品更轻巧。</p></div><div class="card"><b>方案 C · 切换模板</b><p class="sub">改为扁平小包，难度降低为初级。</p></div></div><div class="bottomcta"><button class="btn mint" data-go="13">采用拼布方案</button></div>`},
 '13':{name:'纸样展示',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;const bag=d.calcBag||'boxtote';const calcUrl=API_BASE+'/calculator.html?bag='+bag+'&embed=1';const previewUrl=calcUrl+'&preview=1';const heroSrc13=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;const colorBlockTip13=heroSrc13?`<div class="card" style="margin-top:12px"><div class="row" style="align-items:flex-start;gap:10px"><img src="${heroSrc13}" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex:0 0 auto"><div><b style="font-size:13px">效果图是拼色/拼接设计？</b><p class="small" style="margin-top:4px">上面的纸样给的是整体轮廓，不包含具体分色线——可以对照你的效果图，在对应裁片上自行画出色块分界线，拆成几片后每片各留 1cm 缝份，再按效果图里的颜色/面料分布分别裁剪、拼接缝合。</p></div></div></div>`:'';return `${header('裁剪纸样',true,`<span data-toast="纸样已包含 1cm 缝份，可直接照裁剪线裁剪；下方按钮下载后可在「制作教程」里看每一步">${icon('document.circle.svg')}</span>`)}<div class="content"><div class="eyebrow">${d.patternTitle}</div><div class="card gradient"><b>已经根据你选的方向准备好了</b><p class="sub">已经按标准尺寸自动算好「${d.patternTitle}」的真实纸样——点下方按钮直接下载 1:1 可打印 PDF。</p></div><div class="chips"><span class="chip on">含缝份</span><span class="chip on">1:1 可打印</span></div><div class="card" style="margin-top:12px;padding:0;overflow:hidden"><iframe id="patternCalcFrame" src="${previewUrl}" style="width:100%;height:260px;border:0;display:block;overflow:hidden;transition:height .2s ease" scrolling="no" title="纸样预览"></iframe></div>${colorBlockTip13}${patternDownloaded?`<p class="small" style="text-align:center;margin-top:10px"><span data-resharepattern="1" style="color:#4d9d75;text-decoration:underline;cursor:pointer">纸样已下载 ✓ 点击重新保存</span></p>`:''}${(!patternDownloaded&&lastDownloadError)?`<p class="small" style="color:#c0392b;word-break:break-all;white-space:pre-wrap;background:#fff3f2;border-radius:8px;padding:8px;margin-top:10px">调试信息（可截图发给开发者）：${lastDownloadError}</p>`:''}</div><div class="bottomcta"><button class="btn mint" style="display:flex;align-items:center;justify-content:center;gap:6px" ${patternDownloaded?'data-go="14"':'data-downloadpattern="1"'}>${patternDownloaded?'':icon('Vector-26.svg','ico16')}${patternDownloaded?'查看材料与步骤':'下载纸样'}</button></div>`;}},
 '14':{name:'制作教程',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;const tut=TUTORIALS[d.calcBag];const heroSrc=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;const heroHtml=heroSrc?`<img class="heroimg" src="${heroSrc}" alt="你选中的创意改造图">`:img(photos[d.photoIdx],'heroimg');const toolsText=tut?tut.tools:'家用缝纫机 · 90/14 号针 · 1 cm 缝份';const accHtml=(tut&&tut.accessories&&tut.accessories.length)?tut.accessories.map(a=>`<div class="row" style="align-items:flex-start;margin-top:8px;gap:10px"><b style="font-size:13px;flex:0 0 auto">${a.name}</b><span class="small" style="color:#77817b;text-align:right;flex:1">${a.spec} · ${a.qty}</span></div>`).join(''):'';const steps=(tut&&tut.steps&&tut.steps.length)?tut.steps:[{title:d.sewStep.title,body:[d.sewStep.desc]}];if(openTutStep>=steps.length)openTutStep=0;const stepsHtml=steps.map((s,i)=>{const isOpen=i===openTutStep;return `<div class="card step" data-tutstep="${i}" style="cursor:pointer;align-items:flex-start"><span class="num">${i+1}</span><div style="flex:1;min-width:0"><div class="row" style="align-items:center;gap:8px"><b style="flex:1">${s.title}</b><span style="transition:transform .2s;transform:${isOpen?'rotate(180deg)':'none'};flex:0 0 auto;display:inline-block">${icon('Vector-35.svg','ico16')}</span></div>${isOpen?`<div class="sub" style="margin-top:8px;line-height:1.8">${s.body.map(l=>`<div>${l}</div>`).join('')}</div>`:''}</div></div>`;}).join('');const colorBlockTip=heroSrc?`<div class="card" style="margin-top:14px"><div class="row" style="align-items:flex-start;gap:10px"><img src="${heroSrc}" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex:0 0 auto"><div><b style="font-size:13px">效果图是拼色/拼接设计？</b><p class="small" style="margin-top:4px">下面「纸样」给的是整体轮廓，不包含具体分色线——可以对照你的效果图，在对应裁片上自行画出色块分界线，拆成几片后每片各留 1cm 缝份，再按效果图里的颜色/面料分布分别裁剪、拼接缝合。</p></div></div></div>`:'';return `${header('制作教程',true,`<span data-toast="已保存到草稿">${icon('document.circle.svg')}</span>`)}<div class="content"><div class="eyebrow">${tut?tut.difficulty:d.level} · 预计 ${tut?tut.time:d.time} · ${d.name}</div><h1 class="title">${d.name} 制作教程</h1>${heroHtml}${colorBlockTip}<div class="card"><b>工具清单 · 请自备</b><p class="sub">${toolsText}</p></div>${accHtml?`<div class="card"><b>辅料清单</b>${accHtml}</div>`:''}<h3 style="margin-top:22px">分步骤制作（点击展开每一步）</h3>${stepsHtml}<div class="warn" style="margin-top:14px">布边起毛时，先使用 Z 字线迹锁边。</div><div style="display:flex;gap:10px;margin-top:22px">
   <button class="btn mint" style="flex:1" data-go="15">完成</button>
-  <button class="btn light" style="flex:1" ${heroSrc?'data-publishnow="1"':'data-toast="还没有可发布的创意图，先完成前面的创意生成步骤"'}>发布</button>
+  <button class="btn light" style="flex:1" ${heroSrc?'data-go="25"':'data-toast="还没有可发布的创意图，先完成前面的创意生成步骤"'}>发布</button>
 </div></div>`;}},
-'15':{name:'改造完成',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;const gname=identifyResult?(GARMENT_LABELS[identifyResult.garmentType]||'旧衣'):'旧衣';const tut=TUTORIALS[d.calcBag];const stepCount=(tut&&tut.steps&&tut.steps.length)?tut.steps.length:8;const heroSrc15=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;const heroHtml15=heroSrc15?`<img class="heroimg" src="${heroSrc15}" alt="你完成的改造成品">`:img(photos[4],'heroimg');return `${header('完成',true)}<div class="content"><div class="complete">${icon('checkmark.circle.fill.svg')}</div><h1 class="title" style="text-align:center">你的旧衣完成新生</h1><p class="sub" style="text-align:center">本次共完成 ${stepCount} 个步骤，${gname}被改造成了${d.name}。</p>${heroHtml15}<div class="card row"><div><b>获得 120 绿缝积分</b><p class="small">估算减少 0.6 kg 纺织废弃物</p></div><span class="tag">+120</span></div></div><div class="bottomcta"><button class="btn mint" data-gohome="1">发布我的作品</button></div>`;}},
+'15':{name:'改造完成',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;const gname=identifyResult?(GARMENT_LABELS[identifyResult.garmentType]||'旧衣'):'旧衣';const tut=TUTORIALS[d.calcBag];const stepCount=(tut&&tut.steps&&tut.steps.length)?tut.steps.length:8;const heroSrc15=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;const heroHtml15=heroSrc15?`<img class="heroimg" src="${heroSrc15}" alt="你完成的改造成品">`:img(photos[4],'heroimg');return `${header('完成',true)}<div class="content"><div class="complete">${icon('checkmark.circle.fill.svg')}</div><h1 class="title" style="text-align:center">你的旧衣完成新生</h1><p class="sub" style="text-align:center">本次共完成 ${stepCount} 个步骤，${gname}被改造成了${d.name}。</p>${heroHtml15}<div class="card row"><div><b>获得 120 绿缝积分</b><p class="small">估算减少 0.6 kg 纺织废弃物</p></div><span class="tag">+120</span></div></div><div class="bottomcta"><button class="btn mint" data-go="25">发布我的作品</button></div>`;}},
+'25':{name:'发布作品信息',body:()=>{
+  // 2026-09-13 Bedi 反馈"制作完成点击发布作品没有和直接个人主页发布作品的路径打通，没有连接到填写
+  // 作品信息那个页面"：原来"发布"按钮点了就直接静默发布(标题都是代码自动拼的方向名字，用户完全没
+  // 机会自己写标题/描述)，还是跳回首页动态而不是个人主页。现在改成先进这一屏，让用户自己填标题和
+  // 描述(默认给个建议值，可以改)，点"发布到我的主页"才真正写入 myWorks 并跳回个人主页的"作品"标签。
+  const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;
+  const heroSrc=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;
+  const gname=identifyResult?(GARMENT_LABELS[identifyResult.garmentType]||'旧衣'):'旧衣';
+  if(pendingPublishTitle===null)pendingPublishTitle=`${gname} → ${d.name}`;
+  if(pendingPublishDesc===null)pendingPublishDesc=`用旧${gname}改造的${d.name}，亲手完成，为旧衣物找到新用途。`;
+  return `${header('发布作品',true)}<div class="content"><div class="eyebrow" style="margin-top:0">封面</div>${heroSrc?`<img class="heroimg" src="${heroSrc}" alt="你的改造成品">`:img(photos[d.photoIdx],'heroimg')}<div class="eyebrow">标题</div><input data-publishtitle="1" type="text" value="${escAttr(pendingPublishTitle)}" placeholder="给作品起个标题" style="width:100%;height:48px;border-radius:14px;border:1px solid #e2e7e3;padding:0 14px;font-size:15px;font-family:inherit;box-sizing:border-box;margin-top:8px"><div class="eyebrow">描述</div><textarea data-publishdesc="1" placeholder="说说这次改造的故事…" style="width:100%;min-height:96px;border-radius:14px;border:1px solid #e2e7e3;padding:12px 14px;font-size:14px;font-family:inherit;box-sizing:border-box;resize:vertical;margin-top:8px">${escHtml(pendingPublishDesc)}</textarea></div><div class="bottomcta"><button class="btn mint" data-confirmpublish="1">发布到我的主页</button></div>`;
+}},
 '16':{name:'消息中心',body:()=>{
   const MSGS=[
     {cat:'订单',iconName:'cart.circle.fill.svg',title:'你的订单已发货',body:'拼布托特包预计 9 月 10 日送达',time:'10:24',go:'24',orderKey:'totebag'},
@@ -586,7 +648,11 @@ const SCREENS={
   const c=CONVERSATIONS[activeConversation]||CONVERSATIONS.rita;
   const prod=PRODUCTS[c.productKey];
   const bubbleHtml=c.messages.map(m=>{const isMe=m.from==='me';const avIdx=isMe?5:c.avatar;return `<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;${isMe?'flex-direction:row-reverse':''}">${img(photos[avIdx],'avatar')}<div class="card" style="margin:0;max-width:70%;padding:10px 14px;font-size:14.5px;line-height:1.45;border-radius:18px;${isMe?'background:#dff4e8':''}">${m.text}</div></div>`;}).join('');
-  return `${header(c.name,true)}<div class="content"><div class="card seller" data-go="21" data-productkey="${c.productKey}">${img(photos[prod.heroIdx],'thumb')}<div><b>${prod.name}</b><div class="price">¥${prod.price}</div></div><span class="tag" style="margin-left:auto">查看商品</span></div><div style="margin-top:90px">${bubbleHtml}</div></div><div class="bottomcta"><div class="field"><span>输入消息…</span>${icon('Vector-24.svg')}</div></div>`;
+  // 2026-09-13 Bedi 反馈"图一可以真实发送消息吗"：原来底部这一条只是纯装饰的静态文字+图标，没有真的
+  // input，点了也没反应。改成和评论输入框一样的"本地真实发送"——没有假的客服自动回复(和转发/评论的
+  // 诚实原则一致)，输入框里打字通过 chatDraft 暂存，点发送图标才真的把这条消息 push 进这个会话的
+  // messages 数组、立刻在上面的聊天记录里出现。
+  return `${header(c.name,true)}<div class="content"><div class="card seller" data-go="21" data-productkey="${c.productKey}">${img(photos[prod.heroIdx],'thumb')}<div><b>${prod.name}</b><div class="price">¥${prod.price}</div></div><span class="tag" style="margin-left:auto">查看商品</span></div><div style="margin-top:90px">${bubbleHtml}</div></div><div class="bottomcta"><div class="field" style="gap:8px"><input data-chatinput="1" type="text" value="${escAttr(chatDraft)}" placeholder="输入消息…" style="flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:15px;font-family:inherit;color:#141615"><span data-sendmsg="1" style="cursor:pointer;display:flex;flex:0 0 auto">${icon('Vector-24.svg')}</span></div></div>`;
 }},
 '18':{name:'个人主页',body:()=>{
   const tabHtml=(key,label)=>profileTab===key?`<b>${label}</b>`:`<span data-profiletab="${key}">${label}</span>`;
@@ -613,8 +679,10 @@ const SCREENS={
 '19':{name:'改造历史',body:()=>{
   const htabs=['进行中','已完成','草稿'];
   const chipsHtml=htabs.map(c=>`<span class="chip ${historyTab===c?'on':''}" data-historytab="${c}">${c}</span>`).join('');
-  const items=HISTORY.filter(h=>h.tab===historyTab);
-  const eventsHtml=items.length?items.map(h=>`<div class="event"><b>${h.title}</b>${h.status?`<span class="tag" style="margin-left:8px">${h.status}</span>`:''}<p class="small">${h.time}</p>${h.cta?`<div class="card row" data-go="${h.cta.go}">${img(photos[h.cta.thumbIdx],'thumb')}<div><b>${h.cta.label}</b><p class="small">${h.cta.sub}</p></div><span>›</span></div>`:''}</div>`).join(''):`<p class="sub" style="text-align:center;margin-top:24px">这个分类下还没有记录</p>`;
+  const dynamicEntry=historyTab==='进行中'?currentInProgressEntry():null;
+  const items=dynamicEntry?[dynamicEntry,...HISTORY.filter(h=>h.tab===historyTab)]:HISTORY.filter(h=>h.tab===historyTab);
+  const ctaThumbHtml=cta=>cta.thumb?`<img class="thumb" src="${cta.thumb}" alt="进行中的改造">`:img(photos[cta.thumbIdx],'thumb');
+  const eventsHtml=items.length?items.map(h=>`<div class="event"><b>${h.title}</b>${h.status?`<span class="tag" style="margin-left:8px">${h.status}</span>`:''}<p class="small">${h.time}</p>${h.cta?`<div class="card row" data-go="${h.cta.go}">${ctaThumbHtml(h.cta)}<div><b>${h.cta.label}</b><p class="small">${h.cta.sub}</p></div><span>›</span></div>`:''}</div>`).join(''):`<p class="sub" style="text-align:center;margin-top:24px">这个分类下还没有记录</p>`;
   return `${header('改造历史',true)}<div class="content"><div class="chips">${chipsHtml}</div><div class="timeline">${eventsHtml}</div></div>`;
 },tab:'me'},
 '24':{name:'订单详情',body:()=>{
@@ -628,7 +696,7 @@ const SCREENS={
   let w;
   if(viewingWorkDetail&&viewingWorkDetail.indexOf('my-')===0){
     const mw=myWorks[+viewingWorkDetail.slice(3)]||{};
-    w={img:mw.img,title:mw.title||'我的作品',calcBag:mw.calcBag,desc:'你亲手上传照片、AI 生成创意图并完成教程做出来的改造作品。',mine:true};
+    w={img:mw.img,title:mw.title||'我的作品',calcBag:mw.calcBag,desc:mw.desc||'你亲手上传照片、AI 生成创意图并完成教程做出来的改造作品。',mine:true};
   }else{
     const idx=viewingWorkDetail?+viewingWorkDetail.slice(5):0;
     const demo=PROFILE_DEMO_WORKS[idx]||PROFILE_DEMO_WORKS[0];
@@ -678,6 +746,23 @@ function render(keepScroll){
     ctaSlot.appendChild(cta);
   }
   document.getElementById('navSlot').innerHTML=entry.tab?nav(entry.tab):'';
+  // 2026-09-13 Bedi 反馈"返回到这个页面时依然没有按键可以返回到home桌面"：改造流程里的这些屏(比如
+  // 制作教程、剪裁展开引导)本来就没有底部导航栏(entry.tab 为空)，只有顶部返回箭头一级一级往回退，
+  // 想直接回首页得连点好几次返回。这里统一在这类屏的顶部右侧插一个"回首页"图标(复用底部导航栏同款
+  // 图标 + 同样的 data-tabgo，点了会 goReset('01') 直接清空导航栈回首页)，不用逐屏改 header() 调用。
+  if(!entry.tab){
+    const topEl=screenRoot.querySelector('.top');
+    if(topEl){
+      const rightSpan=topEl.querySelector(':scope > span:last-child');
+      if(rightSpan&&!rightSpan.querySelector('[data-tabgo]')){
+        const homeBtn=document.createElement('span');
+        homeBtn.setAttribute('data-tabgo','01');
+        homeBtn.style.cssText='cursor:pointer;display:inline-flex;margin-right:6px;vertical-align:middle';
+        homeBtn.innerHTML=icon('Subtract.svg');
+        rightSpan.insertBefore(homeBtn,rightSpan.firstChild);
+      }
+    }
+  }
   document.getElementById('screenLabel').textContent=id+' '+entry.name;
   if(id==='13')setupPatternPreviewResize();
 }
@@ -779,10 +864,13 @@ async function triggerRealPatternDownload(){
 }
 
 document.querySelector('.phone').addEventListener('input',e=>{
-  const t=e.target.closest('[data-measure],[data-extrameasure],[data-search],[data-commentinput]');
+  const t=e.target.closest('[data-measure],[data-extrameasure],[data-search],[data-commentinput],[data-chatinput],[data-publishtitle],[data-publishdesc]');
   if(!t)return;
   if(t.dataset.search!==undefined){searchQuery=t.value;return;}
   if(t.dataset.commentinput!==undefined){getPI(t.dataset.commentinput).draft=t.value;return;}
+  if(t.dataset.chatinput!==undefined){chatDraft=t.value;return;}
+  if(t.dataset.publishtitle!==undefined){pendingPublishTitle=t.value;return;}
+  if(t.dataset.publishdesc!==undefined){pendingPublishDesc=t.value;return;}
   if(t.dataset.extrameasure!==undefined){
     const idx=t.dataset.extrameasure.indexOf(':');
     const exIdx=+t.dataset.extrameasure.slice(0,idx),key=t.dataset.extrameasure.slice(idx+1);
@@ -793,7 +881,7 @@ document.querySelector('.phone').addEventListener('input',e=>{
   measurements[t.dataset.measure]=t.value;
 });
 document.querySelector('.phone').addEventListener('click',e=>{
-  const t=e.target.closest('[data-go],[data-tabgo],[data-toast],[data-pick],[data-gohome],[data-realupload],[data-regen],[data-editfield],[data-setfield],[data-selectdir],[data-downloadpattern],[data-resharepattern],[data-togglestyle],[data-saveimg],[data-tutstep],[data-feedtab],[data-searchtag],[data-favorite],[data-msgfilter],[data-msgitem],[data-gofeedtab],[data-like],[data-fav],[data-comment],[data-forward],[data-postcomment],[data-commentinput],[data-cart],[data-listingupload],[data-profiletab],[data-workdetail],[data-referencebag],[data-publishnow],[data-historytab],[data-addphoto],[data-removephoto],[data-confirmphotos],[data-editextrafield],[data-setextrafield]');
+  const t=e.target.closest('[data-go],[data-tabgo],[data-toast],[data-pick],[data-gohome],[data-realupload],[data-regen],[data-editfield],[data-setfield],[data-selectdir],[data-downloadpattern],[data-resharepattern],[data-togglestyle],[data-saveimg],[data-tutstep],[data-feedtab],[data-searchtag],[data-favorite],[data-msgfilter],[data-msgitem],[data-gofeedtab],[data-like],[data-fav],[data-comment],[data-forward],[data-postcomment],[data-commentinput],[data-cart],[data-listingupload],[data-profiletab],[data-workdetail],[data-referencebag],[data-publishnow],[data-historytab],[data-addphoto],[data-removephoto],[data-confirmphotos],[data-editextrafield],[data-setextrafield],[data-sendmsg],[data-confirmpublish]');
   // 2026-09-12 Bedi 反馈："评论框一旦点开就没法取消，最好点击屏幕其他任意区域都能取消发送评论"。
   // 这段必须放在下面"if(!t)return"之前——点在空白背景/帖子卡片本身这些地方时 t 会是 null，
   // 放在 return 后面就永远走不到这里。逻辑：只要还有评论框是打开状态(showComposer)，且这次点击的
@@ -850,7 +938,18 @@ document.querySelector('.phone').addEventListener('click',e=>{
   if(t.dataset.searchtag){selectedSearchTag=t.dataset.searchtag;searchQuery=t.dataset.searchtag;render(true);return;}
   if(t.dataset.favorite){const k=t.dataset.favorite;favoritedProducts[k]=!favoritedProducts[k];render(true);showToast(favoritedProducts[k]?'已收藏':'已取消收藏');return;}
   if(t.dataset.msgfilter){msgFilter=t.dataset.msgfilter;render(true);return;}
-  if(t.dataset.msgitem){activeConversation=t.dataset.msgitem;go('17');return;}
+  if(t.dataset.msgitem){activeConversation=t.dataset.msgitem;chatDraft='';go('17');return;}
+  if(t.dataset.sendmsg!==undefined){
+    const text=(chatDraft||'').trim();
+    if(!text)return;
+    const c=CONVERSATIONS[activeConversation]||CONVERSATIONS.rita;
+    c.messages.push({from:'me',text});
+    chatDraft='';
+    render();
+    const sr=document.getElementById('screenRoot');
+    if(sr)sr.scrollTop=sr.scrollHeight;
+    return;
+  }
   if(t.dataset.realupload!==undefined){document.getElementById('realPhotoInput').click();return;}
   if(t.dataset.addphoto!==undefined){
     if(uploadedPhotos.length>=3){showToast('最多上传 3 张图片');return;}
@@ -863,7 +962,7 @@ document.querySelector('.phone').addEventListener('click',e=>{
   }
   if(t.dataset.confirmphotos!==undefined){
     if(!uploadedPhotos.length){showToast('请先上传至少一张旧衣照片');return;}
-    measurements={};extraMeasurements=[];selectedDirection=null;selectedStyles=['极简','通勤'];creativeHistory=[];creativeDirections=[];historyIndex=-1;patternDownloaded=false;lastPatternPdf=null;publishedIndices={};lastGenerateError=null;
+    measurements={};extraMeasurements=[];selectedDirection=null;selectedStyles=['极简','通勤'];creativeHistory=[];creativeDirections=[];historyIndex=-1;patternDownloaded=false;lastPatternPdf=null;publishedIndices={};lastGenerateError=null;pendingPublishTitle=null;pendingPublishDesc=null;
     go('06');runIdentify();return;
   }
   if(t.dataset.saveimg!==undefined){saveImageToPhotos(historyIndex>=0?creativeHistory[historyIndex]:null);return;}
@@ -918,22 +1017,31 @@ document.querySelector('.phone').addEventListener('click',e=>{
   if(t.dataset.tabgo){referenceBagDir=null;goReset(t.dataset.tabgo);return;}
   if(t.dataset.referencebag){
     referenceBagDir=FEED_POST_DIR[t.dataset.referencebag]||null;
-    measurements={};extraMeasurements=[];selectedDirection=null;selectedStyles=['极简','通勤'];creativeHistory=[];creativeDirections=[];historyIndex=-1;patternDownloaded=false;lastPatternPdf=null;publishedIndices={};lastGenerateError=null;
+    measurements={};extraMeasurements=[];selectedDirection=null;selectedStyles=['极简','通勤'];creativeHistory=[];creativeDirections=[];historyIndex=-1;patternDownloaded=false;lastPatternPdf=null;publishedIndices={};lastGenerateError=null;pendingPublishTitle=null;pendingPublishDesc=null;
     go('05');return;
   }
-  if(t.dataset.publishnow!==undefined){
-    const dPub2=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;
-    const heroPub2=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;
-    if(!heroPub2){showToast('还没有可发布的创意图，先完成前面的创意生成步骤');return;}
-    if(!publishedIndices[historyIndex]){myWorks.unshift({img:heroPub2,title:dPub2.name,calcBag:dPub2.calcBag});ecoPoints+=120;publishedIndices[historyIndex]=true;showToast('恭喜获得 120 绿缝积分，已发布到首页动态');}
-    else{showToast('已发布到首页动态');}
-    setTimeout(()=>goReset('01'),700);return;
+  if(t.dataset.go==='25'){
+    const heroPub25=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;
+    if(!heroPub25){showToast('还没有可发布的创意图，先完成前面的创意生成步骤');return;}
+    if(!publishedIndices[historyIndex]){pendingPublishTitle=null;pendingPublishDesc=null;}
+    go('25');return;
   }
-  if(t.dataset.gohome!==undefined){
+  if(t.dataset.confirmpublish!==undefined){
     const dPub=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;
     const heroSrcPub=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;
-    if(heroSrcPub&&!publishedIndices[historyIndex]){myWorks.unshift({img:heroSrcPub,title:dPub.name,calcBag:dPub.calcBag});ecoPoints+=120;publishedIndices[historyIndex]=true;}
-    showToast('已发布到首页动态');setTimeout(()=>goReset('01'),700);return;
+    const finalTitle=(pendingPublishTitle||'').trim()||`${dPub.name}改造作品`;
+    const finalDesc=(pendingPublishDesc||'').trim();
+    if(!publishedIndices[historyIndex]){
+      myWorks.unshift({img:heroSrcPub,title:finalTitle,desc:finalDesc,calcBag:dPub.calcBag});
+      ecoPoints+=120;publishedIndices[historyIndex]=true;
+      showToast('恭喜获得 120 绿缝积分，已发布到我的主页');
+    }else{
+      const existing=myWorks.find(w=>w.img===heroSrcPub);
+      if(existing){existing.title=finalTitle;existing.desc=finalDesc;}
+      showToast('已更新到我的主页');
+    }
+    profileTab='works';
+    setTimeout(()=>goReset('18'),700);return;
   }
   if(t.dataset.go==='15'){
     const dFin=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;
