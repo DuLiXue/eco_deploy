@@ -9991,18 +9991,53 @@ async function downloadPattern(dryRun){
   if(P.bagType==='boston'){ drawBostonBodyPage(); drawBostonGussetPage(); }
   if(dryRun){ return { pageCount: doc.getPageCount() }; }
   const pdfBytes=await doc.save();
+  const filename=`EcoStitch纸样_${P.bagName}_1比1.pdf`;
   const blob=new Blob([pdfBytes],{type:'application/pdf'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url; a.download=`EcoStitch纸样_${P.bagName}_1比1.pdf`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  // 2026-09-13 Bedi 反馈"下载的纸样找不到""能不能选下载路径""下载完之后能不能点一下跳转到文件位置"——
+  // 先说清楚一个浏览器的硬限制：网页没办法弹出系统的"另存为/选文件夹"对话框，也没办法在下载完之后打开
+  // 系统的文件管理器跳转到某个具体文件，这两件事出于安全考虑对所有网页都是禁止的，不是这份代码能绕过去
+  // 的。能做到的最接近的等价方案，是复用这个项目里"保存图片到相册"(index.html 的 saveImageToPhotos)
+  // 已经用过的同一个思路：优先调用手机系统自带的分享面板(navigator.share)，把这份 PDF 当文件传过去——
+  // 分享面板里用户可以自己选"存到文件"、选具体文件夹、或者直接分享到其他 App，"选择保存位置"这件事就
+  // 交给了用户熟悉的系统分享界面，而不是像原来那样直接丢进浏览器默认的下载文件夹(Safari/微信这类环境里
+  // 默认下载目录本来就不好找，微信自带浏览器对 <a download> 这种写法的支持还常常不稳定，这大概率就是
+  // "找不到"的真正原因)。调不出分享面板的环境(比如电脑浏览器)才退回原来的 <a download> 方式。同时把这次
+  // 生成的 PDF 存进 window._lastPatternPdf，这样屏13"纸样已下载"文字被点击时可以直接复用这份数据再分享/
+  // 下载一次，不用把整个纸样重新画一遍。
+  window._lastPatternPdf={blob,filename};
+  await sharePdfOrDownload(blob,filename);
   // 下载完纸样紧接着自动展开制作教程,并滚动过去——不用用户自己再去找"下一步该怎么做"
   const tutToggle=document.getElementById('tutToggle');
   if(tutToggle){
     if(!tutToggle.classList.contains('open')) toggleTutPanel();
     setTimeout(()=>tutToggle.scrollIntoView({behavior:'smooth',block:'start'}),150);
   }
+}
+
+// 复用的"分享或下载"辅助函数：优先用系统分享面板(可以让用户自己选保存位置)，不支持/失败时退回传统的
+// <a download> 方式。downloadPattern() 首次下载、以及屏13"纸样已下载"被点击重新分享时，都走这一个函数。
+async function sharePdfOrDownload(blob,filename){
+  try{
+    const file=new File([blob],filename,{type:'application/pdf'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:filename});
+      return;
+    }
+  }catch(err){
+    if(err&&err.name==='AbortError')return; // 用户自己在系统分享面板里点了取消，不用再退回下载
+  }
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+// 屏13"纸样已下载 ✓"文字被点击时调用——不用重新计算/重新画一遍纸样，直接复用上一次生成好的 PDF 数据
+// 再走一次"分享或下载"，方便用户找不到第一次存到哪里时，重新选一次保存位置。
+async function sharePatternAgain(){
+  if(!window._lastPatternPdf){throw new Error('还没有已生成的纸样数据，请先点"下载纸样"生成一次');}
+  await sharePdfOrDownload(window._lastPatternPdf.blob,window._lastPatternPdf.filename);
 }
 
 </script>

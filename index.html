@@ -14,7 +14,7 @@
 <section class="screen" id="screenRoot"></section>
 <div id="navSlot"></div>
 </div>
-<input type="file" accept="image/*" id="realPhotoInput" style="display:none">
+<input type="file" accept="image/*" id="realPhotoInput" multiple style="display:none">
 <input type="file" accept="image/*" id="listingPhotoInput" style="display:none">
 </main>
 <script>
@@ -147,6 +147,14 @@ let selectedDirection=null;
 let openTutStep=0;
 let patternDownloaded=false;
 let lastDownloadError=null;
+// 2026-09-13 新增：Bedi 反馈"下载的纸样找不到，能不能点'纸样已下载'重新保存一次"。生成好的 PDF 数据本来
+// 存在纸样计算器那个 iframe 自己的 window 里(见 calculator.html 的 window._lastPatternPdf)——但用户从
+// 屏13下载完纸样后会自动跳到屏14，之后如果再返回屏13，屏13会重新创建一个全新的 iframe(重新加载一次
+// calculator.html)，那个新 iframe 自己的 window._lastPatternPdf 是空的，之前那份数据已经跟着旧 iframe
+// 一起被销毁了。所以这里在下载成功的那一刻(见 triggerRealPatternDownload)，把这份 PDF 数据从 iframe 里
+// 取出来、存进主页面自己的这个变量，这样不管用户之后怎么在屏13/14/15之间来回切换、iframe 被重建多少次，
+// "点击重新保存"都还能拿到同一份数据，不用也没办法找回已经销毁的 iframe。
+let lastPatternPdf=null;
 // 2026-09-12 新增：和 lastDownloadError 同样的思路——之前 startGeneration()/regenerate() 生成失败时
 // 只弹一句"AI 生成没有成功，请重试"，完全看不出真实原因(是服务器报错、超时，还是请求体太大被直接拒绝)。
 // 现在把失败时的真实 HTTP 状态码/服务端返回文本存进这个变量，在屏10露出来，方便截图给开发者定位。
@@ -552,7 +560,7 @@ const SCREENS={
   return `${header('展开旧衣',true)}<div class="progress"><i style="width:64%"></i></div><div class="content"><div class="eyebrow">精准制作 · 1 / 4 · ${GARMENT_LABELS[gt]||'旧衣'} → ${d.name}</div><h1 class="title">${cs.title}</h1>${uploadedPhotoDataUrl?`<img class="heroimg" src="${uploadedPhotoDataUrl}" alt="你上传的旧衣照片">`:img(photos[cs.photoIdx],'heroimg')}<div class="card step"><span class="num">1</span><div><b>按标记线小心拆开</b><p class="sub">${cs.desc}</p></div></div><div class="warn">沿线慢慢拆，避开拉链、纽扣与厚接缝区域。</div><div class="small" style="text-align:center;margin-top:12px;color:#4d9d75;text-decoration:underline;cursor:pointer" data-go="12">材料好像不太够？查看备选方案</div></div><div class="bottomcta"><button class="btn" data-go="13">拆解完成</button></div>`;
 }},
 '12':{name:'布料不足 Plan B',body:()=>`${header('调整方案',true)}<div class="content"><div class="eyebrow">材料检查</div><p class="sub">主裁片宽度预计少 8 cm。以下方案都可以继续完成作品。</p><div class="card"><div class="row"><b>方案 A · 加入拼布</b><span class="tag">推荐</span></div><p class="sub">加入一条浅色棉布侧片，保留原方案容量。</p></div><div class="card"><b>方案 B · 缩小 12%</b><p class="sub">无需额外材料，成品更轻巧。</p></div><div class="card"><b>方案 C · 切换模板</b><p class="sub">改为扁平小包，难度降低为初级。</p></div></div><div class="bottomcta"><button class="btn mint" data-go="13">采用拼布方案</button></div>`},
-'13':{name:'纸样展示',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;const bag=d.calcBag||'boxtote';const calcUrl=API_BASE+'/calculator.html?bag='+bag+'&embed=1';const previewUrl=calcUrl+'&preview=1';const heroSrc13=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;const colorBlockTip13=heroSrc13?`<div class="card" style="margin-top:12px"><div class="row" style="align-items:flex-start;gap:10px"><img src="${heroSrc13}" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex:0 0 auto"><div><b style="font-size:13px">效果图是拼色/拼接设计？</b><p class="small" style="margin-top:4px">上面的纸样给的是整体轮廓，不包含具体分色线——可以对照你的效果图，在对应裁片上自行画出色块分界线，拆成几片后每片各留 1cm 缝份，再按效果图里的颜色/面料分布分别裁剪、拼接缝合。</p></div></div></div>`:'';return `${header('裁剪纸样',true,`<span data-toast="纸样已包含 1cm 缝份，可直接照裁剪线裁剪；下方按钮下载后可在「制作教程」里看每一步">${icon('document.circle.svg')}</span>`)}<div class="content"><div class="eyebrow">${d.patternTitle}</div><div class="card gradient"><b>已经根据你选的方向准备好了</b><p class="sub">已经按标准尺寸自动算好「${d.patternTitle}」的真实纸样——点下方按钮直接下载 1:1 可打印 PDF。</p></div><div class="chips"><span class="chip on">含缝份</span><span class="chip on">1:1 可打印</span></div><div class="card" style="margin-top:12px;padding:0;overflow:hidden"><iframe id="patternCalcFrame" src="${previewUrl}" style="width:100%;height:260px;border:0;display:block;overflow:hidden;transition:height .2s ease" scrolling="no" title="纸样预览"></iframe></div>${colorBlockTip13}${patternDownloaded?`<p class="small" style="text-align:center;color:#4d9d75;margin-top:10px">纸样已下载 ✓</p>`:''}${(!patternDownloaded&&lastDownloadError)?`<p class="small" style="color:#c0392b;word-break:break-all;white-space:pre-wrap;background:#fff3f2;border-radius:8px;padding:8px;margin-top:10px">调试信息（可截图发给开发者）：${lastDownloadError}</p>`:''}</div><div class="bottomcta"><button class="btn mint" style="display:flex;align-items:center;justify-content:center;gap:6px" ${patternDownloaded?'data-go="14"':'data-downloadpattern="1"'}>${patternDownloaded?'':icon('Vector-26.svg','ico16')}${patternDownloaded?'查看材料与步骤':'下载纸样'}</button></div>`;}},
+'13':{name:'纸样展示',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;const bag=d.calcBag||'boxtote';const calcUrl=API_BASE+'/calculator.html?bag='+bag+'&embed=1';const previewUrl=calcUrl+'&preview=1';const heroSrc13=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;const colorBlockTip13=heroSrc13?`<div class="card" style="margin-top:12px"><div class="row" style="align-items:flex-start;gap:10px"><img src="${heroSrc13}" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex:0 0 auto"><div><b style="font-size:13px">效果图是拼色/拼接设计？</b><p class="small" style="margin-top:4px">上面的纸样给的是整体轮廓，不包含具体分色线——可以对照你的效果图，在对应裁片上自行画出色块分界线，拆成几片后每片各留 1cm 缝份，再按效果图里的颜色/面料分布分别裁剪、拼接缝合。</p></div></div></div>`:'';return `${header('裁剪纸样',true,`<span data-toast="纸样已包含 1cm 缝份，可直接照裁剪线裁剪；下方按钮下载后可在「制作教程」里看每一步">${icon('document.circle.svg')}</span>`)}<div class="content"><div class="eyebrow">${d.patternTitle}</div><div class="card gradient"><b>已经根据你选的方向准备好了</b><p class="sub">已经按标准尺寸自动算好「${d.patternTitle}」的真实纸样——点下方按钮直接下载 1:1 可打印 PDF。</p></div><div class="chips"><span class="chip on">含缝份</span><span class="chip on">1:1 可打印</span></div><div class="card" style="margin-top:12px;padding:0;overflow:hidden"><iframe id="patternCalcFrame" src="${previewUrl}" style="width:100%;height:260px;border:0;display:block;overflow:hidden;transition:height .2s ease" scrolling="no" title="纸样预览"></iframe></div>${colorBlockTip13}${patternDownloaded?`<p class="small" style="text-align:center;margin-top:10px"><span data-resharepattern="1" style="color:#4d9d75;text-decoration:underline;cursor:pointer">纸样已下载 ✓ 点击重新保存</span></p>`:''}${(!patternDownloaded&&lastDownloadError)?`<p class="small" style="color:#c0392b;word-break:break-all;white-space:pre-wrap;background:#fff3f2;border-radius:8px;padding:8px;margin-top:10px">调试信息（可截图发给开发者）：${lastDownloadError}</p>`:''}</div><div class="bottomcta"><button class="btn mint" style="display:flex;align-items:center;justify-content:center;gap:6px" ${patternDownloaded?'data-go="14"':'data-downloadpattern="1"'}>${patternDownloaded?'':icon('Vector-26.svg','ico16')}${patternDownloaded?'查看材料与步骤':'下载纸样'}</button></div>`;}},
 '14':{name:'制作教程',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;const tut=TUTORIALS[d.calcBag];const heroSrc=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;const heroHtml=heroSrc?`<img class="heroimg" src="${heroSrc}" alt="你选中的创意改造图">`:img(photos[d.photoIdx],'heroimg');const toolsText=tut?tut.tools:'家用缝纫机 · 90/14 号针 · 1 cm 缝份';const accHtml=(tut&&tut.accessories&&tut.accessories.length)?tut.accessories.map(a=>`<div class="row" style="align-items:flex-start;margin-top:8px;gap:10px"><b style="font-size:13px;flex:0 0 auto">${a.name}</b><span class="small" style="color:#77817b;text-align:right;flex:1">${a.spec} · ${a.qty}</span></div>`).join(''):'';const steps=(tut&&tut.steps&&tut.steps.length)?tut.steps:[{title:d.sewStep.title,body:[d.sewStep.desc]}];if(openTutStep>=steps.length)openTutStep=0;const stepsHtml=steps.map((s,i)=>{const isOpen=i===openTutStep;return `<div class="card step" data-tutstep="${i}" style="cursor:pointer;align-items:flex-start"><span class="num">${i+1}</span><div style="flex:1;min-width:0"><div class="row" style="align-items:center;gap:8px"><b style="flex:1">${s.title}</b><span style="transition:transform .2s;transform:${isOpen?'rotate(180deg)':'none'};flex:0 0 auto;display:inline-block">${icon('Vector-35.svg','ico16')}</span></div>${isOpen?`<div class="sub" style="margin-top:8px;line-height:1.8">${s.body.map(l=>`<div>${l}</div>`).join('')}</div>`:''}</div></div>`;}).join('');const colorBlockTip=heroSrc?`<div class="card" style="margin-top:14px"><div class="row" style="align-items:flex-start;gap:10px"><img src="${heroSrc}" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex:0 0 auto"><div><b style="font-size:13px">效果图是拼色/拼接设计？</b><p class="small" style="margin-top:4px">下面「纸样」给的是整体轮廓，不包含具体分色线——可以对照你的效果图，在对应裁片上自行画出色块分界线，拆成几片后每片各留 1cm 缝份，再按效果图里的颜色/面料分布分别裁剪、拼接缝合。</p></div></div></div>`:'';return `${header('制作教程',true,`<span data-toast="已保存到草稿">${icon('document.circle.svg')}</span>`)}<div class="content"><div class="eyebrow">${tut?tut.difficulty:d.level} · 预计 ${tut?tut.time:d.time} · ${d.name}</div><h1 class="title">${d.name} 制作教程</h1>${heroHtml}${colorBlockTip}<div class="card"><b>工具清单 · 请自备</b><p class="sub">${toolsText}</p></div>${accHtml?`<div class="card"><b>辅料清单</b>${accHtml}</div>`:''}<h3 style="margin-top:22px">分步骤制作（点击展开每一步）</h3>${stepsHtml}<div class="warn" style="margin-top:14px">布边起毛时，先使用 Z 字线迹锁边。</div><div style="display:flex;gap:10px;margin-top:22px">
   <button class="btn mint" style="flex:1" data-go="15">完成</button>
   <button class="btn light" style="flex:1" ${heroSrc?'data-publishnow="1"':'data-toast="还没有可发布的创意图，先完成前面的创意生成步骤"'}>发布</button>
@@ -715,6 +723,27 @@ function showToast(msg){
   clearTimeout(t._h);
   t._h=setTimeout(()=>t.classList.remove('show'),1700);
 }
+// 2026-09-13 新增：和 calculator.html 里 sharePdfOrDownload() 是同一套逻辑(优先用系统分享面板，让用户
+// 自己选保存位置；分享面板调不出来/失败时退回传统的 <a download>)，这里在主页面自己也留一份，专门给
+// "点击'纸样已下载'重新保存"这个场景用——这个场景发生的时候纸样计算器那个 iframe 早就可能已经被重建过、
+// 拿不到之前那份数据了(见 lastPatternPdf 的说明)，所以重新保存这一步完全不依赖 iframe，只用主页面自己
+// 存的这份 blob。
+async function shareOrDownloadPdf(blob,filename){
+  try{
+    const file=new File([blob],filename,{type:'application/pdf'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:filename});
+      return;
+    }
+  }catch(err){
+    if(err&&err.name==='AbortError')return;
+  }
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
 async function triggerRealPatternDownload(){
   const frame=document.getElementById('patternCalcFrame');
   if(!frame){showToast('纸样计算器加载失败，请返回上一步重试');return;}
@@ -729,6 +758,9 @@ async function triggerRealPatternDownload(){
     }else{
       showToast('纸样计算器还没准备好，请稍等再试');return;
     }
+    // 趁 iframe 还活着，把这次生成的 PDF 数据"搬"到主页面自己身上留一份（见上面 lastPatternPdf 的说明），
+    // 不然等下面 go('14') 跳走、以后再回到屏13重建 iframe，就再也拿不到这份数据了。
+    lastPatternPdf=win._lastPatternPdf||null;
     patternDownloaded=true;
     openTutStep=0;
     go('14');
@@ -761,7 +793,7 @@ document.querySelector('.phone').addEventListener('input',e=>{
   measurements[t.dataset.measure]=t.value;
 });
 document.querySelector('.phone').addEventListener('click',e=>{
-  const t=e.target.closest('[data-go],[data-tabgo],[data-toast],[data-pick],[data-gohome],[data-realupload],[data-regen],[data-editfield],[data-setfield],[data-selectdir],[data-downloadpattern],[data-togglestyle],[data-saveimg],[data-tutstep],[data-feedtab],[data-searchtag],[data-favorite],[data-msgfilter],[data-msgitem],[data-gofeedtab],[data-like],[data-fav],[data-comment],[data-forward],[data-postcomment],[data-commentinput],[data-cart],[data-listingupload],[data-profiletab],[data-workdetail],[data-referencebag],[data-publishnow],[data-historytab],[data-addphoto],[data-removephoto],[data-confirmphotos],[data-editextrafield],[data-setextrafield]');
+  const t=e.target.closest('[data-go],[data-tabgo],[data-toast],[data-pick],[data-gohome],[data-realupload],[data-regen],[data-editfield],[data-setfield],[data-selectdir],[data-downloadpattern],[data-resharepattern],[data-togglestyle],[data-saveimg],[data-tutstep],[data-feedtab],[data-searchtag],[data-favorite],[data-msgfilter],[data-msgitem],[data-gofeedtab],[data-like],[data-fav],[data-comment],[data-forward],[data-postcomment],[data-commentinput],[data-cart],[data-listingupload],[data-profiletab],[data-workdetail],[data-referencebag],[data-publishnow],[data-historytab],[data-addphoto],[data-removephoto],[data-confirmphotos],[data-editextrafield],[data-setextrafield]');
   // 2026-09-12 Bedi 反馈："评论框一旦点开就没法取消，最好点击屏幕其他任意区域都能取消发送评论"。
   // 这段必须放在下面"if(!t)return"之前——点在空白背景/帖子卡片本身这些地方时 t 会是 null，
   // 放在 return 后面就永远走不到这里。逻辑：只要还有评论框是打开状态(showComposer)，且这次点击的
@@ -831,7 +863,7 @@ document.querySelector('.phone').addEventListener('click',e=>{
   }
   if(t.dataset.confirmphotos!==undefined){
     if(!uploadedPhotos.length){showToast('请先上传至少一张旧衣照片');return;}
-    measurements={};extraMeasurements=[];selectedDirection=null;selectedStyles=['极简','通勤'];creativeHistory=[];creativeDirections=[];historyIndex=-1;patternDownloaded=false;publishedIndices={};lastGenerateError=null;
+    measurements={};extraMeasurements=[];selectedDirection=null;selectedStyles=['极简','通勤'];creativeHistory=[];creativeDirections=[];historyIndex=-1;patternDownloaded=false;lastPatternPdf=null;publishedIndices={};lastGenerateError=null;
     go('06');runIdentify();return;
   }
   if(t.dataset.saveimg!==undefined){saveImageToPhotos(historyIndex>=0?creativeHistory[historyIndex]:null);return;}
@@ -859,6 +891,15 @@ document.querySelector('.phone').addEventListener('click',e=>{
     render(true);return;
   }
   if(t.dataset.downloadpattern!==undefined){triggerRealPatternDownload();return;}
+  if(t.dataset.resharepattern!==undefined){
+    // 2026-09-13 Bedi 反馈"下载的纸样找不到，点'纸样已下载'能不能跳转到文件位置"——网页没办法真的跳转到
+    // 文件管理器里的具体文件(浏览器不允许网页这么做)，能做到的是让用户再走一次"分享/保存"，重新选一次
+    // 存到哪里。直接用主页面自己存的 lastPatternPdf(见该变量的说明)，不依赖纸样计算器那个 iframe 是否
+    // 还是原来那个实例，不用重新计算/重新画一遍纸样。
+    if(!lastPatternPdf){showToast('还没有已生成的纸样数据，请先下载一次纸样');return;}
+    shareOrDownloadPdf(lastPatternPdf.blob,lastPatternPdf.filename).catch(err=>{showToast('重新保存失败：'+(err&&err.message?err.message:String(err)));});
+    return;
+  }
   if(t.dataset.setfield){
     const idx=t.dataset.setfield.indexOf(':');
     const f=t.dataset.setfield.slice(0,idx),v=t.dataset.setfield.slice(idx+1);
@@ -877,7 +918,7 @@ document.querySelector('.phone').addEventListener('click',e=>{
   if(t.dataset.tabgo){referenceBagDir=null;goReset(t.dataset.tabgo);return;}
   if(t.dataset.referencebag){
     referenceBagDir=FEED_POST_DIR[t.dataset.referencebag]||null;
-    measurements={};extraMeasurements=[];selectedDirection=null;selectedStyles=['极简','通勤'];creativeHistory=[];creativeDirections=[];historyIndex=-1;patternDownloaded=false;publishedIndices={};lastGenerateError=null;
+    measurements={};extraMeasurements=[];selectedDirection=null;selectedStyles=['极简','通勤'];creativeHistory=[];creativeDirections=[];historyIndex=-1;patternDownloaded=false;lastPatternPdf=null;publishedIndices={};lastGenerateError=null;
     go('05');return;
   }
   if(t.dataset.publishnow!==undefined){
@@ -924,25 +965,39 @@ document.querySelector('.phone').addEventListener('click',e=>{
 // 数组(最多3张)，不再像单图版本那样上传完立刻跳到识别页——现在要等用户在屏05点"确认"才会去识别(见
 // data-confirmphotos 处理逻辑)，这样才能让用户在识别前把多张旧衣都传完。
 document.getElementById('realPhotoInput').addEventListener('change',async e=>{
-  const file=e.target.files[0];
+  // 2026-09-13 Bedi 反馈"添加多张图片的时候能不能一次性选多张，限制最多选3张，而不是加一张就跳回去
+  // 再点一次选图片"——原来这个 input 每次只读 e.target.files[0]，就算系统相册允许多选，也只会用第一张。
+  // 现在给 input 加了 multiple 属性(见上面 <input> 标签)，这里改成遍历 e.target.files 这一整批文件，
+  // 按"还剩多少个名额(最多3张)"截断，一次性都处理完再渲染一次，不用每加一张就重新点一次"+"。
+  const files=Array.from(e.target.files||[]);
   e.target.value='';
-  if(!file)return;
-  if(uploadedPhotos.length>=3){showToast('最多上传 3 张图片');return;}
-  let dataUrl;
-  // 2026-09-12 Bedi 反馈"多张照片是不是它就不知道该如何生成了"：排查下来最可能的原因是 Vercel 云函数
-  // 单次请求体约 4.5MB 的硬性上限——多张真实旧衣照片(尤其牛仔布/毛线这类细节多、压缩率差的面料)转成
-  // base64 叠加后容易逼近这个上限。第一张(主图)仍按原来 1280px/0.85 保留最好的清晰度；第二、三张
-  // 额外照片本来就只用来识别面料、给 AI 做拼接参考，不需要那么高清晰度，这里缩小到 900px/0.7，从源头
-  // 把总请求体积压下来。
-  const isExtraPhoto=uploadedPhotos.length>=1;
-  try{
-    dataUrl=isExtraPhoto?await resizePhotoDataUrl(file,900,0.7):await resizePhotoDataUrl(file);
-  }catch(err){
-    dataUrl=await fileToDataUrl(file);
+  if(!files.length)return;
+  const remaining=3-uploadedPhotos.length;
+  if(remaining<=0){showToast('最多上传 3 张图片');return;}
+  const toProcess=files.slice(0,remaining);
+  // 这句提示要放在 render(true) 之后再弹（见下面），不能在这里就调用——showToast 是把提示条插到当前
+  // #screenRoot 里，而 render(true) 会重新整个渲染 #screenRoot 的内容，先弹提示再 render 的话，提示条
+  // 会被这次 render 直接连带清空，用户根本看不到。
+  const tooManySelected=files.length>remaining;
+  for(const file of toProcess){
+    // 2026-09-12 Bedi 反馈"多张照片是不是它就不知道该如何生成了"：排查下来最可能的原因是 Vercel 云函数
+    // 单次请求体约 4.5MB 的硬性上限——多张真实旧衣照片(尤其牛仔布/毛线这类细节多、压缩率差的面料)转成
+    // base64 叠加后容易逼近这个上限。第一张(主图)仍按原来 1280px/0.85 保留最好的清晰度；第二、三张
+    // 额外照片本来就只用来识别面料、给 AI 做拼接参考，不需要那么高清晰度，这里缩小到 900px/0.7，从源头
+    // 把总请求体积压下来。这里的"是不是主图"要按 uploadedPhotos 当前的实际长度判断(不是这一批里的下标)，
+    // 因为可能是先加了1张、再打开一次多选加2张这种混合情况。
+    const isExtraPhoto=uploadedPhotos.length>=1;
+    let dataUrl;
+    try{
+      dataUrl=isExtraPhoto?await resizePhotoDataUrl(file,900,0.7):await resizePhotoDataUrl(file);
+    }catch(err){
+      dataUrl=await fileToDataUrl(file);
+    }
+    uploadedPhotos.push(dataUrl);
   }
-  uploadedPhotos.push(dataUrl);
   syncPrimaryPhoto();
   render(true);
+  if(tooManySelected)showToast(`最多上传 3 张图片，已为你保留前 ${remaining} 张`);
 });
 document.getElementById('listingPhotoInput').addEventListener('change',async e=>{
   const file=e.target.files[0];
