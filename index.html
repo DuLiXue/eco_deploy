@@ -22,7 +22,27 @@
   function setAppHeight(){
     var h=(window.visualViewport?window.visualViewport.height:window.innerHeight);
     document.documentElement.style.setProperty('--app-height',h+'px');
+    revealFocusedInput();
   }
+  // 2026-09-13 Bedi 反馈："聊天窗口/评论功能，输入文字时上面的内容都看不到了"——单靠上面的
+  // --app-height 只解决了整体高度会跟着键盘变矮，没解决 iOS 键盘弹出时自己那一套"把聚焦的
+  // 输入框滚动到可见区域"的逻辑：这个输入框(聊天输入框贴底用 absolute 定位、评论输入框在
+  // 帖子卡片里)位置比较特殊，iOS 自带的滚动经常算错，把 .screen 滚到一段空白区域去，看起来
+  // 就像"上面的内容都不见了"。这里不依赖 iOS 自己的滚动，改成我们自己在输入框聚焦、以及键盘
+  // 弹出(visualViewport resize)的时候，主动把这个输入框滚动到可见范围内。
+  function revealFocusedInput(){
+    var active=document.activeElement;
+    if(active&&active.matches&&active.matches('input[data-chatinput],input[data-commentinput]')){
+      try{active.scrollIntoView({block:'center',inline:'nearest'});}catch(e){active.scrollIntoView();}
+    }
+  }
+  document.addEventListener('focusin',function(e){
+    var el=e.target;
+    if(el&&el.matches&&el.matches('input[data-chatinput],input[data-commentinput]')){
+      setTimeout(revealFocusedInput,50);
+      setTimeout(revealFocusedInput,350);
+    }
+  });
   setAppHeight();
   window.addEventListener('resize',setAppHeight);
   window.addEventListener('orientationchange',setAppHeight);
@@ -108,8 +128,8 @@ function currentInProgressEntry(){
     const tut=TUTORIALS[d.calcBag];
     const stepTotal=(tut&&tut.steps&&tut.steps.length)?tut.steps.length:8;
     if(historyIndex>=0&&creativeHistory[historyIndex]){
-      const curStepTitle=(tut&&tut.steps&&tut.steps[openTutStep])?tut.steps[openTutStep].title:'继续教程';
-      resumeGo='14';sub=`下一步：${curStepTitle}（教程 ${Math.min(openTutStep+1,stepTotal)}/${stepTotal}）`;
+      const curStepTitle=(tut&&tut.steps&&tut.steps[openTutStep])?tut.steps[openTutStep].title:(tut&&tut.steps&&tut.steps[0]?tut.steps[0].title:'继续教程');
+      resumeGo='14';sub=`下一步：${curStepTitle}（教程 ${Math.min(Math.max(openTutStep+1,1),stepTotal)}/${stepTotal}）`;
     }else{
       resumeGo='11';sub='继续裁剪展开';
     }
@@ -185,7 +205,7 @@ let identifying=false;
 let editingField=null;
 let measurements={};
 let selectedDirection=null;
-let openTutStep=0;
+let openTutStep=-1; // 2026-09-13 Bedi 反馈："制作步骤页面...所有制作步骤都是默认闭合的状态" —— 默认不展开任何一步，-1 表示"没有展开中的步骤"
 // 2026-09-13 Bedi 反馈：制作教程页的"工具清单"/"辅料清单"也想像下面的步骤一样可以点击折叠展开，
 // 只是刚进入这个页面时"工具清单"默认展开、"辅料清单"默认收起。
 let toolsCardOpen=true;
@@ -763,27 +783,10 @@ function render(keepScroll){
     ctaSlot.appendChild(cta);
   }
   document.getElementById('navSlot').innerHTML=entry.tab?nav(entry.tab):'';
-  // 2026-09-13 Bedi 反馈"返回到这个页面时依然没有按键可以返回到home桌面"：改造流程里的这些屏(比如
-  // 制作教程、剪裁展开引导)本来就没有底部导航栏(entry.tab 为空)，只有顶部返回箭头一级一级往回退，
-  // 想直接回首页得连点好几次返回。这里统一在这类屏的顶部右侧插一个"回首页"图标(复用底部导航栏同款
-  // 图标 + 同样的 data-tabgo，点了会 goReset('01') 直接清空导航栈回首页)，不用逐屏改 header() 调用。
-  if(!entry.tab){
-    const topEl=screenRoot.querySelector('.top');
-    if(topEl){
-      const rightSpan=topEl.querySelector(':scope > span:last-child');
-      // 2026-09-13 Bedi 反馈"图一右上角多了个图标"：制作教程/纸样展示这类屏右上角本来就有自己的
-      // 专用图标（比如"已保存草稿"提示、购物车），再叠加一个回首页图标就变成 2 个图标挤在一起、
-      // 意图也不清楚。改成只在右上角本来完全空着（没有任何专属图标）的屏才插入回首页图标，
-      // 已经有专属图标的屏就不再叠加——这些屏都还有左上角的返回箭头可以逐级退回。
-      if(rightSpan&&rightSpan.childElementCount===0){
-        const homeBtn=document.createElement('span');
-        homeBtn.setAttribute('data-tabgo','01');
-        homeBtn.style.cssText='cursor:pointer;display:inline-flex;margin-right:6px;vertical-align:middle';
-        homeBtn.innerHTML=icon('Subtract.svg');
-        rightSpan.insertBefore(homeBtn,rightSpan.firstChild);
-      }
-    }
-  }
+  // 2026-09-13 Bedi 反馈"检查一下所有页面，右上角有home图标的全部删除掉这个图标"：撤销之前加的
+  // "顶部右上角回首页快捷图标"整个功能——不管这一屏右上角本来是空的还是已经有自己的专属图标，
+  // 一律不再插入这个 home 图标。这些屏仍然保留左上角的返回箭头可以逐级退回。
+
   document.getElementById('screenLabel').textContent=id+' '+entry.name;
   if(id==='13')setupPatternPreviewResize();
 }
@@ -868,7 +871,7 @@ async function triggerRealPatternDownload(){
     // 不然等下面 go('14') 跳走、以后再回到屏13重建 iframe，就再也拿不到这份数据了。
     lastPatternPdf=win._lastPatternPdf||null;
     patternDownloaded=true;
-    openTutStep=0;
+    openTutStep=-1;
     toolsCardOpen=true;
     accCardOpen=false;
     go('14');
@@ -1090,7 +1093,7 @@ document.querySelector('.phone').addEventListener('click',e=>{
   }
   if(t.dataset.go==='submitorder'){showToast('下单成功！');setTimeout(()=>goReset('02'),900);return;}
   if(t.dataset.go==='09'){go('09');startGeneration();return;}
-  if(t.dataset.go==='13'){openTutStep=0;go('13');return;}
+  if(t.dataset.go==='13'){openTutStep=-1;go('13');return;}
   if(t.dataset.go==='04'){viewingPostId=t.dataset.postid||FEED_POSTS[0].id;go('04');return;}
   if(t.dataset.go==='21'){viewingProductKey=t.dataset.productkey||'totebag';go('21');return;}
   if(t.dataset.go==='24'){viewingOrderKey=t.dataset.orderkey||'totebag';go('24');return;}
