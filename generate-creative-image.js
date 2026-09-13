@@ -15,6 +15,17 @@
 const MODEL_ID = 'gemini-2.5-flash-image';
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent`;
 
+// 2026-09-12 新增：Bedi 反馈"多张照片一起生成时经常失败"。排查下来这里有两个平台层面的硬限制，都可能是
+// 原因：①Vercel 云函数单次请求体大小上限(约 4.5MB，这个改不了，只能从前端把照片体积压小，见 index.html
+// 里 resizePhotoDataUrl 的调用)；②Vercel 云函数默认执行超时时间比较短(Hobby 账号常见默认是 10 秒)，
+// 多张图片一起发给 Gemini、模型需要处理的内容变多，真实耗时可能比单张图片长，容易撞到这个超时上限、
+// 被 Vercel 直接掐断返回 504——这种情况前端也只会看到"请求失败"，看不出是超时。下面这行把这个函数自己
+// 的最长执行时间显式提高到 60 秒(Vercel 的"Function-level configuration"写法)，减少因为超时被掐断的
+// 概率。⚠️ 诚实说明：60 秒是否真的生效，取决于 Vercel 账号的套餐——免费的 Hobby 套餐目前允许把单个函数
+// 的执行时间配置到最长 60 秒，但如果 Bedi 的项目套餐不允许，Vercel 部署时通常会在构建日志里给出提示，
+// 到时候按提示调整这个数字即可(比如改回 10 或 30)。
+export const config = { maxDuration: 60 };
+
 export default async function handler(req, res) {
   // 允许跨域调用——如果以后 MVP 页面和这个函数没有部署在同一个 Vercel 项目/域名下，需要这个；
   // 同域部署(推荐做法，见部署说明)下这几行不影响正常使用。
@@ -71,7 +82,11 @@ export default async function handler(req, res) {
             ...imageParts,
           ],
         }],
-        generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+        // 2026-09-12 Bedi 反馈：多次点"重新生成"，得到的包型款式几乎一样。temperature 默认在 Gemini 那边
+        // 大约是 1，调高到 1.3 增加采样的随机性，让每次生成更容易产生实际差异(配合前端 index.html 里
+        // regenerate() 新增的"每次一条具体不同变化方向"的 prompt 一起生效，双管齐下)。1.3 仍在 Gemini
+        // 文档给出的 0~2 有效范围内，没有超出正常参数边界。
+        generationConfig: { responseModalities: ['TEXT', 'IMAGE'], temperature: 1.3 },
       }),
     });
 
