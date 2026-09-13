@@ -69,47 +69,69 @@ export default async function handler(req, res) {
       imageParts.push({ inline_data: { mime_type: match[1], data: match[2] } });
     }
 
-    const geminiResp = await fetch(GEMINI_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            ...imageParts,
-          ],
-        }],
-        // 2026-09-12 Bedi 反馈：多次点"重新生成"，得到的包型款式几乎一样。temperature 默认在 Gemini 那边
-        // 大约是 1，调高到 1.3 增加采样的随机性，让每次生成更容易产生实际差异(配合前端 index.html 里
-        // regenerate() 新增的"每次一条具体不同变化方向"的 prompt 一起生效，双管齐下)。1.3 仍在 Gemini
-        // 文档给出的 0~2 有效范围内，没有超出正常参数边界。
-        generationConfig: { responseModalities: ['TEXT', 'IMAGE'], temperature: 1.3 },
-      }),
-    });
+    // 2026-09-13 新增：Bedi 截图反馈了一次真实失败——Gemini 这次调用"有返回内容，但内容是一段文字描述
+    // (比如"这是使用您提供的旧衣物面料制作的波士顿枕头包……")，没有真的生成图片"，也就是模型把这次请求
+    // 当成了"描述一下"而不是"画一张图"。这是 Gemini 图片生成模型已知会出现的情况，概率不算高但确实存在，
+    // 之前把 temperature 调到 1.3(为了解决"重新生成总是同一个款式")之后，采样随机性变大，出现这种"文不对
+    // 题、只回文字不出图"的概率也跟着变大了。这次做两处调整：
+    // ①在 prompt 末尾强制补一句"必须输出图片，不能只用文字描述"，从指令层面降低模型选择"只回答文字"的
+    //   概率；②把这次调用包一层重试——如果 Gemini 这次返回的内容里确实没有图片数据(不是网络错误，是"返回
+    //   成功但没图"这种特定情况)，就自动换一次种子再请求一次(最多重试 2 次，一共最多 3 次尝试)，因为这种
+    //   情况往往换一次生成就正常了，没必要让用户自己手动点"重试生成"。同时把 temperature 从 1.3 降回 1.0
+    //   (Gemini 默认水平)——"每次换一个具体不同方向"这件事，前端 REGEN_VARIATIONS 那组明确的文字指令已经
+    //   能保证了，不需要再额外靠调高 temperature 来碰运气，这样能在"保留生成结果多样性"和"降低只出文字不出
+    //   图的概率"之间取一个更稳的平衡。
+    const MUST_OUTPUT_IMAGE_SUFFIX = '（重要：这次请求必须输出一张真实生成的图片，不允许只用文字描述这个设计而不生成图片，如果无法生成图片也不要用文字回答，要重新尝试生成图片）';
+    const finalPrompt = prompt + MUST_OUTPUT_IMAGE_SUFFIX;
+    const MAX_ATTEMPTS = 3;
+    let lastNoImageData = null;
+    let lastHttpError = null;
 
-    if (!geminiResp.ok) {
-      const errText = await geminiResp.text();
-      // 常见原因：①这个 API key 所在的 Google Cloud 项目没有开通结算(billing)——Gemini 图片生成模型
-      // 目前没有免费额度，哪怕 key 本身能正常调用文字模型，图片模型也需要先在 Google Cloud 控制台给这个
-      // 项目挂上有效的结算账号；②MODEL_ID 已经更新/弃用，去模型列表页确认当前的图片生成模型ID。
-      res.status(geminiResp.status).json({ error: 'Gemini API 调用失败(状态码 ' + geminiResp.status + '): ' + errText });
-      return;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const geminiResp = await fetch(GEMINI_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: finalPrompt },
+              ...imageParts,
+            ],
+          }],
+          generationConfig: { responseModalities: ['TEXT', 'IMAGE'], temperature: 1.0 },
+        }),
+      });
+
+      if (!geminiResp.ok) {
+        // HTTP 层面的错误(比如 billing 没开通、模型ID不存在、请求格式错误)重试也没用，直接返回，不浪费
+        // 重试次数——这类错误的报错信息里已经写清楚了常见原因：①这个 API key 所在的 Google Cloud 项目
+        // 没有开通结算(billing)——Gemini 图片生成模型目前没有免费额度；②MODEL_ID 已经更新/弃用。
+        const errText = await geminiResp.text();
+        lastHttpError = { status: geminiResp.status, errText };
+        break;
+      }
+
+      const data = await geminiResp.json();
+      const parts = (data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
+      const imgPart = parts.find(p => p.inlineData && p.inlineData.data);
+      if (imgPart) {
+        const outMime = imgPart.inlineData.mimeType || 'image/png';
+        const imageDataUrl = 'data:' + outMime + ';base64,' + imgPart.inlineData.data;
+        res.status(200).json({ imageDataUrl });
+        return;
+      }
+      // 返回成功，但没有图片数据——记下来，如果还有重试次数就再来一次；用完了就把最后一次的原始返回带出去。
+      lastNoImageData = data;
     }
 
-    const data = await geminiResp.json();
-    const parts = (data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
-    const imgPart = parts.find(p => p.inlineData && p.inlineData.data);
-    if (!imgPart) {
-      res.status(502).json({ error: 'Gemini 返回了内容，但里面没有图片数据，原始返回(截断): ' + JSON.stringify(data).slice(0, 800) });
+    if (lastHttpError) {
+      res.status(lastHttpError.status).json({ error: 'Gemini API 调用失败(状态码 ' + lastHttpError.status + '): ' + lastHttpError.errText });
       return;
     }
-
-    const outMime = imgPart.inlineData.mimeType || 'image/png';
-    const imageDataUrl = 'data:' + outMime + ';base64,' + imgPart.inlineData.data;
-    res.status(200).json({ imageDataUrl });
+    res.status(502).json({ error: 'Gemini 返回了内容，但里面没有图片数据(已自动重试 ' + MAX_ATTEMPTS + ' 次仍是这样)，原始返回(截断): ' + JSON.stringify(lastNoImageData).slice(0, 800) });
   } catch (err) {
     res.status(500).json({ error: '服务端处理异常: ' + (err && err.message ? err.message : String(err)) });
   }
