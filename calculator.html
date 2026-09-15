@@ -7667,7 +7667,18 @@ window._NOTO_B64="AAEAAAAQAQAABAAAQkFTRULjT+4AB1DMAAAA3kdQT1NaxsSbAAdRrAAAFdJHU1
 .embed{background:#fff;min-height:100%}
 .embed body{background:#fff;padding:0;align-items:stretch;display:block;min-height:100vh}
 .embed .hint{display:none}
-.embed .ph{width:100%;max-width:100%;height:auto;min-height:0;border-radius:0;box-shadow:none;background:transparent}
+/* 2026-09-15 Bedi 反馈"上下黑条"(截图里裁片清单预览卡片上下各有一条黑边，多个包型都有，不是某一个包型
+   专属)：真正的根因不在这份内联<style>里——calculator.html 还额外引入了同目录下的 theme-overrides.css
+   (见下方<link rel="stylesheet" href="theme-overrides.css">)，那份文件里独立定义了一条
+   ".ph{border:8px solid #101110;...}"，专门给"独立打开calculator.html"这个手机模型效果做的黑色机身边框
+   (模拟手机外壳)。这条 border 规则和这里`.embed .ph{...}`重置规则是两个不同属性的两份声明，选择器优先级
+   再高也没用——`.embed .ph`那份只重置了 border-radius/box-shadow/background 这几项，从来没提过 border
+   本身，所以 theme-overrides.css 那条"独立生效"的 border 声明会原封不动地穿透进嵌在屏13预览卡片里的
+   embed/preview 模式，画出这两条实打实的黑边(8px粗、纯色#101110，和截图量出来的完全吻合)。之前几次排查
+   一直没找到，就是因为只查了这份内联<style>本身的规则，没想到边框来自另一个单独引入的样式表。根治：在这条
+   重置规则里补上 border:none，不管 theme-overrides.css 后续怎么改这个手机机身样式，嵌入预览时都不会再露出
+   这圈黑边——独立打开 calculator.html 时(没有 .embed class)完全不受影响，机身边框照常显示。 */
+.embed .ph{width:100%;max-width:100%;height:auto;min-height:0;border:none;border-radius:0;box-shadow:none;background:transparent}
 .embed .statusbar{display:none}
 .embed .bar{display:none}
 .embed #bagsel{display:none}
@@ -8682,14 +8693,38 @@ async function downloadPattern(dryRun){
 
 
   // 裁片清单
+  // ⚠️2026-09-15 Bedi 反馈"下面表格的字排版都出页面了"(附斜背马鞍包截图，裁片说明文字直接被切没了)：
+  // 原来的写法把每片的"数量/说明"这一整句话(实测经常有三四十个字，比如"表布×1 里布×1（对角折边对折
+  // 裁通两层，2页拼接打印，源图真实曲线，标记A对位）")当成单行文字硬画在从 M+128mm 开始、到页面右边距
+  // 只剩几十mm宽的这一栏里——字数一多，这行字必然直接画到页面之外，而且这是纸样文件本身的问题(不是
+  // 预览界面的问题)，打印出来这段说明就是真的丢了，不是显示裁切。根治：改成"裁片名+尺寸"占一行(这两项
+  // 本来就短，不会超)，"数量/说明"这句话另起一行、按页面实际可用宽度自动换行——用加载进来的这份真实字体
+  // 的 font.widthOfTextAtSize() 一个字一个字量出实际渲染宽度来决定在哪断行(中文没有空格，只能按字符边界
+  // 换行，不能按英文那样按单词断)，保证不管这句话多长，每一行都是量出来确实能放进页面宽度以内的，不会再
+  // 出现"看起来是这一栏的地盘、实际画出页面外"的情况。
+  function wrapTextToWidth(text,maxWidthMM,size){
+    const str=String(text||''); if(!str)return [];
+    const lines=[]; let cur='';
+    for(const ch of str){
+      const test=cur+ch;
+      if(cur && font.widthOfTextAtSize(test,size)/MM>maxWidthMM){ lines.push(cur); cur=ch; }
+      else{ cur=test; }
+    }
+    if(cur)lines.push(cur);
+    return lines;
+  }
   y+=10;
   mk(pg,'裁片清单（尺寸已含缝份）',M,y,13,ink); y+=8;
-  mk(pg,'裁片',M+2,y,10,gray); mk(pg,'尺寸(cm)',M+72,y,10,gray); mk(pg,'数量',M+128,y,10,gray);
+  mk(pg,'裁片',M+2,y,10,gray); mk(pg,'尺寸(cm)',M+72,y,10,gray); mk(pg,'数量/说明',M+128,y,10,gray);
   y+=2; line(pg,M,y,210-M,y,0.3,rgb(0.9,0.9,0.88)); y+=7;
+  const noteMaxWidth=210-M*2-2; // 说明另起一行、占满页面可用宽度，不再挤在窄栏里
   P.pieces.forEach(pc=>{
-    mk(pg,pc[0],M+2,y,10,ink); mk(pg,`${pc[1]} × ${pc[2]}`,M+72,y,10,ink); mk(pg,pc[3],M+128,y,10,ink); y+=7;
+    mk(pg,pc[0],M+2,y,10,ink); mk(pg,`${pc[1]} × ${pc[2]}`,M+72,y,10,ink); y+=5.5;
+    const noteLines=wrapTextToWidth(pc[3],noteMaxWidth,8.5);
+    noteLines.forEach(ln=>{ mk(pg,ln,M+4,y,8.5,gray); y+=4.4; });
+    y+=3;
   });
-  y+=8;
+  y+=5;
 
   // ===== 三条拆分规则:对折 / 窄长切段 / 网格 =====
   const sa_mm2=(P.sa||1)*10;
