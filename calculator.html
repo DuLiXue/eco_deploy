@@ -10034,6 +10034,17 @@ async function downloadPattern(dryRun){
 function isWeChatBrowser(){
   return /MicroMessenger/i.test(navigator.userAgent||'');
 }
+// 2026-09-15 二次实测(Bedi 明确反馈"纸样依旧是空的"，且这次特意确认过不是在微信里打开)：说明上面"检测
+// 微信、不是微信就继续用 navigator.share({files:...})"这套思路还是没堵住问题——navigator.share 这个
+// "分享文件"的能力，在不止一种环境里都会出现"调用不报错、用户也确实选了保存，但传过去的根本不是文件的
+// 二进制内容，是被静默降级成一段文字(通常就是 title)"这种隐蔽失败；微信只是第一次踩到的环境，没办法靠
+// 一个个把出问题的环境加进检测名单里来根治，因为不知道下一个是哪个 App/浏览器。治本做法：这一步完全不再
+// 依赖 navigator.share 传文件，不管什么环境，一律直接用最基础的 URL.createObjectURL()+<a download>——
+// 这是网页保存文件几十年来最朴素、支持最广、也不存在"看起来成功实际内容被换掉"这种坑的方式，唯一牺牲的是
+// "能在系统分享面板里自己选具体保存文件夹/直接转发给别的App"这个锦上添花的体验，换来的是"下载下来的文件
+// 一定就是完整的那份 PDF，不会是几十字节的假文件"这个更重要的保证。微信内置浏览器对 <a download> 本身的
+// 支持也不稳定(常见表现是点了没反应，或者直接把 PDF 用微信自带预览器打开而不落地保存)，所以微信环境这里
+// 保留原来的检测和提示，引导用户去手机自带浏览器重新打开，这条建议不受这次改动影响，继续保留。
 async function sharePdfOrDownload(blob,filename){
   if(isWeChatBrowser()){
     // 不用 alert()：alert 弹完用户点掉之后，调用方(downloadPattern→index.html 的 triggerRealPatternDownload)
@@ -10041,16 +10052,7 @@ async function sharePdfOrDownload(blob,filename){
     // 已下载"的提示——等于在一个已知会保存失败的环境里，反而告诉用户"成功了"，比什么都不说更糟。改成
     // throw，让这个信息走 triggerRealPatternDownload 已经有的 catch 分支：不跳转、不显示"已下载"，把这段
     // 说明原样显示在屏13按钮下方那个专门用来展示下载报错信息的红色提示框里，用户肯定能看到。
-    throw new Error('检测到你正在微信内置浏览器里打开——微信这个环境对"保存文件"的支持不稳定，实测会出现"分享面板正常弹出、也选了保存位置，但保存下来的文件是空的/只有文件名文字"这种情况。请点右上角"···"，选"在浏览器打开"，用手机自带的浏览器（如 Safari/Chrome）重新打开这个页面后再下载纸样，这样能保证下载到的是完整文件。');
-  }
-  try{
-    const file=new File([blob],filename,{type:'application/pdf'});
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
-      await navigator.share({files:[file],title:filename});
-      return;
-    }
-  }catch(err){
-    if(err&&err.name==='AbortError')return; // 用户自己在系统分享面板里点了取消，不用再退回下载
+    throw new Error('检测到你正在微信内置浏览器里打开——微信这个环境对"保存文件"的支持不稳定，下载可能没有反应，或者点开是空的。请点右上角"···"，选"在浏览器打开"，用手机自带的浏览器（如 Safari/Chrome）重新打开这个页面后再下载纸样，这样能保证下载到的是完整文件。');
   }
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');

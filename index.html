@@ -391,17 +391,12 @@ const MEASURE_CONFIGS={
   flat:{svg:'<rect x="70" y="55" width="160" height="115" fill="#d7dfdc" stroke="#25332c" stroke-width="2"/><path d="M70 44h160M58 55v115" fill="none" stroke="#6abd94" stroke-dasharray="5 5"/><text x="130" y="38" font-size="12">长</text><text x="30" y="116" font-size="12">宽</text>',fields:[{key:'length',label:'长 (cm)',placeholder:'如 80'},{key:'width',label:'宽 (cm)',placeholder:'如 50'}]}
 };
 function fileToDataUrl(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(file);});}
+// 2026-09-15 纸样下载那边坐实了 navigator.share({files:...}) 会在不止一种环境里"看起来分享成功、实际
+// 内容被静默换成文字"，这个保存图片的函数用的是同一个 API、同一个套路，虽然还没收到过关于它的具体反馈，
+// 但没理由认为它不会踩同一个坑——所以一并改成不再依赖 navigator.share 传文件，直接用最基础可靠的
+// <a download> 方式，避免以后又出现"保存的图片打不开"这种同类问题。
 async function saveImageToPhotos(dataUrl){
   if(!dataUrl)return;
-  try{
-    const res=await fetch(dataUrl);
-    const blob=await res.blob();
-    const file=new File([blob],'ecostitch-创意方案.png',{type:blob.type||'image/png'});
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
-      await navigator.share({files:[file],title:'EcoStitch 创意方案'});
-      return;
-    }
-  }catch(err){}
   try{
     const a=document.createElement('a');
     a.href=dataUrl;
@@ -807,15 +802,11 @@ const SCREENS={
   return `${header('展开旧衣',true)}<div class="progress"><i style="width:64%"></i></div><div class="content"><div class="eyebrow">精准制作 · 1 / 4 · ${GARMENT_LABELS[primaryGt]||'旧衣'} → ${d.name}</div><h1 class="title">${n>1?'按标记线小心拆开每一件旧衣':primaryCs.title}</h1>${blocksHtml}${extraNote?`<p class="small" style="margin-top:10px">${extraNote}</p>`:''}<div class="warn" style="margin-top:14px">沿线慢慢拆，避开拉链、纽扣与厚接缝区域。</div><div class="small" style="text-align:center;margin-top:12px;color:#4d9d75;text-decoration:underline;cursor:pointer" data-go="12">材料好像不太够？查看备选方案</div></div><div class="bottomcta"><button class="btn" data-go="13">拆解完成</button></div>`;
 }},
 '12':{name:'布料不足 Plan B',body:()=>`${header('调整方案',true)}<div class="content"><div class="eyebrow">材料检查</div><p class="sub">主裁片宽度预计少 8 cm。以下方案都可以继续完成作品。</p><div class="card"><div class="row"><b>方案 A · 加入拼布</b><span class="tag">推荐</span></div><p class="sub">加入一条浅色棉布侧片，保留原方案容量。</p></div><div class="card"><b>方案 B · 缩小 12%</b><p class="sub">无需额外材料，成品更轻巧。</p></div><div class="card"><b>方案 C · 切换模板</b><p class="sub">改为扁平小包，难度降低为初级。</p></div></div><div class="bottomcta"><button class="btn mint" data-go="13">采用拼布方案</button></div>`},
-// 2026-09-15 Bedi 反馈"下载的纸样是空的"排查过程中一并补上的保险修复：navigator.share({files:[...]})
-// 这个"分享文件"能力属于 Permissions Policy 管控的受限特性，很多浏览器默认只把它开放给顶层页面，iframe
-// 里的页面即使同源，默认也是被禁用的，除非显式在 <iframe> 标签上加 allow="web-share" 声明。纸样计算器
-// (calculator.html 的 downloadPattern()/sharePdfOrDownload())恰恰是跑在下面这个 patternCalcFrame iframe
-// 里、不是顶层页面，之前一直没加这个声明——不确定这是不是"分享面板正常弹出但内容是文件名文字"这个诡异
-// bug 的根因（这个 bug 已经证实在非微信的普通浏览器里也会发生，不只是微信环境的锅，见 shareOrDownloadPdf/
-// sharePdfOrDownload 里 2026-09-15 的说明），但加上这个声明只有好处没有坏处（本来就该加，是遗漏），先加上
-// 排除掉这个可能性；不够的话后续再考虑索性放弃 iframe 里调用 navigator.share，改成统一走更简单可靠的
-// <a download> 方式。
+// 2026-09-15 排查"下载的纸样是空的"这个 bug 时，曾经怀疑过是 iframe 没加 allow="web-share" 导致
+// navigator.share({files:[...]})在里面被 Permissions Policy 限制，先加上这个声明观察——后来 Bedi 反馈
+// 加了之后问题依旧，说明这不是根因。真正的根治是在 calculator.html 的 sharePdfOrDownload() 里索性不再
+// 调用 navigator.share 传文件，见那边 2026-09-15 的详细说明。这个 allow="web-share" 声明本身留着无害
+// (不影响任何东西)，就不再专门去掉了。
 '13':{name:'纸样展示',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;const bag=d.calcBag||'boxtote';const calcUrl=API_BASE+'/calculator.html?bag='+bag+'&embed=1';const previewUrl=calcUrl+'&preview=1';const heroSrc13=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;const colorBlockTip13=heroSrc13?`<div class="card" style="margin-top:12px"><div class="row" style="align-items:flex-start;gap:10px"><img src="${heroSrc13}" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex:0 0 auto"><div><b style="font-size:13px">效果图和纸样细节对不上？</b><p class="small" style="margin-top:4px">上面的纸样给的是「${d.name}」这个包型的基础轮廓和结构做法，是经过验证、能实际做出来的版本；AI 效果图是创意参考，口袋位置/背带样式/拼接分色/五金款式这些细节可能和纸样不完全一样。可以对照效果图，在裁片上自行标出分色线、口袋位置等细节，按 1cm 缝份自由调整拼接，基础结构跟着纸样走就不会出错。</p></div></div></div>`:'';return `${header('裁剪纸样',true,`<span data-toast="纸样已包含 1cm 缝份，可直接照裁剪线裁剪；下方按钮下载后可在「制作教程」里看每一步">${icon('document.circle.svg')}</span>`)}<div class="content"><div class="eyebrow">${d.patternTitle}</div><div class="card gradient"><b>已经根据你选的方向准备好了</b><p class="sub">已经按标准尺寸自动算好「${d.patternTitle}」的真实纸样——点下方按钮直接下载 1:1 可打印 PDF。</p></div><div class="chips"><span class="chip on">含缝份</span><span class="chip on">1:1 可打印</span></div><div class="card" style="margin-top:12px;padding:0;overflow:hidden"><iframe id="patternCalcFrame" src="${previewUrl}" allow="web-share" style="width:100%;height:260px;border:0;display:block;overflow:hidden;transition:height .2s ease" scrolling="no" title="纸样预览"></iframe></div>${colorBlockTip13}${patternDownloaded?`<p class="small" style="text-align:center;margin-top:10px"><span data-resharepattern="1" style="color:#4d9d75;text-decoration:underline;cursor:pointer">纸样已下载 ✓ 点击重新保存</span></p>`:''}${(!patternDownloaded&&lastDownloadError)?`<p class="small" style="color:#c0392b;word-break:break-all;white-space:pre-wrap;background:#fff3f2;border-radius:8px;padding:8px;margin-top:10px">调试信息（可截图发给开发者）：${lastDownloadError}</p>`:''}</div><div class="bottomcta"><button class="btn mint" style="display:flex;align-items:center;justify-content:center;gap:6px" ${patternDownloaded?'data-go="14"':'data-downloadpattern="1"'}>${patternDownloaded?'':icon('Vector-26.svg','ico16')}${patternDownloaded?'查看材料与步骤':'下载纸样'}</button></div>`;}},
 '14':{name:'制作教程',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;const tut=TUTORIALS[d.calcBag];const heroSrc=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;const heroHtml=heroSrc?`<img class="heroimg" src="${heroSrc}" alt="你选中的创意改造图">`:img(photos[d.photoIdx],'heroimg');const toolsText=tut?tut.tools:'家用缝纫机 · 90/14 号针 · 1 cm 缝份';const accHtml=(tut&&tut.accessories&&tut.accessories.length)?tut.accessories.map(a=>`<div class="row" style="align-items:flex-start;margin-top:8px;gap:10px"><b style="font-size:13px;flex:0 0 auto">${a.name}</b><span class="small" style="color:#77817b;text-align:right;flex:1">${a.spec} · ${a.qty}</span></div>`).join(''):'';const steps=(tut&&tut.steps&&tut.steps.length)?tut.steps:[{title:d.sewStep.title,body:[d.sewStep.desc]}];if(openTutStep>=steps.length)openTutStep=0;const stepsHtml=steps.map((s,i)=>{const isOpen=i===openTutStep;return `<div class="card step" data-tutstep="${i}" style="cursor:pointer;align-items:flex-start"><span class="num">${i+1}</span><div style="flex:1;min-width:0"><div class="row" style="align-items:center;gap:8px"><b style="flex:1">${s.title}</b><span style="transition:transform .2s;transform:${isOpen?'rotate(180deg)':'none'};flex:0 0 auto;display:inline-block">${icon('Vector-35.svg','ico16')}</span></div>${isOpen?`<div class="sub" style="margin-top:8px;line-height:1.8">${s.body.map(l=>`<div>${l}</div>`).join('')}</div>`:''}</div></div>`;}).join('');const colorBlockTip=heroSrc?`<div class="card" style="margin-top:14px"><div class="row" style="align-items:flex-start;gap:10px"><img src="${heroSrc}" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex:0 0 auto"><div><b style="font-size:13px">效果图和下面的步骤对不上？</b><p class="small" style="margin-top:4px">下面的步骤是「${d.name}」这个包型经过验证、能实际做出来的基础做法；AI 效果图是创意参考，口袋位置/背带样式/拼接分色/五金款式这些细节可能和步骤描述不完全一样，可以对照效果图自由调整这些细节，基础结构跟着步骤走就不会出错。</p></div></div></div>`:'';const toolsCardHtml=`<div class="card step" data-toolscard="1" style="cursor:pointer;align-items:flex-start"><div style="flex:1;min-width:0"><div class="row" style="align-items:center;gap:8px"><b style="flex:1">工具清单 · 请自备</b><span style="transition:transform .2s;transform:${toolsCardOpen?'rotate(180deg)':'none'};flex:0 0 auto;display:inline-block">${icon('Vector-35.svg','ico16')}</span></div>${toolsCardOpen?`<p class="sub" style="margin-top:8px">${toolsText}</p>`:''}</div></div>`;const accCardHtml=accHtml?`<div class="card step" data-acccard="1" style="cursor:pointer;align-items:flex-start"><div style="flex:1;min-width:0"><div class="row" style="align-items:center;gap:8px"><b style="flex:1">辅料清单</b><span style="transition:transform .2s;transform:${accCardOpen?'rotate(180deg)':'none'};flex:0 0 auto;display:inline-block">${icon('Vector-35.svg','ico16')}</span></div>${accCardOpen?`<div style="margin-top:8px">${accHtml}</div>`:''}</div></div>`:'';return `${header('制作教程',true,`<span data-toast="已保存到草稿">${icon('document.circle.svg')}</span>`)}<div class="content"><div class="eyebrow">${tut?tut.difficulty:d.level} · 预计 ${tut?tut.time:d.time} · ${d.name}</div><h1 class="title">${d.name} 制作教程</h1>${heroHtml}${colorBlockTip}${toolsCardHtml}${accCardHtml}<h3 style="margin-top:22px">分步骤制作（点击展开每一步）</h3>${stepsHtml}<div class="warn" style="margin-top:14px">布边起毛时，先使用 Z 字线迹锁边。</div><div style="display:flex;gap:10px;margin-top:22px">
   <button class="btn mint" style="flex:1" data-go="15">完成</button>
@@ -1035,18 +1026,17 @@ function showToast(msg){
 function isWeChatBrowser(){
   return /MicroMessenger/i.test(navigator.userAgent||'');
 }
+// 2026-09-15 二次实测(Bedi 反馈"纸样依旧是空的"，且这次特意确认过不是在微信里打开)：说明只靠"检测微信、
+// 不是微信就继续用 navigator.share({files:...})"这套思路没能根治——navigator.share 的"分享文件"能力在
+// 不止一种环境里都会出现"不报错、用户也确实选了保存，但传过去的根本不是文件二进制内容、被静默换成一段
+// 文字"的隐蔽失败，微信只是第一次踩到的那个环境，没法靠不断往检测名单里加环境来堵。这个函数和
+// calculator.html 里的 sharePdfOrDownload() 是同一段逻辑复制出来的两份(一份给 iframe 内首次下载用，一份
+// 给主页面"点击重新保存"用)，两处这次都改成同一个方向：不再用 navigator.share 传文件，不管环境，一律直接
+// 用最基础的 URL.createObjectURL()+<a download>——保存下来的一定就是完整的那份 PDF，不会再出现几十字节
+// 的假文件。微信环境本身对 <a download> 支持也不稳定，这里保留原来的检测和提示，引导去系统浏览器重新打开。
 async function shareOrDownloadPdf(blob,filename){
   if(isWeChatBrowser()){
-    throw new Error('检测到你正在微信内置浏览器里打开——微信这个环境对"保存文件"的支持不稳定，实测会出现"分享面板正常弹出、也选了保存位置，但保存下来的文件是空的/只有文件名文字"这种情况。请点右上角"···"，选"在浏览器打开"，用手机自带的浏览器（如 Safari/Chrome）重新打开这个页面后再保存纸样，这样能保证保存到的是完整文件。');
-  }
-  try{
-    const file=new File([blob],filename,{type:'application/pdf'});
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
-      await navigator.share({files:[file],title:filename});
-      return;
-    }
-  }catch(err){
-    if(err&&err.name==='AbortError')return;
+    throw new Error('检测到你正在微信内置浏览器里打开——微信这个环境对"保存文件"的支持不稳定，下载可能没有反应，或者点开是空的。请点右上角"···"，选"在浏览器打开"，用手机自带的浏览器（如 Safari/Chrome）重新打开这个页面后再保存纸样，这样能保证保存到的是完整文件。');
   }
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
