@@ -10016,7 +10016,33 @@ async function downloadPattern(dryRun){
 
 // 复用的"分享或下载"辅助函数：优先用系统分享面板(可以让用户自己选保存位置)，不支持/失败时退回传统的
 // <a download> 方式。downloadPattern() 首次下载、以及屏13"纸样已下载"被点击重新分享时，都走这一个函数。
+// 2026-09-15 Bedi 实测坐实的真 bug(不是猜测):三角笔袋纸样"下载后打开是空白"，让 Bedi 把保存下来的文件
+// 发过来一看——文件只有 38 字节，内容不是 PDF，是纯文字"EcoStitch纸样_三角笔袋_1比1.pdf"这串文件名本身
+// (38 正好等于这串文件名字符串的 UTF-8 字节数，逐字节核对过完全吻合，不是巧合)。也就是说下面这条
+// navigator.share({files:[file],...}) 在 Bedi 用的微信内置浏览器这个环境里，canShare 明明汇报"支持"、
+// share() 也确实弹出了系统分享面板、用户也确实选了"存到文件"、整个调用也没有抛错——但实际传递给分享面板
+// 的根本不是 file 参数里的 PDF 二进制内容，而是被静默降级成只分享了 title 这个文字字符串，等于是一个
+// "看起来成功、实际内容全丢了"的隐蔽失败，比抛错更难排查。这不是文件太大、不是字体缺失、也不是本来就
+// 支持良好只是这次运气不好——是这个 API 在这个特定 webview 里对"分享文件"这个能力本身支持不完整。
+// 治本的办法(而不是继续猜哪个参数没传对):不再对着一个已经证明会静默丢内容的 API 死磕，改成先检测是不是
+// 在微信这个环境里(微信的 UA 里必定带 MicroMessenger，这是业界通用的检测方式)——是的话，压根不去调用
+// navigator.share，直接明确提示用户"这是微信环境的已知限制，点右上角"···"选"在浏览器打开"后再下载"，
+// 这样用户会走到系统默认浏览器(iOS是Safari/Android是Chrome等)，这些环境里文件下载是原生支持、经过
+// 千锤百炼的，不会重演这次"分享成功但内容是假的"的问题；不是微信环境的话，行为完全不变，继续走原来
+// navigator.share 优先、失败再退回 <a download> 这条路径(没有证据说明这条路径在非微信环境有问题，
+// 不能因为在微信里踩了坑就连累这些原本工作正常的环境)。
+function isWeChatBrowser(){
+  return /MicroMessenger/i.test(navigator.userAgent||'');
+}
 async function sharePdfOrDownload(blob,filename){
+  if(isWeChatBrowser()){
+    // 不用 alert()：alert 弹完用户点掉之后，调用方(downloadPattern→index.html 的 triggerRealPatternDownload)
+    // 并不知道这次其实什么也没保存下来，还是会照常把 patternDownloaded 设成 true、跳到"制作教程"屏、弹"纸样
+    // 已下载"的提示——等于在一个已知会保存失败的环境里，反而告诉用户"成功了"，比什么都不说更糟。改成
+    // throw，让这个信息走 triggerRealPatternDownload 已经有的 catch 分支：不跳转、不显示"已下载"，把这段
+    // 说明原样显示在屏13按钮下方那个专门用来展示下载报错信息的红色提示框里，用户肯定能看到。
+    throw new Error('检测到你正在微信内置浏览器里打开——微信这个环境对"保存文件"的支持不稳定，实测会出现"分享面板正常弹出、也选了保存位置，但保存下来的文件是空的/只有文件名文字"这种情况。请点右上角"···"，选"在浏览器打开"，用手机自带的浏览器（如 Safari/Chrome）重新打开这个页面后再下载纸样，这样能保证下载到的是完整文件。');
+  }
   try{
     const file=new File([blob],filename,{type:'application/pdf'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
