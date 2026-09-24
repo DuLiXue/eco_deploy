@@ -7851,10 +7851,11 @@ if(new URLSearchParams(location.search).get('preview')==='1'){
     }catch(e){}
     const infoEl=document.getElementById('previewInfo');
     if(!infoEl){ window.__previewReady=true; return; }
-    infoEl.style.display='block';
+    // 2026-09-24 不再显示"正在计算纸样页数…"的加载文字，算完再显示结果
     try{
       const info=await downloadPattern(true);
       if(info&&typeof info.pageCount==='number'&&info.pageCount>0){
+        infoEl.style.display='block';
         infoEl.classList.remove('loading');
         infoEl.textContent='共 '+info.pageCount+' 张 A4 纸样，请仔细查看纸样说明'+(info.pageCount>1?'，部分裁片需要跨页拼接后使用':'')+'。';
       }else{
@@ -8581,6 +8582,10 @@ async function downloadPattern(dryRun,prepareOnly){
   doc.registerFontkit(window.fontkit);
   const font=await _getFont(doc);
   const A4=[210*MM, 297*MM];
+  // 2026-09-24 每页左上角的符号图例：绘制符号时记下这一页用到了哪些符号，最后统一在每页左上角画"符号+简短说明"，
+  // 只列本页真正出现的符号(见文件末尾 drawPageLegends)。
+  const pageSyms=new Map();
+  function markSym(page,t){ if(!page)return; if(!pageSyms.has(page))pageSyms.set(page,new Set()); pageSyms.get(page).add(t); }
 
   // helper: draw text with mm coords (top-left origin → convert)
   // ⚠️2026-08-28(接入饺子拉链小包横版A4页面时实测踩到):这两个函数原来把"翻转Y轴"写死成 297(A4竖版的
@@ -8667,7 +8672,7 @@ async function downloadPattern(dryRun,prepareOnly){
       line(page,x-1.2,y+1.5,x,y+3,0.35,ink); line(page,x+1.2,y+1.5,x,y+3,0.35,ink);
     }
   }
-  let pg=doc.addPage(A4); const M=12;
+  let pg=doc.addPage(A4); const M=12; const coverPage=pg;
   mk(pg,'EcoStitch 裁剪纸样',M,M+6,20,ink);
   mk(pg,`包型：${P.bagName}   成品 ${P.W}×${P.H}${P.D?('×'+P.D):''}cm   缝份 ${P.sa}cm`,M,M+14,11,gray);
 
@@ -8696,32 +8701,16 @@ async function downloadPattern(dryRun,prepareOnly){
   mk(pg,'纸样说明',M,y,13,ink); y+=7;
   mk(pg,'1. 外轮廓实线 = 裁剪线（沿此剪）；轮廓内侧虚线 = 缝纫线（沿此缝）。',M+2,y,9.5,ink); y+=5.5;
   mk(pg,`2. 本纸样已含缝份（裁剪线与缝纫线之间即缝份，默认 ${sav}cm，可根据布料自行调整）。`,M+2,y,9.5,ink); y+=5.5;
-  mk(pg,'3. 拼合边为虚线并标有 △对位三角+字母；分块纸样按相同字母对齐拼合后再裁布。',M+2,y,9.5,ink); y+=5.5;
-  mk(pg,'4. 标注「镜像」的裁片，需裁 2 张互为镜像的布片（一正一反）。',M+2,y,9.5,ink); y+=5.5;
-  mk(pg,'5. 标有对位口符号的，按相对应字母拼合、对齐后缝合。',M+2,y,9.5,ink); y+=9;
-
-  // 纸样符号含义(表格形式)
-  mk(pg,'纸样符号含义',M,y,13,ink); y+=6;
-  const symRows=[
-    ['sym_fold','折叠符号','此边为布料对折的折边，布对折后裁，不剪此边'],
-    ['sym_notch','对位口','缝合对位记号，相同字母的点相互对齐'],
-    ['sym_tri','对位三角','拼合/对齐记号，剪 0.3cm 小剪口对位'],
-    ['sym_grain','布纹经线方向','裁布时使布料经线（纵向）与此箭头平行'],
-  ];
-  const col1=M+2, col2=M+22, col3=M+58, rowH=8;
-  // 表头背景线
-  symRows.forEach((r,ri)=>{
-    const ry=y+ri*rowH;
-    rect(pg,col1-2,ry-1,210-M*2-(col1-2-M),rowH,0.2,rgb(0.85,0.85,0.83));
-    drawSym(pg,r[0],col1+3,ry+rowH/2-1);      // 符号
-    mk(pg,r[1],col2,ry+rowH/2+0.5,8.5,ink);    // 名称
-    mk(pg,r[2],col3,ry+rowH/2+0.5,8,gray);     // 说明
-  });
-  y+=symRows.length*rowH+6;
+  mk(pg,'3. 每页左上角列出该页用到的符号及含义；标「需拼合」的裁片跨页打印，按相同字母对齐拼合后再裁布。',M+2,y,9.5,ink); y+=9;
 
   // 缝份建议
   mk(pg,`缝份建议（默认 ${sav}cm，可按布料调整）`,M,y,11,green); y+=6;
   mk(pg,'普通直边 1cm · 厚牛仔布 1~1.5cm · 弧线/圆角 0.7cm · 拉链边 0.8cm · 拉链缝后压 0.2cm 明线',M+2,y,8.5,gray);
+  // 2026-09-24 裁片等比预览：先在首页留出位置，等下面算完哪些裁片需要跨页拼合后再画(见 drawCoverPreview)
+  y+=10;
+  mk(pg,'裁片预览（等比缩小，标「需拼合」的裁片需跨页打印后拼合）',M,y,13,ink); y+=4;
+  const PREVIEW_Y=y, PREVIEW_H=58;
+  y+=PREVIEW_H+2;
 
 
 
@@ -8752,8 +8741,10 @@ async function downloadPattern(dryRun,prepareOnly){
   y+=2; line(pg,M,y,210-M,y,0.3,rgb(0.9,0.9,0.88)); y+=7;
   const noteMaxWidth=210-M*2-2; // 说明另起一行、占满页面可用宽度，不再挤在窄栏里
   P.pieces.forEach(pc=>{
+    const noteLinesPre=wrapTextToWidth(pc[3],noteMaxWidth,8.5);
+    if(y+5.5+noteLinesPre.length*4.4>285){ pg=doc.addPage(A4); y=20; mk(pg,'裁片清单（续）',M,12,11,ink); }
     mk(pg,pc[0],M+2,y,10,ink); mk(pg,`${pc[1]} × ${pc[2]}`,M+72,y,10,ink); y+=5.5;
-    const noteLines=wrapTextToWidth(pc[3],noteMaxWidth,8.5);
+    const noteLines=noteLinesPre;
     noteLines.forEach(ln=>{ mk(pg,ln,M+4,y,8.5,gray); y+=4.4; });
     y+=3;
   });
@@ -8761,7 +8752,7 @@ async function downloadPattern(dryRun,prepareOnly){
 
   // ===== 三条拆分规则:对折 / 窄长切段 / 网格 =====
   const sa_mm2=(P.sa||1)*10;
-  const FW=210-M*2, FH=297-24;
+  const FW=210-M*2, FH=297-30;
   const PADX=8, PADY=10, GAP=6;
   const FITW=FW-PADX, FITH=FH-PADY;
   function fits1(w,h){ return (w<=FITW&&h<=FITH)||(h<=FITW&&w<=FITH); }
@@ -8834,6 +8825,7 @@ async function downloadPattern(dryRun,prepareOnly){
   });
   // 对位口:裁剪线边缘的 V 形缺口(尖朝内),字母在缺口正中。edge: 'top'|'bottom'
   function triLabel(page,cx,edgeY,letter,edge){
+    markSym(page,'notch');
     const halfW=5.5, depth=6;           // V 口宽度一半、深度(mm)
     const dir = (edge==='bottom') ? -1 : 1;
     const tipY = edgeY + dir*depth;
@@ -8899,6 +8891,7 @@ async function downloadPattern(dryRun,prepareOnly){
     if(bl.grain && nh>26){
       if(bl.bias){
         // 斜裁:45°斜双箭头(左上角)
+        markSym(page,'bias');
         const bx=nx+5, by=ny+5, L=13;
         line(page,bx,by,bx+L,by+L,0.4,gray);
         line(page,bx,by+3,bx,by,0.4,gray); line(page,bx+3,by,bx,by,0.4,gray);
@@ -8918,6 +8911,7 @@ async function downloadPattern(dryRun,prepareOnly){
         else if((oy+h)-textBot >= need){ ay2=oy+h-5; ay1=ay2-arrowLen; }
         else ay1=null;
         if(ay1!=null){
+          markSym(page,'grain');
           const ax=nx+5;
           line(page,ax,ay1,ax,ay2,0.4,gray);
           line(page,ax-1.3,ay1+2,ax,ay1,0.4,gray); line(page,ax+1.3,ay1+2,ax,ay1,0.4,gray);
@@ -8928,6 +8922,7 @@ async function downloadPattern(dryRun,prepareOnly){
     }
   }
   function foldArc(page,cx,cy,dir){
+    markSym(page,'fold');
     // 两条嵌套半圆弧(照纸样,虚线),开口朝折边,弧朝片内
     const radii=[2.2,3.6], seg=14;
     radii.forEach(r=>{
@@ -9231,6 +9226,7 @@ async function downloadPattern(dryRun,prepareOnly){
     strokePath(page, tp, w, color);
   }
   function grainArrow(page,gx,gy1,gy2){
+    markSym(page,'grain');
     line(page,gx,gy1,gx,gy2,0.4,gray);
     line(page,gx-1.3,gy1+2,gx,gy1,0.4,gray); line(page,gx+1.3,gy1+2,gx,gy1,0.4,gray);
     line(page,gx-1.3,gy2-2,gx,gy2,0.4,gray); line(page,gx+1.3,gy2-2,gx,gy2,0.4,gray);
@@ -9530,11 +9526,12 @@ async function downloadPattern(dryRun,prepareOnly){
       const H=page.getHeight();
       pgd.els.forEach(e=>{
         const [d,stroke,fill,dash]=e;
-        const opt={x:0,y:H,scale:sc};
+        const opt={x:0,y:H-8*MM,scale:sc};
         if(fill){ opt.color=black; }
         if(stroke){ opt.borderColor=black; opt.borderWidth=0.9; if(dash) opt.borderDashArray=[4*sc,4*sc]; }
         page.drawSvgPath(d,opt);
       });
+      markSym(page,'notch'); if(pgd.n>1) markSym(page,'fold');
       mk(page,'裁片：挎包包身 第'+pgd.n+'/3页（按A、B对位拼成一整片 · 底边半圆符号=对折线）',M,8,8.5,gray);
       mk(page,'纸样：外实线=裁剪线(剪) · 内虚线=缝纫线(缝) · 边缘虚线=与相邻页拼接边',M,290,7.5,gray);
     });
@@ -9885,6 +9882,7 @@ async function downloadPattern(dryRun,prepareOnly){
   }
   // 竖直边(A1对位)专用的对位三角标记,画法和 triLabel(横边用)对称,只是把 x/y 角色互换
   function triLabelV(page,edgeX,cy,letter,edge){
+    markSym(page,'notch');
     const halfW=5.5, depth=6;
     const dir=(edge==='left')?-1:1;
     const tipX=edgeX+dir*depth;
@@ -10059,12 +10057,65 @@ async function downloadPattern(dryRun,prepareOnly){
   // \u8fc7\u6ee4\u540e\u7684\u771f\u5b9e\u9875\u6570\u91cd\u65b0\u7b97,\u4e0d\u518d\u7528\u672a\u8fc7\u6ee4\u7684 `pages.length`\u2014\u2014\u8fd9\u6837\u4ee5\u540e\u4efb\u4f55\u65b0\u589e\u88c1\u7247\u7c7b\u578b\u53ea\u8981\u51fa\u73b0"\u5168\u90e8\u88c1\u7247\u90fd\u662f
   // \u4e13\u7528\u7ed8\u5236\u3001\u6ca1\u6709\u4e00\u4e2a\u77e9\u5f62\u88c1\u7247\u8d70\u901a\u7528\u6d41\u7a0b"\u8fd9\u79cd\u7ec4\u5408,\u90fd\u4e0d\u4f1a\u518d\u591a\u51fa\u8fd9\u4e00\u5f20\u7a7a\u767d\u9875,\u4e0d\u662f\u53ea\u5bf9\u4e09\u89d2\u7b14\u888b\u8fd9\u4e00\u79cdbag\u7c7b\u578b
   // \u6253\u7684\u4e13\u9879\u8865\u4e01\u3002
+  // ===== 首页裁片等比预览(2026-09-24) =====
+  // 每个裁片按清单里的真实尺寸(含缝份)画成同一比例缩小的矩形外框(曲线裁片按外接矩形示意)，
+  // 需要跨页打印后再拼合的裁片用橙色突出，并标出分几页。
+  (function drawCoverPreview(){
+    const orange=rgb(0.88,0.41,0.17), orangeFill=rgb(0.99,0.93,0.88);
+    const joinPages={};
+    blocks.forEach(b=>{ if(b.strip||b.grid){ joinPages[b.name]=b.total||(b.rows*b.cols)||2; } });
+    const CUSTOM_SPLIT={crescent:{'侧片':2},unlinedsling:{'包身（整片）':3},saddle:{'后下片':2,'前片':2,'侧片':3}};
+    Object.assign(joinPages, CUSTOM_SPLIT[P.bagType]||{});
+    const items=P.pieces.map(pc=>{
+      const w=parseFloat(pc[1])*10, h=parseFloat(pc[2])*10;
+      const qm=String(pc[3]).match(/[×xX*](\d+)/g)||[];
+      const qty=qm.reduce((a,m)=>a+parseInt(m.slice(1)),0)||1;
+      return {name:pc[0],w,h,qty,join:joinPages[pc[0]]||0};
+    }).filter(it=>it.w>0&&it.h>0);
+    if(!items.length) return;
+    const X0=M, AW=210-M*2, AH=PREVIEW_H, GAPX=6, LABELH=8;
+    function layout(s){
+      let x=0,y=0,rowH=0,rows=[[]];
+      for(const it of items){
+        const w=Math.max(it.w*s,4), h=Math.max(it.h*s,3);
+        const cellW=Math.max(w,labelTextWidthMM(it.name,6.5)+2);
+        if(x>0 && x+cellW>AW){ x=0; y+=rowH+LABELH+3; rowH=0; rows.push([]); }
+        rows[rows.length-1].push({it,x,y,w,h,cellW});
+        x+=cellW+GAPX; rowH=Math.max(rowH,h);
+      }
+      return {rows,height:y+rowH+LABELH};
+    }
+    let lo=0.01, hi=0.6;
+    for(let k=0;k<30;k++){ const mid=(lo+hi)/2; if(layout(mid).height<=AH) lo=mid; else hi=mid; }
+    const L=layout(lo);
+    rect(coverPage,X0,PREVIEW_Y,AW,AH+4,0.25,rgb(0.85,0.85,0.83));
+    L.rows.forEach(row=>{
+      const rowH=Math.max(...row.map(r=>r.h));
+      row.forEach(r=>{
+        const px=X0+2+r.x+(r.cellW-r.w)/2, py=PREVIEW_Y+2+r.y+(rowH-r.h);
+        if(r.it.join){
+          coverPage.drawRectangle({x:px*MM,y:(297-py-r.h)*MM,width:r.w*MM,height:r.h*MM,color:orangeFill,borderColor:orange,borderWidth:1.1});
+          // 按分页数画几条虚线示意拼合位置
+          for(let k=1;k<r.it.join;k++){
+            if(r.h>=r.w){ const yy=py+r.h*k/r.it.join; line(coverPage,px,yy,px+r.w,yy,0.4,orange,[1.2,1]); }
+            else { const xx=px+r.w*k/r.it.join; line(coverPage,xx,py,xx,py+r.h,0.4,orange,[1.2,1]); }
+          }
+        } else {
+          rect(coverPage,px,py,r.w,r.h,0.5,ink);
+        }
+        const nm=r.it.name+(r.it.qty>1?' ×'+r.it.qty:'');
+        mk(coverPage,nm,X0+2+r.x+(r.cellW-labelTextWidthMM(nm,6.5))/2,PREVIEW_Y+2+r.y+rowH+3.2,6.5,r.it.join?orange:ink);
+        if(r.it.join){ const tg='需拼合·分'+r.it.join+'页'; mk(coverPage,tg,X0+2+r.x+(r.cellW-labelTextWidthMM(tg,5.5))/2,PREVIEW_Y+2+r.y+rowH+6.4,5.5,orange); }
+      });
+    });
+    mk(coverPage,'比例约 1:'+Math.round(1/lo)+' · 曲线裁片按外接矩形示意',X0+AW-labelTextWidthMM('比例约 1:'+Math.round(1/lo)+' · 曲线裁片按外接矩形示意',6)-1,PREVIEW_Y+AH+2.6,6,gray);
+  })();
   const nonEmptyPages = pages.filter(pgo => pgo.sh.some(s => s.items.length > 0));
   nonEmptyPages.forEach((pgo,pi)=>{
     const page=doc.addPage(A4);
     mk(page,'\u7eb8\u6837\uff1a\u5916\u5b9e\u7ebf=\u88c1\u526a\u7ebf(\u526a) \u00b7 \u5185\u865a\u7ebf=\u7f1d\u7eab\u7ebf(\u7f1d) \u00b7 \u25b3\u5b57\u6bcd=\u62fc\u5408\u5bf9\u4f4d',M,8,8.5,gray);
     pgo.sh.forEach(s=>s.items.forEach(m=>{
-      const ox=M+m.x+PADX/2, oy=13+s.y+PADY/2;
+      const ox=M+m.x+PADX/2, oy=19+s.y+PADY/2;
       const w=m.rot?m.bl.h:m.bl.w, h=m.rot?m.bl.w:m.bl.h;
       drawBlk(page,ox,oy,w,h,Object.assign({},m.bl,{rot:m.rot}));
     }));
@@ -10084,6 +10135,31 @@ async function downloadPattern(dryRun,prepareOnly){
     drawZipBPPocketPage();
   }
   if(P.bagType==='boston'){ drawBostonBodyPage(); drawBostonGussetPage(); }
+  // ===== 每页左上角符号图例(2026-09-24)：只列本页出现过的符号 =====
+  (function drawPageLegends(){
+    const ORDER=['fold','notch','grain','bias'];
+    const TEXT={fold:'对折边(布对折后裁)',notch:'对位口(同字母对齐)',grain:'布纹方向',bias:'45°斜裁'};
+    function glyph(page,t,x,y){
+      if(t==='fold'){ foldArcRaw(page,x,y+1.6); }
+      else if(t==='notch'){ line(page,x-3,y-1.8,x+3,y-1.8,0.35,ink); line(page,x-2.4,y-1.8,x,y+1.8,0.35,ink); line(page,x+2.4,y-1.8,x,y+1.8,0.35,ink); mk(page,'A',x-0.9,y-0.2,4.5,ink); }
+      else if(t==='grain'){ line(page,x,y-2.2,x,y+2.2,0.35,gray); line(page,x-1,y-1.1,x,y-2.2,0.35,gray); line(page,x+1,y-1.1,x,y-2.2,0.35,gray); line(page,x-1,y+1.1,x,y+2.2,0.35,gray); line(page,x+1,y+1.1,x,y+2.2,0.35,gray); }
+      else if(t==='bias'){ line(page,x-2,y+2,x+2,y-2,0.35,gray); line(page,x+2,y-2,x+0.6,y-2,0.35,gray); line(page,x+2,y-2,x+2,y-0.6,0.35,gray); line(page,x-2,y+2,x-0.6,y+2,0.35,gray); line(page,x-2,y+2,x-2,y+0.6,0.35,gray); }
+    }
+    function foldArcRaw(page,cx,cy){
+      [1.6,2.7].forEach(r=>{ const seg=10; for(let i=0;i<seg;i++){ if(i%2===1)continue; const a1=Math.PI*(i/seg),a2=Math.PI*((i+1)/seg); line(page,cx-r*Math.cos(a1),cy-r*Math.sin(a1),cx-r*Math.cos(a2),cy-r*Math.sin(a2),0.35,ink);} });
+      line(page,cx-3.2,cy,cx+3.2,cy,0.35,ink);
+    }
+    doc.getPages().forEach(page=>{
+      const set=pageSyms.get(page); if(!set||!set.size) return;
+      let x=M, y=15.2;
+      const H=page.getHeight()/MM; if(H<260) y=15.2; // 横版页同样放左上角
+      ORDER.filter(t=>set.has(t)).forEach(t=>{
+        glyph(page,t,x+3,y-1.2);
+        mk(page,TEXT[t],x+7,y,6.5,gray);
+        x+=7+labelTextWidthMM(TEXT[t],6.5)+5;
+      });
+    });
+  })();
   if(dryRun){ return { pageCount: doc.getPageCount() }; }
   const pdfBytes=await doc.save();
   const filename=`EcoStitch纸样_${P.bagName}_1比1.pdf`;
