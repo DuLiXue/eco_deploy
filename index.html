@@ -498,7 +498,7 @@ async function startGeneration(){
   // 简短分类词)，就还是退回用 mat1。
   const matDesc1=(identifyResult&&identifyResult.materialDesc)?identifyResult.materialDesc:mat1;
   const structureText1=directionStructureText(selectedDirection);
-  const prompt='这件旧衣的面料具体是："'+matDesc1+'"。把照片中这件旧衣的这块面料，改造设计成'+styleText1+dirName1+'。'+structureText1+'严格参考并保留原图这块面料本身真实的颜色、深浅、水洗纹理、磨损/破洞/污渍细节、缝线和五金配色，不要换成其他颜色或质感的面料，也不要换成"同类材质但不同花色"的面料，最终效果应该让人一眼就能认出"这就是用照片里这同一块面料做出来的成品"。商品摄影风格、纯白背景、单个成品居中完整展示(整个包都要在画面内，提手最顶端和包底都不能被裁切，四周留出适当空白)、不出现人物。'+multiPhotoPromptSuffix();
+  const prompt='这件旧衣的面料具体是："'+matDesc1+'"。把照片中这件旧衣的这块面料，改造设计成'+styleText1+dirName1+'。'+structureText1+'严格参考并保留原图这块面料本身真实的颜色、深浅、水洗纹理、磨损/破洞/污渍细节、缝线和五金配色，不要换成其他颜色或质感的面料，也不要换成"同类材质但不同花色"的面料，最终效果应该让人一眼就能认出"这就是用照片里这同一块面料做出来的成品"。'+CREATIVE_AESTHETIC_TEXT+multiPhotoPromptSuffix()+STRICT_MATERIAL_TEXT;
   try{
     const r=await fetch(API_BASE+'/api/generate-creative-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photoDataUrls:uploadedPhotos,prompt})});
     clearInterval(timer);
@@ -535,8 +535,8 @@ async function startGeneration(){
 // 候选池，regenerate() 从池子里挑，这样"每次重新生成允许变细节效果"和"必须和纸样裁片/制作步骤保持一致"
 // 这两个诉求就不会互相打架。
 const VAR_PROPORTION='这一次请在不改变包的基本轮廓和开合方式的前提下，微调整体的高宽比例（比如稍微更高瘦或更矮胖一些）';
-const VAR_HARDWARE='这一次请改变五金/配件的样式或位置（比如金属扣、铆钉、标签牌的样式和位置；如果这个包型本身没有拉链，就不要凭空画出拉链，只调整已经存在的五金配件）';
-const VAR_DECOR='这一次请改变装饰细节（比如换一种撞色明线、加一条滚边条、加一个小标签牌），但不要改变包的基本廓形和开合方式';
+const VAR_HARDWARE='这一次请调整明线的走向、针距或颜色，以及原衣物上已有的纽扣/布标/口袋等细节的位置(只用旧衣上已有或包型必需的配件，不要新增金属扣、铆钉、皮质标签等原衣物没有的材质；如果这个包型本身没有拉链，就不要凭空画出拉链)';
+const VAR_DECOR='这一次请改变装饰细节（比如换一种颜色的明线、用同一件旧衣的面料裁一条滚边条、把原衣物的口袋或布标换个位置），但不要改变包的基本廓形和开合方式，也不要引入原衣物没有的材质';
 function regenVariationPool(dirKey){
   const d=DIRECTIONS[dirKey]||DIRECTIONS.tote;
   return [d.varPocket,d.varStrap,d.varColorBlock,VAR_PROPORTION,VAR_HARDWARE,VAR_DECOR].filter(Boolean);
@@ -573,7 +573,7 @@ async function regenerate(){
   const structureText2=directionStructureText(selectedDirection);
   const variationPool=regenVariationPool(selectedDirection);
   const variation=variationPool[creativeHistory.length%variationPool.length];
-  const prompt='这件旧衣的面料具体是："'+matDesc2+'"。把照片中这件旧衣的这块面料，改造设计成'+styleText2+dirName2+'。'+structureText2+variation+'。必须严格保持与原图相同的面料颜色、水洗纹理、磨损细节和五金配色，不要生成看起来像换了一块不同面料的效果，也不要生成和之前几乎一样的款式。商品摄影风格、纯白背景、单个成品居中完整展示(整个包都要在画面内，提手最顶端和包底都不能被裁切，四周留出适当空白)、不出现人物。'+multiPhotoPromptSuffix();
+  const prompt='这件旧衣的面料具体是："'+matDesc2+'"。把照片中这件旧衣的这块面料，改造设计成'+styleText2+dirName2+'。'+structureText2+variation+'。必须严格保持与原图相同的面料颜色、水洗纹理、磨损细节和五金配色，不要生成看起来像换了一块不同面料的效果，也不要生成和之前几乎一样的款式。'+CREATIVE_AESTHETIC_TEXT+multiPhotoPromptSuffix()+STRICT_MATERIAL_TEXT;
   try{
     const r=await fetch(API_BASE+'/api/generate-creative-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photoDataUrls:uploadedPhotos,prompt})});
     if(r.ok){const data=await r.json();creativeHistory.push(data.imageDataUrl);creativeDirections.push(selectedDirection);historyIndex=creativeHistory.length-1;lastGenerateError=null;}
@@ -601,6 +601,18 @@ function multiPhotoPromptSuffix(){
 // 写死的具体做法。这个函数把 DIRECTIONS 里这个方向本身记录的结构说明(note)、裁剪要点(cutStep.desc)、
 // 缝合要点(sewStep.desc)都转成一段描述塞进 prompt，让生成图从一开始就往"这个具体做法能做出来的样子"上靠，
 // 而不是只靠包型名字瞎猜。
+// 2026-09-24 Bedi 反馈"生成的图的审美水平要高，不能生成丑的"：两处生成 prompt(首次生成/重新生成)共用这段审美与构图要求，
+// 统一把画面往高端品牌商品图的水准上拉，同时列出常见的"丑图"特征让模型避开。
+// 2026-09-24 Bedi 反馈"要严格根据上传的衣物的材质及特点来生成，不要出现没有的材质"：放在 prompt 最后、优先级最高的材质硬约束。
+const STRICT_MATERIAL_TEXT='【材质硬性约束，优先级高于上文所有要求】成品的每一个部位(包身、提手、侧片、口袋、包盖、滚边条、可见的内衬)都只能使用照片中这件(或这几件)旧衣上真实存在的面料，'+
+'不得出现照片里没有的任何材质，例如皮革/麂皮/PU、帆布、针织、蕾丝、网纱、亮片、塑料、编织绳、金属链条等；'+
+'上文如果提到"撞色面料""另一种颜色面料""皮革贴皮"等，只有在上传的旧衣里确实有对应面料时才可以用，否则改用同一块面料的不同部位来做出层次(比如面料正反面、有图案和无图案的区域、水洗深浅不同的部分)；'+
+'尽量保留并突出原衣物本身的特点(如原有的口袋、缝线、水洗/磨白、破洞、纽扣、印花、商标布标)；除包型本身必需的拉链外，不要额外添加金属扣、铆钉、D环、皮质标签等五金配件。';
+const CREATIVE_AESTHETIC_TEXT='画面审美要求：高端设计师品牌/时尚杂志级别的商品摄影，质感高级、干净克制；柔和均匀的影棚光，轻微自然投影，细节清晰锐利；'+
+'包型比例协调、轮廓挺括流畅、左右对称，缝线细密笔直、包边整齐，做工看起来精致耐用，像真正能在精品店出售的成品；'+
+'配色和谐统一，拼接和装饰点到为止、有设计感，不堆砌元素；'+
+'避免以下情况：廉价塑料感、粗糙歪斜的缝线、布料皱巴巴或鼓包、比例怪异或变形、过度饱和或刺眼的颜色、杂乱的装饰和图案、卡通或手绘插画风格、画面模糊、出现文字水印或多余的道具。'+
+'构图：纯白或极浅的中性色背景，单个成品居中完整展示(整个包都要在画面内，提手最顶端和包底都不能被裁切，四周留出适当空白)，正面略带一点侧角度以体现立体感，不出现人物。';
 function directionStructureText(dirKey){
   const d=DIRECTIONS[dirKey]||DIRECTIONS.tote;
   const shapeLine=d.patternShape?('最重要的硬性外形约束(必须严格遵守，优先级最高)：'+d.patternShape+' '):'';
@@ -687,7 +699,8 @@ const SCREENS={
   const addBox=n<3?`<div data-addphoto="1" style="width:${thumbSize}px;height:${thumbSize}px;border-radius:14px;border:1.5px dashed #4d9d75;display:flex;align-items:center;justify-content:center;color:#4d9d75;font-size:28px;font-weight:300;cursor:pointer;flex:0 0 auto">+</div>`:'';
   const photoRow=n?`<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">${thumbs}${addBox}</div><p class="small" style="margin-top:8px">最多上传 3 张图片</p>`:'';
   // 2026-09-23 Bedi 反馈：这一屏去掉左上角返回键，顶部改成"开始改造"标题(底部导航栏可以离开这一屏)
-  return `<style>.phone .status{background:#CDEEDC!important}</style><header class="top" style="height:auto;padding:14px 20px 20px;align-items:flex-end;background:linear-gradient(180deg,#CDEEDC 0%,#DDF3E7 45%,#EEF8F2 78%,#f6f7f6 100%)"><div style="font-size:30px;font-weight:900;font-style:italic;letter-spacing:-1px;color:#141615;line-height:1">开始改造</div><div style="display:flex;align-items:center;gap:8px"><div style="text-align:right;line-height:1.2"><div style="font-size:15px;font-weight:800;color:#141615;letter-spacing:.5px">STEP 01</div><div style="font-size:11px;color:#6f7a73;margin-top:2px">上传旧衣照片</div></div><span style="width:34px;height:34px;display:flex;align-items:center;justify-content:center">${icon('sparkles.svg')}</span></div></header><div class="progress"><i style="width:12%"></i></div><div class="content"><p class="sub" style="margin-top:16px">保持衣物平整、背景干净，能帮助我们更准确地识别轮廓与面料。</p>${n===0?`<div class="upload" data-realupload="1">${icon('camera.circle.fill.svg')}<div><b>拍照或从相册选择</b><p class="small">JPG、PNG、HEIC · 不超过 10 MB</p></div></div>`:''}<div class="card"><b>拍摄小提示</b><p class="sub">自然光下平铺拍摄，画面中保留完整衣物边缘。这一步的照片会真的发给 AI 识别。</p></div>${photoRow}</div>${n?`<div class="bottomcta"><button class="btn mint" data-confirmphotos="1">确认</button></div>`:''}`;
+  // 2026-09-24 按 Bedi 提供的设计图重做：浅蓝→淡紫渐变顶部+副标题，渐变进度条，上传框去虚线改柔和阴影卡片
+  return `<style>.phone .status{background:linear-gradient(90deg,#DDF1FB,#E9EEFB)!important}</style><div style="min-height:100%;background:linear-gradient(180deg,#F2F5FB 0%,#EEF2FB 60%,#F4F6FA 100%)"><header class="top" style="height:auto;padding:18px 20px 22px;align-items:flex-end;background:linear-gradient(100deg,#DDF1FB 0%,#E7EEFB 55%,#EEEBFB 100%)"><div><div style="font-size:30px;font-weight:900;font-style:italic;letter-spacing:-1px;color:#141615;line-height:1.05">开始改造</div><div style="font-size:13px;font-weight:700;color:#5E6B80;margin-top:8px">Hi~ 让旧衣开始新生活</div></div><div style="display:flex;align-items:center;gap:10px"><div style="text-align:right;line-height:1.2"><div style="font-size:15px;font-weight:900;color:#141615;letter-spacing:.5px">STEP 01</div><div style="font-size:11px;color:#6f7a80;margin-top:3px">上传旧衣照片</div></div><span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center">${icon('sparkles.svg')}</span></div></header><div class="progress" style="background:#E4E8F2"><i style="width:12%;background:linear-gradient(90deg,#8ED7C4,#93A9F4)"></i></div><div class="content" style="background:transparent"><p class="sub" style="margin-top:16px">保持衣物平整、背景干净，能帮助我们更准确地识别轮廓与面料。</p>${n===0?`<div class="upload" data-realupload="1" style="border:0;border-radius:26px;background:linear-gradient(160deg,#FFFFFF 0%,#F7F9FE 55%,#EDF2FB 100%);box-shadow:0 10px 28px rgba(92,110,160,.12)">${icon('camera.circle.fill.svg')}<div><b>拍照或从相册选择</b><p class="small">JPG、PNG、HEIC · 不超过 10 MB</p></div></div>`:''}<div class="card" style="border:0;border-radius:24px;padding:18px 16px;box-shadow:0 8px 24px rgba(92,110,160,.09)"><b>拍摄小提示</b><p class="sub">自然光下平铺拍摄，画面中保留完整衣物边缘。这一步的照片会真的发给 AI 识别。</p></div>${photoRow}</div></div>${n?`<div class="bottomcta"><button class="btn mint" data-confirmphotos="1">确认</button></div>`:''}`;
 },tab:'make'},
 '06':{name:'AI 识别确认',body:()=>{
   if(identifying){
@@ -769,7 +782,7 @@ const SCREENS={
       // 点标题行展开/收起；没手动操作过时，默认只展开当前选中包型所在的那一级。
       const tiersHtml=DIRECTION_TIERS.map(t=>{
         const keys=t.keys.filter(k=>DIRECTIONS[k]);
-        const open=(t.level in dirTierOpen)?dirTierOpen[t.level]:keys.includes(selectedDirection);
+        const open=(t.level in dirTierOpen)?dirTierOpen[t.level]:(t.level==='初级'); // 2026-09-24 默认只展开初级
         const chips=keys.map(key=>`<span class="chip ${selectedDirection===key?'on':''}" data-pickdirection="${key}">${DIRECTIONS[key].name}</span>`).join('');
         const picked=(!open&&keys.includes(selectedDirection))?`<span class="small" style="color:#3B8B68;font-weight:700">已选 ${DIRECTIONS[selectedDirection].name}</span>`:`<span class="small" style="color:#9aa39d">${keys.length} 款</span>`;
         const chevron=`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#141615" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;transform:rotate(${open?180:0}deg);flex:0 0 auto"><path d="M6 9l6 6l6-6"/></svg>`;
@@ -792,7 +805,7 @@ const SCREENS={
   const currentDirName=current?(DIRECTIONS[selectedDirection]||DIRECTIONS.tote).name:'';
   return `${header('选择方案',true)}<div class="content"><div class="eyebrow">${total>0?`已生成 ${total} 个方案`:'创意结果'}</div>
   ${currentDirName?`<div class="chips" style="margin:12px 0 10px"><span class="chip on">当前款式：${currentDirName}</span></div>`:''}
-  <div class="result wide" style="height:340px;${regenerating?'opacity:.5':''}">${current?`<img src="${current}" style="width:100%;height:100%;object-fit:cover;display:block;-webkit-touch-callout:default" oncontextmenu="return true">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#eef2ef;color:#77817b;font-size:12px;text-align:center;padding:16px">AI 生成没有成功<br>可点击下方按钮重试</div>`}<span class="ai-note">AI 创意效果</span></div>
+  <div class="result wide" style="height:340px;${regenerating?'opacity:.5':''}">${current?`<img src="${current}" style="width:100%;height:100%;object-fit:contain;background:#fff;display:block;-webkit-touch-callout:default" oncontextmenu="return true">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#eef2ef;color:#77817b;font-size:12px;text-align:center;padding:16px">AI 生成没有成功<br>可点击下方按钮重试</div>`}<span class="ai-note">AI 创意效果</span></div>
   ${(!current&&lastGenerateError)?`<p class="small" style="color:#c0392b;word-break:break-all;white-space:pre-wrap;background:#fff3f2;border-radius:8px;padding:8px;margin-top:10px">调试信息（可截图发给开发者）：${lastGenerateError}</p>`:''}
   ${current?`<p class="small" style="text-align:center;color:#77817b;margin-top:8px">长按图片可直接保存到相册，也可以点击下方按钮保存</p><button class="btn light" style="margin-top:8px" data-saveimg="1">保存图片到相册</button>`:''}
   <button class="btn light" style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:6px${regenerating?';opacity:.6;pointer-events:none':''}" data-regen="1">${icon('sparkles.svg')} ${regenerating?'正在生成…（约需几秒）':(total>0?'重新生成':'重试生成')}</button>
@@ -822,11 +835,11 @@ const SCREENS={
 // 调用 navigator.share 传文件，见那边 2026-09-15 的详细说明。这个 allow="web-share" 声明本身留着无害
 // (不影响任何东西)，就不再专门去掉了。
 '13':{name:'纸样展示',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;const bag=d.calcBag||'boxtote';const calcUrl=API_BASE+'/calculator.html?bag='+bag+'&embed=1';const previewUrl=calcUrl+'&preview=1';const heroSrc13=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;const colorBlockTip13='';return `${header('裁剪纸样',true,`<span data-toast="纸样已包含 1cm 缝份，可直接照裁剪线裁剪；下方按钮下载后可在「制作教程」里看每一步">${icon('document.circle.svg')}</span>`)}<div class="content"><div class="eyebrow">${d.patternTitle}</div><div class="card gradient"><b>已经根据你选的方向准备好了</b><p class="sub">已经按标准尺寸自动算好「${d.patternTitle}」的真实纸样——点下方按钮直接下载 1:1 可打印 PDF。</p></div><div class="chips"><span class="chip on">含缝份</span><span class="chip on">1:1 可打印</span></div><div class="card" style="margin-top:12px;padding:0;overflow:hidden"><iframe id="patternCalcFrame" src="${previewUrl}" allow="web-share" style="width:100%;height:260px;border:0;display:block;overflow:hidden;transition:height .2s ease" scrolling="no" title="纸样预览"></iframe></div>${colorBlockTip13}${patternDownloaded?`<p class="small" style="text-align:center;margin-top:10px"><span data-resharepattern="1" style="color:#4d9d75;text-decoration:underline;cursor:pointer">纸样已下载 ✓ 点击重新保存</span></p>`:''}${(!patternDownloaded&&lastDownloadError)?`<p class="small" style="color:#c0392b;word-break:break-all;white-space:pre-wrap;background:#fff3f2;border-radius:8px;padding:8px;margin-top:10px">调试信息（可截图发给开发者）：${lastDownloadError}</p>`:''}</div><div class="bottomcta"><button class="btn mint" style="display:flex;align-items:center;justify-content:center;gap:6px" ${patternDownloaded?'data-go="14"':'data-downloadpattern="1"'}>${patternDownloaded?'':icon('Vector-26.svg','ico16')}${patternDownloaded?'查看材料与步骤':'下载纸样'}</button></div>`;}},
-'14':{name:'制作教程',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;const tut=TUTORIALS[d.calcBag];const heroSrc=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;const heroHtml=heroSrc?`<img class="heroimg" src="${heroSrc}" alt="你选中的创意改造图">`:img(photos[d.photoIdx],'heroimg');const toolsText=tut?tut.tools:'家用缝纫机 · 90/14 号针 · 1 cm 缝份';const accHtml=(tut&&tut.accessories&&tut.accessories.length)?tut.accessories.map(a=>`<div class="row" style="align-items:flex-start;margin-top:8px;gap:10px"><b style="font-size:13px;flex:1 1 auto;min-width:0">${a.name}</b><span class="small" style="color:#77817b;text-align:right;flex:1 1 auto;min-width:0">${a.spec} · ${a.qty}</span></div>`).join(''):'';const steps=(tut&&tut.steps&&tut.steps.length)?tut.steps:[{title:d.sewStep.title,body:[d.sewStep.desc]}];if(openTutStep>=steps.length)openTutStep=0;const stepsHtml=steps.map((s,i)=>{const isOpen=i===openTutStep;return `<div class="card step" data-tutstep="${i}" style="cursor:pointer;align-items:flex-start"><span class="num">${i+1}</span><div style="flex:1;min-width:0"><div class="row" style="align-items:center;gap:8px"><b style="flex:1">${s.title}</b><span style="transition:transform .2s;transform:${isOpen?'rotate(180deg)':'none'};flex:0 0 auto;display:inline-block;margin-right:4px">${icon('Vector-35.svg','ico16')}</span></div>${isOpen?`<div class="sub" style="margin-top:8px;line-height:1.8">${s.body.map(l=>`<div>${l}</div>`).join('')}</div>`:''}</div></div>`;}).join('');const colorBlockTip='';const toolsCardHtml=`<div class="card step" data-toolscard="1" style="cursor:pointer;align-items:flex-start"><div style="flex:1;min-width:0"><div class="row" style="align-items:center;gap:8px"><b style="flex:1">工具清单 · 请自备</b><span style="transition:transform .2s;transform:${toolsCardOpen?'rotate(180deg)':'none'};flex:0 0 auto;display:inline-block;margin-right:4px">${icon('Vector-35.svg','ico16')}</span></div>${toolsCardOpen?`<p class="sub" style="margin-top:8px">${toolsText}</p>`:''}</div></div>`;const accCardHtml=accHtml?`<div class="card step" data-acccard="1" style="cursor:pointer;align-items:flex-start"><div style="flex:1;min-width:0"><div class="row" style="align-items:center;gap:8px"><b style="flex:1">辅料清单</b><span style="transition:transform .2s;transform:${accCardOpen?'rotate(180deg)':'none'};flex:0 0 auto;display:inline-block;margin-right:4px">${icon('Vector-35.svg','ico16')}</span></div>${accCardOpen?`<div style="margin-top:8px">${accHtml}</div>`:''}</div></div>`:'';return `${header('制作教程',true,`<span data-toast="已保存到草稿">${icon('document.circle.svg')}</span>`)}<div class="content"><div class="eyebrow">${tut?tut.difficulty:d.level} · 预计 ${tut?tut.time:d.time} · ${d.name}</div><h1 class="title">${d.name} 制作教程</h1>${heroHtml}${colorBlockTip}${toolsCardHtml}${accCardHtml}<h3 style="margin-top:22px">分步骤制作</h3>${stepsHtml}<div class="warn" style="margin-top:14px">布边起毛时，先使用 Z 字线迹锁边。</div><div style="display:flex;gap:10px;margin-top:22px">
+'14':{name:'制作教程',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;const tut=TUTORIALS[d.calcBag];const heroSrc=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;const heroHtml=heroSrc?`<img class="heroimg" style="object-fit:contain;background:#fff" src="${heroSrc}" alt="你选中的创意改造图">`:img(photos[d.photoIdx],'heroimg');const toolsText=tut?tut.tools:'家用缝纫机 · 90/14 号针 · 1 cm 缝份';const accHtml=(tut&&tut.accessories&&tut.accessories.length)?tut.accessories.map(a=>`<div class="row" style="align-items:flex-start;margin-top:8px;gap:10px"><b style="font-size:13px;flex:1 1 auto;min-width:0">${a.name}</b><span class="small" style="color:#77817b;text-align:right;flex:1 1 auto;min-width:0">${a.spec} · ${a.qty}</span></div>`).join(''):'';const steps=(tut&&tut.steps&&tut.steps.length)?tut.steps:[{title:d.sewStep.title,body:[d.sewStep.desc]}];if(openTutStep>=steps.length)openTutStep=0;const stepsHtml=steps.map((s,i)=>{const isOpen=i===openTutStep;return `<div class="card step" data-tutstep="${i}" style="cursor:pointer;align-items:flex-start"><span class="num">${i+1}</span><div style="flex:1;min-width:0"><div class="row" style="align-items:center;gap:8px"><b style="flex:1">${s.title}</b><span style="transition:transform .2s;transform:${isOpen?'rotate(180deg)':'none'};flex:0 0 auto;display:inline-block;margin-right:4px">${icon('Vector-35.svg','ico16')}</span></div>${isOpen?`<div class="sub" style="margin-top:8px;line-height:1.8">${s.body.map(l=>`<div>${l}</div>`).join('')}</div>`:''}</div></div>`;}).join('');const colorBlockTip='';const toolsCardHtml=`<div class="card step" data-toolscard="1" style="cursor:pointer;align-items:flex-start"><div style="flex:1;min-width:0"><div class="row" style="align-items:center;gap:8px"><b style="flex:1">工具清单 · 请自备</b><span style="transition:transform .2s;transform:${toolsCardOpen?'rotate(180deg)':'none'};flex:0 0 auto;display:inline-block;margin-right:4px">${icon('Vector-35.svg','ico16')}</span></div>${toolsCardOpen?`<p class="sub" style="margin-top:8px">${toolsText}</p>`:''}</div></div>`;const accCardHtml=accHtml?`<div class="card step" data-acccard="1" style="cursor:pointer;align-items:flex-start"><div style="flex:1;min-width:0"><div class="row" style="align-items:center;gap:8px"><b style="flex:1">辅料清单</b><span style="transition:transform .2s;transform:${accCardOpen?'rotate(180deg)':'none'};flex:0 0 auto;display:inline-block;margin-right:4px">${icon('Vector-35.svg','ico16')}</span></div>${accCardOpen?`<div style="margin-top:8px">${accHtml}</div>`:''}</div></div>`:'';return `${header('制作教程',true,`<span data-toast="已保存到草稿">${icon('document.circle.svg')}</span>`)}<div class="content"><div class="eyebrow">${tut?tut.difficulty:d.level} · 预计 ${tut?tut.time:d.time} · ${d.name}</div><h1 class="title">${d.name} 制作教程</h1>${heroHtml}${colorBlockTip}${toolsCardHtml}${accCardHtml}<h3 style="margin-top:22px">分步骤制作</h3>${stepsHtml}<div class="warn" style="margin-top:14px">布边起毛时，先使用 Z 字线迹锁边。</div><div style="display:flex;gap:10px;margin-top:22px">
   <button class="btn mint" style="flex:1" data-go="15">完成</button>
   <button class="btn light" style="flex:1" ${heroSrc?'data-go="25"':'data-toast="还没有可发布的创意图，先完成前面的创意生成步骤"'}>发布</button>
 </div></div>`;}},
-'15':{name:'改造完成',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;const gname=identifyResult?(GARMENT_LABELS[identifyResult.garmentType]||'旧衣'):'旧衣';const tut=TUTORIALS[d.calcBag];const stepCount=(tut&&tut.steps&&tut.steps.length)?tut.steps.length:8;const heroSrc15=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;const heroHtml15=heroSrc15?`<img class="heroimg" src="${heroSrc15}" alt="你完成的改造成品">`:img(photos[4],'heroimg');return `${header('完成',true)}<div class="content"><div class="complete">${icon('checkmark.circle.fill.svg')}</div><h1 class="title" style="text-align:center">你的旧衣完成新生</h1><p class="sub" style="text-align:center">本次共完成 ${stepCount} 个步骤，${gname}被改造成了${d.name}。</p>${heroHtml15}<div class="card row"><div><b>获得 120 绿缝积分</b><p class="small">估算减少 0.6 kg 纺织废弃物</p></div><span class="tag">+120</span></div></div><div class="bottomcta"><button class="btn mint" data-go="25">发布我的作品</button></div>`;}},
+'15':{name:'改造完成',body:()=>{const d=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;const gname=identifyResult?(GARMENT_LABELS[identifyResult.garmentType]||'旧衣'):'旧衣';const tut=TUTORIALS[d.calcBag];const stepCount=(tut&&tut.steps&&tut.steps.length)?tut.steps.length:8;const heroSrc15=(historyIndex>=0&&creativeHistory[historyIndex])?creativeHistory[historyIndex]:null;const heroHtml15=heroSrc15?`<img class="heroimg" style="object-fit:contain;background:#fff" src="${heroSrc15}" alt="你完成的改造成品">`:img(photos[4],'heroimg');return `${header('完成',true)}<div class="content"><div class="complete">${icon('checkmark.circle.fill.svg')}</div><h1 class="title" style="text-align:center">你的旧衣完成新生</h1><p class="sub" style="text-align:center">本次共完成 ${stepCount} 个步骤，${gname}被改造成了${d.name}。</p>${heroHtml15}<div class="card row"><div><b>获得 120 绿缝积分</b><p class="small">估算减少 0.6 kg 纺织废弃物</p></div><span class="tag">+120</span></div></div><div class="bottomcta"><button class="btn mint" data-go="25">发布我的作品</button></div>`;}},
 '25':{name:'发布作品信息',body:()=>{
   // 2026-09-13 Bedi 反馈"制作完成点击发布作品没有和直接个人主页发布作品的路径打通，没有连接到填写
   // 作品信息那个页面"：原来"发布"按钮点了就直接静默发布(标题都是代码自动拼的方向名字，用户完全没
@@ -837,7 +850,7 @@ const SCREENS={
   const gname=identifyResult?(GARMENT_LABELS[identifyResult.garmentType]||'旧衣'):'旧衣';
   if(pendingPublishTitle===null)pendingPublishTitle=`${gname} → ${d.name}`;
   if(pendingPublishDesc===null)pendingPublishDesc=`用旧${gname}改造的${d.name}，亲手完成，为旧衣物找到新用途。`;
-  return `${header('发布作品',true)}<div class="content"><div class="eyebrow" style="margin-top:0">封面</div>${heroSrc?`<img class="heroimg" src="${heroSrc}" alt="你的改造成品">`:img(photos[d.photoIdx],'heroimg')}<div class="eyebrow">标题</div><input data-publishtitle="1" type="text" value="${escAttr(pendingPublishTitle)}" placeholder="给作品起个标题" style="width:100%;height:48px;border-radius:14px;border:1px solid #e2e7e3;padding:0 14px;font-size:15px;font-family:inherit;box-sizing:border-box;margin-top:8px"><div class="eyebrow">描述</div><textarea data-publishdesc="1" placeholder="说说这次改造的故事…" style="width:100%;min-height:96px;border-radius:14px;border:1px solid #e2e7e3;padding:12px 14px;font-size:14px;font-family:inherit;box-sizing:border-box;resize:vertical;margin-top:8px">${escHtml(pendingPublishDesc)}</textarea></div><div class="bottomcta"><button class="btn mint" data-confirmpublish="1">发布到我的主页</button></div>`;
+  return `${header('发布作品',true)}<div class="content"><div class="eyebrow" style="margin-top:0">封面</div>${heroSrc?`<img class="heroimg" style="object-fit:contain;background:#fff" src="${heroSrc}" alt="你的改造成品">`:img(photos[d.photoIdx],'heroimg')}<div class="eyebrow">标题</div><input data-publishtitle="1" type="text" value="${escAttr(pendingPublishTitle)}" placeholder="给作品起个标题" style="width:100%;height:48px;border-radius:14px;border:1px solid #e2e7e3;padding:0 14px;font-size:15px;font-family:inherit;box-sizing:border-box;margin-top:8px"><div class="eyebrow">描述</div><textarea data-publishdesc="1" placeholder="说说这次改造的故事…" style="width:100%;min-height:96px;border-radius:14px;border:1px solid #e2e7e3;padding:12px 14px;font-size:14px;font-family:inherit;box-sizing:border-box;resize:vertical;margin-top:8px">${escHtml(pendingPublishDesc)}</textarea></div><div class="bottomcta"><button class="btn mint" data-confirmpublish="1">发布到我的主页</button></div>`;
 }},
 '16':{name:'消息中心',body:()=>{
   const MSGS=[
@@ -1232,6 +1245,26 @@ function saveResultToast(how){
   if(how==='share') return '纸样已交给系统保存，选"存储到文件"可以选文件夹';
   return '纸样已下载到浏览器的"下载"文件夹';
 }
+// 2026-09-24 跨网址下载：纸样计算器 iframe 生成好 PDF 后用 postMessage 把文件发过来，存在这里(按包型区分)。
+// 页面和计算器不在同一个网址、无法直接访问 iframe 时，点击下载就用这份文件。
+let framePatternPdf=null;
+let framePdfWaiters=[];
+window.addEventListener('message',function(e){
+  const d=e.data||{};
+  if(d.type==='ecostitch-pattern-pdf'&&d.blob){
+    framePatternPdf={bag:d.bag,filename:d.filename,blob:d.blob};
+    const ws=framePdfWaiters;framePdfWaiters=[];ws.forEach(w=>w.resolve(framePatternPdf));
+  }else if(d.type==='ecostitch-pattern-pdf-error'){
+    const ws=framePdfWaiters;framePdfWaiters=[];ws.forEach(w=>w.reject(new Error(d.message||'纸样生成失败')));
+  }
+});
+function requestPdfFromFrame(frame){
+  return new Promise((resolve,reject)=>{
+    framePdfWaiters.push({resolve,reject});
+    try{frame.contentWindow.postMessage({type:'ecostitch-request-pdf'},'*');}catch(e){reject(e);}
+    setTimeout(()=>reject(new Error('纸样计算器没有响应。如果线上的 calculator.html 还没更新，请先重新部署它；或者用正式网址（'+API_BASE+'）打开 App 再下载。')),30000);
+  });
+}
 async function triggerRealPatternDownload(){
   const frame=document.getElementById('patternCalcFrame');
   if(!frame){showToast('纸样计算器加载失败，请返回上一步重试');return;}
@@ -1239,9 +1272,25 @@ async function triggerRealPatternDownload(){
   try{win=frame.contentWindow;void win.document;}catch(err){canAccess=false;}
   lastDownloadError=null;
   if(!win||!canAccess){
-    // 跨域：当前页面和纸样计算器不在同一个网址下(比如直接双击打开本地的 index.html)，浏览器禁止互相访问
-    lastDownloadError='无法连接纸样计算器：当前页面和纸样计算器不在同一个网址下，浏览器不允许下载。请用正式网址（'+API_BASE+'）打开 App 后再下载。';
-    showToast('纸样下载失败，下方已显示原因');render(true);return;
+    // 跨域(页面和计算器不在同一个网址)：不能直接访问 iframe，改用 postMessage 拿到的 PDF 文件
+    const dCur=DIRECTIONS[selectedDirection]||DIRECTIONS.tote;
+    const bagCur=dCur.calcBag||'boxtote';
+    const ready=(framePatternPdf&&framePatternPdf.bag===bagCur)?framePatternPdf:null;
+    const src=ready||requestPdfFromFrame(frame);
+    const filename=ready?ready.filename:('EcoStitch纸样_'+dCur.patternTitle+'_1比1.pdf');
+    try{
+      const how=await savePdfFile(src,filename);
+      const pdf=(src&&typeof src.then==='function')?await src:src;
+      lastPatternPdf={blob:pdf.blob,filename:pdf.filename||filename};
+      patternDownloaded=true;openTutStep=-1;toolsCardOpen=true;accCardOpen=false;
+      go('14');showToast(saveResultToast(how));
+    }catch(err){
+      if(err&&err.name==='AbortError'){showToast('已取消保存');return;}
+      if(err&&err.name==='NeedTapAgain'){showToast(err.message);return;}
+      lastDownloadError=(err&&err.name?err.name+': ':'')+(err&&err.message?err.message:String(err));
+      showToast('纸样保存失败，下方已显示具体错误信息');render(true);
+    }
+    return;
   }
   if(typeof win.getPatternPdf!=='function'){
     // 纸样计算器还没加载完，或者线上的 calculator.html 还是旧版本(没有 getPatternPdf)——退回旧版下载方式，保证至少能下载
@@ -1465,7 +1514,7 @@ document.querySelector('.phone').addEventListener('click',e=>{
   }
   if(t.dataset.pickdirection){selectedDirection=t.dataset.pickdirection;render(true);return;}
   if(t.dataset.directionmoretoggle!==undefined){directionMoreOpen=!directionMoreOpen;render(true);return;}
-  if(t.dataset.dirtier){const lv=t.dataset.dirtier;const tier=DIRECTION_TIERS.find(x=>x.level===lv);const cur=(lv in dirTierOpen)?dirTierOpen[lv]:!!(tier&&tier.keys.includes(selectedDirection));dirTierOpen[lv]=!cur;render(true);return;}
+  if(t.dataset.dirtier){const lv=t.dataset.dirtier;const tier=DIRECTION_TIERS.find(x=>x.level===lv);const cur=(lv in dirTierOpen)?dirTierOpen[lv]:(lv==='初级');dirTierOpen[lv]=!cur;render(true);return;}
   if(t.dataset.togglestyle){
     const s=t.dataset.togglestyle;
     const i=selectedStyles.indexOf(s);

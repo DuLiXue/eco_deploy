@@ -7865,7 +7865,7 @@ if(new URLSearchParams(location.search).get('preview')==='1'){
     // 一截空白，把 iframe 的高度收缩到刚好贴合内容(见 setupPatternPreviewResize)。
     window.__previewReady=true;
     // 2026-09-23 后台提前生成好 PDF，点击保存时直接交给系统分享面板/另存为(见 savePdfFile 说明)
-    try{ if(typeof getPatternPdf==='function') getPatternPdf(); }catch(e){}
+    try{ if(typeof getPatternPdf==='function'){ const src=getPatternPdf(); Promise.resolve(src).then(postPatternPdfToParent).catch(()=>{}); } }catch(e){}
   });
 }
 </script>
@@ -10214,6 +10214,28 @@ function getPatternPdf(){
   return p;
 }
 // 纸样计算器页面自己的"下载纸样"按钮
+// 2026-09-24 跨网址也能下载：主应用(index.html)和纸样计算器不在同一个网址时(比如本地打开 index.html、
+// 计算器来自线上)，浏览器禁止两个页面直接互相访问。改用 postMessage 把生成好的 PDF 文件本身发给主应用，
+// 由主应用在用户点击的那一下弹出"另存为"/分享面板(见 index.html 的 framePatternPdf)。
+function postPatternPdfToParent(pdf){
+  try{
+    if(window.parent&&window.parent!==window&&pdf&&pdf.blob){
+      window.parent.postMessage({type:'ecostitch-pattern-pdf',bag:(window._pattern||{}).bagType||curBag,filename:pdf.filename,blob:pdf.blob},'*');
+    }
+  }catch(e){}
+}
+window.addEventListener('message',async function(e){
+  const d=e.data||{};
+  if(d.type!=='ecostitch-request-pdf')return;
+  try{
+    if(!window._pattern&&typeof calculate==='function')calculate();
+    const src=getPatternPdf();
+    const pdf=(src&&typeof src.then==='function')?await src:src;
+    postPatternPdfToParent(pdf);
+  }catch(err){
+    try{window.parent.postMessage({type:'ecostitch-pattern-pdf-error',message:(err&&err.message)||String(err)},'*');}catch(e2){}
+  }
+});
 async function savePatternFromCalc(){
   if(!window._pattern){ alert('请先计算'); return; }
   try{
