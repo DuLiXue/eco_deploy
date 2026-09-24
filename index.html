@@ -313,7 +313,7 @@ const STYLE_PROMPT_HINTS={
   极简:'极简风格（线条干净利落、不加多余装饰、五金配件尽量简约低调）',
   复古:'复古风格（做旧金属五金、外露车缝线、偏暗做旧配色）',
   通勤:'通勤风格（版型规整利落、适合日常背出门、五金低调百搭）',
-  拼色:'拼色风格（明显的撞色/异色拼接色块设计，故意呈现出多种颜色分区拼接的效果）'
+  拼色:'拼色风格（明显的拼接色块设计；只有上传的旧衣本身包含不同颜色时才做撞色，颜色取自旧衣原有的布料；旧衣是单一颜色时，用同一块布料的分区拼接线做出拼接感，不引入新颜色）'
 };
 function styleHintText(){
   if(!selectedStyles.length)return'';
@@ -498,7 +498,7 @@ async function startGeneration(){
   // 简短分类词)，就还是退回用 mat1。
   const matDesc1=(identifyResult&&identifyResult.materialDesc)?identifyResult.materialDesc:mat1;
   const structureText1=directionStructureText(selectedDirection);
-  const prompt='这件旧衣的面料具体是："'+matDesc1+'"。把照片中这件旧衣的这块面料，改造设计成'+styleText1+dirName1+'。'+structureText1+'严格参考并保留原图这块面料本身真实的颜色、深浅、水洗纹理、磨损/破洞/污渍细节、缝线和五金配色，不要换成其他颜色或质感的面料，也不要换成"同类材质但不同花色"的面料，最终效果应该让人一眼就能认出"这就是用照片里这同一块面料做出来的成品"。'+CREATIVE_AESTHETIC_TEXT+multiPhotoPromptSuffix()+STRICT_MATERIAL_TEXT;
+  const prompt='【首要原则】这件成品用到的所有布料(包括颜色、深浅、材质、纹理)都必须来自用户上传的旧衣照片，不能出现照片里没有的布料或颜色。'+'这件旧衣的面料具体是："'+matDesc1+'"。把照片中这件旧衣的这块面料，改造设计成'+styleText1+dirName1+'。'+structureText1+'严格参考并保留原图这块面料本身真实的颜色、深浅、水洗纹理、磨损/破洞/污渍细节、缝线和五金配色，不要换成其他颜色或质感的面料，也不要换成"同类材质但不同花色"的面料，最终效果应该让人一眼就能认出"这就是用照片里这同一块面料做出来的成品"。'+CREATIVE_AESTHETIC_TEXT+multiPhotoPromptSuffix()+STRICT_MATERIAL_TEXT+shapeLockText(selectedDirection);
   try{
     const r=await fetch(API_BASE+'/api/generate-creative-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photoDataUrls:uploadedPhotos,prompt})});
     clearInterval(timer);
@@ -539,7 +539,7 @@ const VAR_HARDWARE='这一次请调整明线的走向、针距或颜色，以及
 const VAR_DECOR='这一次请改变装饰细节（比如换一种颜色的明线、用同一件旧衣的面料裁一条滚边条、把原衣物的口袋或布标换个位置），但不要改变包的基本廓形和开合方式，也不要引入原衣物没有的材质';
 function regenVariationPool(dirKey){
   const d=DIRECTIONS[dirKey]||DIRECTIONS.tote;
-  return [d.varPocket,d.varStrap,d.varColorBlock,VAR_PROPORTION,VAR_HARDWARE,VAR_DECOR].filter(Boolean);
+  return [d.varPocket,d.varStrap,d.varColorBlock,VAR_PROPORTION,VAR_HARDWARE,VAR_DECOR].filter(Boolean); // 撞色用的布料受 STRICT_MATERIAL_TEXT 约束，只能来自照片里的旧衣
 }
 async function regenerate(){
   if(regenerating)return;
@@ -573,7 +573,7 @@ async function regenerate(){
   const structureText2=directionStructureText(selectedDirection);
   const variationPool=regenVariationPool(selectedDirection);
   const variation=variationPool[creativeHistory.length%variationPool.length];
-  const prompt='这件旧衣的面料具体是："'+matDesc2+'"。把照片中这件旧衣的这块面料，改造设计成'+styleText2+dirName2+'。'+structureText2+variation+'。必须严格保持与原图相同的面料颜色、水洗纹理、磨损细节和五金配色，不要生成看起来像换了一块不同面料的效果，也不要生成和之前几乎一样的款式。'+CREATIVE_AESTHETIC_TEXT+multiPhotoPromptSuffix()+STRICT_MATERIAL_TEXT;
+  const prompt='【首要原则】这件成品用到的所有布料(包括颜色、深浅、材质、纹理)都必须来自用户上传的旧衣照片，不能出现照片里没有的布料或颜色。'+'这件旧衣的面料具体是："'+matDesc2+'"。把照片中这件旧衣的这块面料，改造设计成'+styleText2+dirName2+'。'+structureText2+variation+'。必须严格保持与原图相同的面料颜色、水洗纹理、磨损细节和五金配色，不要生成看起来像换了一块不同面料的效果'+((!referenceBagDir&&directionPickMode==='random')?'，也不要生成和之前几乎一样的款式。':'；包型结构保持不变，只在上面说的细节上做出变化。')+CREATIVE_AESTHETIC_TEXT+multiPhotoPromptSuffix()+STRICT_MATERIAL_TEXT+shapeLockText(selectedDirection);
   try{
     const r=await fetch(API_BASE+'/api/generate-creative-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photoDataUrls:uploadedPhotos,prompt})});
     if(r.ok){const data=await r.json();creativeHistory.push(data.imageDataUrl);creativeDirections.push(selectedDirection);historyIndex=creativeHistory.length-1;lastGenerateError=null;}
@@ -604,15 +604,24 @@ function multiPhotoPromptSuffix(){
 // 2026-09-24 Bedi 反馈"生成的图的审美水平要高，不能生成丑的"：两处生成 prompt(首次生成/重新生成)共用这段审美与构图要求，
 // 统一把画面往高端品牌商品图的水准上拉，同时列出常见的"丑图"特征让模型避开。
 // 2026-09-24 Bedi 反馈"要严格根据上传的衣物的材质及特点来生成，不要出现没有的材质"：放在 prompt 最后、优先级最高的材质硬约束。
-const STRICT_MATERIAL_TEXT='【材质硬性约束，优先级高于上文所有要求】成品的每一个部位(包身、提手、侧片、口袋、包盖、滚边条、可见的内衬)都只能使用照片中这件(或这几件)旧衣上真实存在的面料，'+
+const STRICT_MATERIAL_TEXT='【首要原则：一切布料都以用户上传的旧衣为准，优先级高于上文所有要求】成品的每一个部位(包身、提手、侧片、口袋、包盖、滚边条、可见的内衬)都只能使用照片中这件(或这几件)旧衣上真实存在的面料，'+
 '不得出现照片里没有的任何材质，例如皮革/麂皮/PU、帆布、针织、蕾丝、网纱、亮片、塑料、编织绳、金属链条等；'+
-'上文如果提到"撞色面料""另一种颜色面料""皮革贴皮"等，只有在上传的旧衣里确实有对应面料时才可以用，否则改用同一块面料的不同部位来做出层次(比如面料正反面、有图案和无图案的区域、水洗深浅不同的部分)；'+
+'撞色的前提是上传的旧衣本身就包含不同颜色：只有当照片里的旧衣本来就有不同颜色/深浅的布料(同一件衣服上的不同部位，如裤腰、口袋布、内衬、印花区、原有拼接块，或上传的其他几件旧衣)时，才可以用这些布料做撞色；'+
+'如果上传的旧衣是单一颜色，整个包就只用这一种颜色，不要做撞色；'+
+'每块布料的颜色、深浅、水洗效果都要和照片里对应部位一致，不能凭空出现照片里没有的颜色或面料(比如照片里只有浅蓝水洗牛仔，就不能出现深蓝原色牛仔)；'+
+'上文如果提到"撞色面料""另一种颜色面料""拼色""皮革贴皮"等，只能用照片里旧衣已有的布料来实现，找不到对应布料就不要做；'+
 '尽量保留并突出原衣物本身的特点(如原有的口袋、缝线、水洗/磨白、破洞、纽扣、印花、商标布标)；除包型本身必需的拉链外，不要额外添加金属扣、铆钉、D环、皮质标签等五金配件。';
 const CREATIVE_AESTHETIC_TEXT='画面审美要求：高端设计师品牌/时尚杂志级别的商品摄影，质感高级、干净克制；柔和均匀的影棚光，轻微自然投影，细节清晰锐利；'+
 '包型比例协调、轮廓挺括流畅、左右对称，缝线细密笔直、包边整齐，做工看起来精致耐用，像真正能在精品店出售的成品；'+
 '配色和谐统一，拼接和装饰点到为止、有设计感，不堆砌元素；'+
 '避免以下情况：廉价塑料感、粗糙歪斜的缝线、布料皱巴巴或鼓包、比例怪异或变形、过度饱和或刺眼的颜色、杂乱的装饰和图案、卡通或手绘插画风格、画面模糊、出现文字水印或多余的道具。'+
 '构图：纯白或极浅的中性色背景，单个成品居中完整展示(整个包都要在画面内，提手最顶端和包底都不能被裁切，四周留出适当空白)，正面略带一点侧角度以体现立体感，不出现人物。';
+// 2026-09-24 Bedi 反馈选了"挎包"却生成出托特包：把包型外形约束在 prompt 最末尾再强调一次(模型对结尾的要求最听话)，
+// 并去掉了"重新生成"里"不要生成和之前几乎一样的款式"这句——它会诱导模型直接换成别的包型。
+function shapeLockText(dirKey){
+  const d=DIRECTIONS[dirKey]||DIRECTIONS.tote;
+  return '【包型硬约束，最后再强调一次】这次的成品必须是「'+d.name+'」这一种包型，外形和结构必须与下面的描述一致，不能换成任何其他包型。'+(d.patternShape?('它的外形要点：'+d.patternShape):'');
+}
 function directionStructureText(dirKey){
   const d=DIRECTIONS[dirKey]||DIRECTIONS.tote;
   const shapeLine=d.patternShape?('最重要的硬性外形约束(必须严格遵守，优先级最高)：'+d.patternShape+' '):'';

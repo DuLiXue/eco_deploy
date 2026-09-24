@@ -8586,6 +8586,12 @@ async function downloadPattern(dryRun,prepareOnly){
   // 只列本页真正出现的符号(见文件末尾 drawPageLegends)。
   const pageSyms=new Map();
   function markSym(page,t){ if(!page)return; if(!pageSyms.has(page))pageSyms.set(page,new Set()); pageSyms.get(page).add(t); }
+  // 2026-09-24 记录每页画过的线段和文字位置(mm)，用来给符号图例找一块不压线、不压字的空白：
+  // 左上角空着就放左上角；纸样铺满整页时，放到裁片内部的空白处。
+  const pageGeom=new Map(); let geomOn=true;
+  function geomOf(page){ if(!pageGeom.has(page))pageGeom.set(page,{segs:[],boxes:[]}); return pageGeom.get(page); }
+  function recSeg(page,x1,y1,x2,y2){ if(geomOn&&page) geomOf(page).segs.push([x1,y1,x2,y2]); }
+  function recBox(page,x,y,w,h){ if(geomOn&&page) geomOf(page).boxes.push([x,y,w,h]); }
 
   // helper: draw text with mm coords (top-left origin → convert)
   // ⚠️2026-08-28(接入饺子拉链小包横版A4页面时实测踩到):这两个函数原来把"翻转Y轴"写死成 297(A4竖版的
@@ -8597,6 +8603,7 @@ async function downloadPattern(dryRun,prepareOnly){
   // 翻转,不用给横版页面单独写一套换算公式，以后如果还有裁片需要横版出图，也不用再踩同一个坑。
   const mk=(page,txt,xmm,ymm,size,color)=>{
     const phMM=page.getHeight()/MM;
+    if(geomOn){ let tw=0; try{ tw=font.widthOfTextAtSize(String(txt),size)/MM; }catch(e){ tw=String(txt).length*size*0.352; } recBox(page,xmm,ymm-size*0.352*0.85,tw,size*0.352*1.05); }
     page.drawText(String(txt),{x:xmm*MM, y:(phMM-ymm)*MM, size, font, color:color||rgb(0.11,0.12,0.09)});
   };
   // ⚠️2026-08-28(饺子拉链小包实测踩到,Bedi 截图问"为什么每个角都切了一下"):pdf-lib 的 drawLine 默认线帽是
@@ -8615,6 +8622,7 @@ async function downloadPattern(dryRun,prepareOnly){
   // 再喂给它,已用独立测试PDF核对换算公式和最终尖角效果(和缝纫线用手绘曲线连续过渡的观感一致，无缺口无圆弧)。
   const line=(page,x1,y1,x2,y2,w,color,dash)=>{
     const phMM=page.getHeight()/MM;
+    recSeg(page,x1,y1,x2,y2);
     page.drawLine({start:{x:x1*MM,y:(phMM-y1)*MM}, end:{x:x2*MM,y:(phMM-y2)*MM},
       thickness:(w||0.4)*MM, color:color||rgb(0.11,0.12,0.09), dashArray:dash?dash.map(d=>d*MM):undefined,
       lineCap:LineCapStyle.Round});
@@ -8625,6 +8633,7 @@ async function downloadPattern(dryRun,prepareOnly){
   const strokePath=(page,pts,w,color)=>{
     if(pts.length<2) return;
     const phMM=page.getHeight()/MM;
+    for(let i=0;i<pts.length-1;i++) recSeg(page,pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1]);
     let d='';
     for(let i=0;i<pts.length;i++){
       const x=pts[i][0]*MM, y=-((phMM-pts[i][1])*MM); // drawSvgPath 路径坐标是SVG惯例(Y向下),先取反抵消
@@ -9530,6 +9539,10 @@ async function downloadPattern(dryRun,prepareOnly){
         if(fill){ opt.color=black; }
         if(stroke){ opt.borderColor=black; opt.borderWidth=0.9; if(dash) opt.borderDashArray=[4*sc,4*sc]; }
         page.drawSvgPath(d,opt);
+        { const nums=(d.match(/-?\d*\.?\d+(?:e-?\d+)?/gi)||[]).map(Number); const k=sc/MM; const pts=[];
+          for(let q=0;q+1<nums.length;q+=2) pts.push([nums[q]*k, nums[q+1]*k+8]);
+          if(fill){ const xs=pts.map(p=>p[0]), ys=pts.map(p=>p[1]); if(xs.length) recBox(page,Math.min(...xs),Math.min(...ys),Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys)); }
+          else for(let q=0;q<pts.length-1;q++) recSeg(page,pts[q][0],pts[q][1],pts[q+1][0],pts[q+1][1]); }
       });
       markSym(page,'notch'); if(pgd.n>1) markSym(page,'fold');
       mk(page,'裁片：挎包包身 第'+pgd.n+'/3页（按A、B对位拼成一整片 · 底边半圆符号=对折线）',M,8,8.5,gray);
@@ -10149,14 +10162,40 @@ async function downloadPattern(dryRun,prepareOnly){
       [1.6,2.7].forEach(r=>{ const seg=10; for(let i=0;i<seg;i++){ if(i%2===1)continue; const a1=Math.PI*(i/seg),a2=Math.PI*((i+1)/seg); line(page,cx-r*Math.cos(a1),cy-r*Math.sin(a1),cx-r*Math.cos(a2),cy-r*Math.sin(a2),0.35,ink);} });
       line(page,cx-3.2,cy,cx+3.2,cy,0.35,ink);
     }
+    geomOn=false; // 画图例本身不再记录
     doc.getPages().forEach(page=>{
       const set=pageSyms.get(page); if(!set||!set.size) return;
-      let x=M, y=15.2;
-      const H=page.getHeight()/MM; if(H<260) y=15.2; // 横版页同样放左上角
-      ORDER.filter(t=>set.has(t)).forEach(t=>{
+      const syms=ORDER.filter(t=>set.has(t));
+      const PW=Math.floor(page.getWidth()/MM), PH=Math.floor(page.getHeight()/MM);
+      // 1mm 栅格占用图 + 前缀和，O(1) 判断一个矩形区域是否碰到已有线条/文字
+      const occ=new Uint8Array(PW*PH);
+      const mark=(x,y)=>{ const ix=Math.floor(x), iy=Math.floor(y); if(ix>=0&&iy>=0&&ix<PW&&iy<PH) occ[iy*PW+ix]=1; };
+      const g=pageGeom.get(page)||{segs:[],boxes:[]};
+      g.segs.forEach(([x1,y1,x2,y2])=>{ const L=Math.hypot(x2-x1,y2-y1), n=Math.max(1,Math.ceil(L/0.5)); for(let i=0;i<=n;i++){ mark(x1+(x2-x1)*i/n, y1+(y2-y1)*i/n); } });
+      g.boxes.forEach(([x,y,w,h])=>{ for(let yy=Math.floor(y);yy<=Math.ceil(y+h);yy++) for(let xx=Math.floor(x);xx<=Math.ceil(x+w);xx++) mark(xx,yy); });
+      const S=new Uint32Array((PW+1)*(PH+1));
+      for(let yy=0;yy<PH;yy++){ let row=0; for(let xx=0;xx<PW;xx++){ row+=occ[yy*PW+xx]; S[(yy+1)*(PW+1)+xx+1]=S[yy*(PW+1)+xx+1]+row; } }
+      const free=(x,y,w,h,m)=>{ const x0=Math.max(0,Math.floor(x-m)), y0=Math.max(0,Math.floor(y-m)), x1=Math.min(PW,Math.ceil(x+w+m)), y1=Math.min(PH,Math.ceil(y+h+m));
+        if(x-m<0||y-m<0||x+w+m>PW||y+h+m>PH) return false;
+        return (S[y1*(PW+1)+x1]-S[y0*(PW+1)+x1]-S[y1*(PW+1)+x0]+S[y0*(PW+1)+x0])===0; };
+      const itemW=t=>7+labelTextWidthMM(TEXT[t],6.5);
+      const rowW=syms.reduce((a,t)=>a+itemW(t)+4,0)-4, colW=Math.max(...syms.map(itemW)), colH=syms.length*5.2;
+      const layouts=[{w:rowW,h:5.2,row:true},{w:colW,h:colH,row:false}];
+      let spot=null;
+      // ① 优先左上角(标题下方)
+      for(const L of layouts){ if(free(M,12.4,L.w,L.h,1)){ spot={x:M,y:12.4,L}; break; } }
+      // ② 左上角被纸样占满时，在页面里(含裁片内部)自上而下、自左向右找第一块空白
+      if(!spot){
+        outer: for(const L of layouts){
+          for(let yy=12;yy+L.h<PH-10;yy+=1.5){ for(let xx=8;xx+L.w<PW-8;xx+=1.5){ if(free(xx,yy,L.w,L.h,1.6)){ spot={x:xx,y:yy,L}; break outer; } } }
+        }
+      }
+      if(!spot) spot={x:M,y:12.4,L:layouts[0]}; // 实在找不到就回到左上角
+      let x=spot.x, y=spot.y+4;
+      syms.forEach(t=>{
         glyph(page,t,x+3,y-1.2);
         mk(page,TEXT[t],x+7,y,6.5,gray);
-        x+=7+labelTextWidthMM(TEXT[t],6.5)+5;
+        if(spot.L.row) x+=itemW(t)+4; else y+=5.2;
       });
     });
   })();
