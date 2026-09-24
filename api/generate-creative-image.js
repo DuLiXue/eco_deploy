@@ -12,7 +12,13 @@
 // 模型:如果调用后报"模型不存在"或"已弃用"，去 https://ai.google.dev/gemini-api/docs/models 查当前可用的
 // 图片生成模型ID替换下面的 MODEL_ID(写这份代码时官方文档里同时出现过 gemini-2.5-flash-image 和更新的
 // gemini-3.1-flash-image，选一个文档里明确标注支持"图生图"/"image editing"的型号)。
-const MODEL_ID = 'gemini-2.5-flash-image';
+// 2026-09-24 换模型：gemini-2.5-flash-image 官方公告最早 2026-10-02 下线；Bedi 要求"分辨率不需要高，但还原度要高"，
+// 又补充"清晰度低能更便宜就用低的"：Pro 最低只能出 1K(约 $0.134/张)，而 Nano Banana 2(gemini-3.1-flash-image)
+// 支持 512px 输出(约 $0.045/张)，所以默认用 Nano Banana 2 + 512px；还原度靠高清参考图 + 面料特写 + 还原要求保证。
+// 如果实测还原度不够，在 Vercel 环境变量里加 GEMINI_IMAGE_MODEL=gemini-3-pro-image(会自动改用 1K)即可切到 Pro，不用改代码。
+const MODEL_ID = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image';
+// 512px 只有 Nano Banana 2 支持，参数值必须写 '512'(写 '512px'/'0.5K' 会被忽略)；其他模型用 1K。
+let IMAGE_SIZE = /3\.1-flash-image$/.test(MODEL_ID) ? '512' : '1K';
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent`;
 
 // 2026-09-12 新增：Bedi 反馈"多张照片一起生成时经常失败"。排查下来这里有两个平台层面的硬限制，都可能是
@@ -46,7 +52,7 @@ export default async function handler(req, res) {
     // 后面 1-2 张是用户额外上传的其他旧衣照片)，让 Gemini 同时看到多张图、把不同旧衣的面料拼进同一个
     // 设计里(比如包身用第一件、包带/侧边用第二件)。保留旧字段 photoDataUrl 做向后兼容——如果前端某处
     // 还是只传单图字段，这里照样按单图处理，不会破坏原有调用方式。
-    const { photoDataUrl, photoDataUrls, prompt } = req.body || {};
+    const { photoDataUrl, photoDataUrls, closeupDataUrl, prompt } = req.body || {};
     const urls = Array.isArray(photoDataUrls) && photoDataUrls.length
       ? photoDataUrls
       : (photoDataUrl ? [photoDataUrl] : []);
@@ -59,15 +65,27 @@ export default async function handler(req, res) {
 
     // 每张 photoDataUrl 都是形如 "data:image/png;base64,xxxxx" 的 data URL，
     // Gemini API 只要纯 base64 数据 + 单独的 mime type，这里逐张拆开、拼成多个 inline_data part。
-    const imageParts = [];
+    const toPart = url => { const m = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(url || ''); return m ? { inline_data: { mime_type: m[1], data: m[2] } } : null; };
+    // 2026-09-24 面料还原：图片放在文字要求前面，并给每张图写清用途(整体照 / 面料特写)，让模型把它们当作"要原样使用的布料"而不是风格参考
+    const imageParts = [{ text: '【参考图说明】下面是用户上传的旧衣照片，它们是做这个包唯一的布料来源。' }];
+    let n = 0;
     for (const url of limitedUrls) {
-      const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(url);
-      if (!match) {
+      const part = toPart(url);
+      if (!part) {
         res.status(400).json({ error: 'photoDataUrl(s) 格式不对，应该是 data:image/xxx;base64,... 这样的完整 data URL' });
         return;
       }
-      imageParts.push({ inline_data: { mime_type: match[1], data: match[2] } });
+      n++;
+      imageParts.push({ text: '图' + n + '：第' + n + '件旧衣的整体照片' }, part);
     }
+    const closeupPart = toPart(closeupDataUrl);
+    if (closeupPart) { n++; imageParts.push({ text: '图' + n + '：第1件旧衣的面料局部特写(从原照片直接裁切，未做任何修改)，用来看清真实颜色、纹理粗细、洗水/磨白/褪色分布和缝线颜色' }, closeupPart); }
+    const FIDELITY = '【面料还原要求，优先级最高】成品必须像是把上面照片里这件真实的衣服剪开、重新缝成的包，包面就是这块布本身：'
+      + '①颜色和色调与照片完全一致，包括原布的泛黄、偏绿、偏灰等色偏，不要校正成更干净、更标准的颜色；'
+      + '②保留原布的深浅变化和洗水、磨白、褪色、斑驳的真实分布，原衣上缝线附近、边缘处更深的地方，包上对应位置也要更深，不要画成均匀一致的纯色布；'
+      + '③纹理粗细、斜纹方向、颗粒感、图案的大小比例都与原布一致；④明线的颜色和粗细与原衣相同；'
+      + '⑤裁片取自原衣时恰好带到的原有细节(明线、分割缝、布标、纽扣等)可以原样出现在包面上，但不能凭空添加原衣没有的材料、颜色或部件。'
+      + '不要重新设计布料，不要让布料看起来比原衣更新、更平整、更均匀。';
 
     // 2026-09-13 新增：Bedi 截图反馈了一次真实失败——Gemini 这次调用"有返回内容，但内容是一段文字描述
     // (比如"这是使用您提供的旧衣物面料制作的波士顿枕头包……")，没有真的生成图片"，也就是模型把这次请求
@@ -82,12 +100,13 @@ export default async function handler(req, res) {
     //   能保证了，不需要再额外靠调高 temperature 来碰运气，这样能在"保留生成结果多样性"和"降低只出文字不出
     //   图的概率"之间取一个更稳的平衡。
     const MUST_OUTPUT_IMAGE_SUFFIX = '（重要：这次请求必须输出一张真实生成的图片，不允许只用文字描述这个设计而不生成图片，如果无法生成图片也不要用文字回答，要重新尝试生成图片）';
-    const finalPrompt = prompt + MUST_OUTPUT_IMAGE_SUFFIX;
-    const MAX_ATTEMPTS = 3;
+    const finalPrompt = FIDELITY + prompt + MUST_OUTPUT_IMAGE_SUFFIX;
+    const MAX_ATTEMPTS = 2; const t0 = Date.now(); // Pro 模型单次较慢，最多试 2 次，且超过 35 秒不再重试，避免撞上 60 秒超时
     let lastNoImageData = null;
     let lastHttpError = null;
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      if (attempt > 1 && Date.now() - t0 > 35000) break;
       const geminiResp = await fetch(GEMINI_ENDPOINT, {
         method: 'POST',
         headers: {
@@ -97,11 +116,11 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           contents: [{
             parts: [
-              { text: finalPrompt },
               ...imageParts,
+              { text: finalPrompt },
             ],
           }],
-          generationConfig: { responseModalities: ['TEXT', 'IMAGE'], temperature: 1.0 },
+          generationConfig: { responseModalities: ['TEXT', 'IMAGE'], imageConfig: { imageSize: IMAGE_SIZE } },
         }),
       });
 
@@ -110,13 +129,15 @@ export default async function handler(req, res) {
         // 重试次数——这类错误的报错信息里已经写清楚了常见原因：①这个 API key 所在的 Google Cloud 项目
         // 没有开通结算(billing)——Gemini 图片生成模型目前没有免费额度；②MODEL_ID 已经更新/弃用。
         const errText = await geminiResp.text();
+        // 万一 Google 不接受 '512'，自动退回 1K 再试一次，不让用户看到失败
+        if (geminiResp.status === 400 && IMAGE_SIZE !== '1K' && /image_?size/i.test(errText)) { IMAGE_SIZE = '1K'; attempt--; continue; }
         lastHttpError = { status: geminiResp.status, errText };
         break;
       }
 
       const data = await geminiResp.json();
       const parts = (data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
-      const imgPart = parts.find(p => p.inlineData && p.inlineData.data);
+      const imgPart = parts.filter(p => p.inlineData && p.inlineData.data && !p.thought).pop(); // Pro 会先输出思考过程中的草图(thought=true)，取最后一张正式图
       if (imgPart) {
         const outMime = imgPart.inlineData.mimeType || 'image/png';
         const imageDataUrl = 'data:' + outMime + ';base64,' + imgPart.inlineData.data;
