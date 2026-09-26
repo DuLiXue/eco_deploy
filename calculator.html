@@ -7981,8 +7981,8 @@ let curBag='boxtote';
 
 // 各包型标准成品尺寸(来自模板库 net_dimensions)
 const STD={
-  boxtote:{W:21,H:27,D:9.5},
-  unlinedbox:{W:21,H:27,D:9.5},   // 尼龙方包单层：与尼龙方包同一套尺寸，只是去掉里布、侧片拆成2片在底端拼接
+  boxtote:{W:19,H:25,D:7.5},   // 2026-09-26 Bedi：纸样图上 21×27 / 16×27 / 9.5×34.5 是裁片尺寸(含缝份)，成品净尺寸=19×25×7.5
+  unlinedbox:{W:19,H:25,D:7.5},  // 2026-09-26 Bedi 给的尼龙方包净尺寸图：前后片21×27、前口袋16×27、侧边9.5×34.5(半)、提手裁25
   unlinedpouch:{W:22,H:18,D:6},   // 笔袋：与三角笔袋同一版型(无里布)，纸样为单片展开图
   unlinedsling:{W:56,H:40,D:0},   // 挎包：模板库推算成品尺寸(平铺最宽56×高40)，待实物验证；纸样为 Bedi 手绘 3 页 A4 1:1 拼接
   jointote:{W:40,H:27,D:12},
@@ -8045,13 +8045,13 @@ function calculate(){
   if(curBag==='boxtote'){
     // 模板2 尼龙方包 · 已验证(基准 21×27×9.5)
     const bw=W+sa*2, bh=H+sa*2;
-    const sw=D+sa*2, sl=(H+D-2)+sa*2;
-    const pkw=Math.round((W*0.76))+sa*2, pkh=bh;
+    const sw=D+sa*2, sl=Math.round((H+D+sa*2)*10)/10; // 侧边完整裁片9.5×34.5，纸样沿底边对折只画一半
+    const pkw=Math.round((W+sa*2)*0.76), pkh=bh;
     pieces=[
-      ['前后片', bw, bh, '表布×2 里布×2'],
-      ['侧底围条', sw, sl, '表布×1 里布×1'],
-      ['前口袋', pkw, pkh, '表布×1 里布×1'],
-      ['提手', 8, 25+sa*2, '×2（或用成品）'],
+      ['前后片', bw, bh, '表布×2 里布×2（竖对折）'],
+      ['侧底围条', sw, sl, '表布×1 里布×1（横对折）'],
+      ['前口袋', pkw, pkh, '表布×1 里布×1（不对折）'],
+      ['提手', 8, 25, '×2（或用成品）'],  // 2026-09-26 按 Bedi 的尼龙方包净尺寸图"提手裁25厘米"：25已是裁剪长度
     ];
     fabricNeed=bw*2;
     notes='方底托特包为已验证结构，公式与实物裁片完全吻合。侧底围条同时构成左侧+底+右侧。';
@@ -8063,9 +8063,9 @@ function calculate(){
     const upH=(H*0.62)+sa*2;           // 上半约0.62高
     const dnH=(H*0.70)+sa*2;           // 下半含折底
     pieces=[
-      ['上半部外布', bw, upH, '表布×2（印花/浅色）'],
-      ['下半部底布', bw, dnH, '表布×1（耐磨/深色）'],
-      ['包身里布', bw, (H*2+D+sa*2), '里布×1（对折）'],
+      ['上半部外布', bw, upH, '表布×2（印花/浅色）（不对折）'],
+      ['下半部底布', bw, dnH, '表布×1（耐磨/深色）（不对折）'],
+      ['包身里布', bw, (H*2+D+sa*2), '里布×1（对折）（不对折）'],
       ['里口袋', Math.round(bw*0.8), (H*0.5)+sa*2, '里布×1（对折）'],
       ['背带', 12, 82, '×2（手提82/肩背90-100）'],
     ];
@@ -8077,10 +8077,10 @@ function calculate(){
     // 包口沿36×5、主体印花36×14、包底36×8、里布36×48、底角6×6
     const bw=W+D+sa*2;
     pieces=[
-      ['包口沿布', bw, 5+sa*2, '表布×2（纯色厚料）'],
-      ['主体印花布', bw, (H*0.7)+sa*2, '表布×2（图案旧衣）'],
-      ['包底拼接布', bw, (D*0.66)+sa*2, '表布×1（两下角切6×6缺口）'],
-      ['连体里布', bw, (H*2+D)+sa*2, '里布×1（两侧切6×6缺口）'],
+      ['包口沿布', bw, 5+sa*2, '表布×2（纯色厚料）（不对折）'],
+      ['主体印花布', bw, (H*0.7)+sa*2, '表布×2（图案旧衣）（不对折）'],
+      ['包底拼接布', bw, (D*0.66)+sa*2, '表布×1（两下角切6×6缺口）（不对折）'],
+      ['连体里布', bw, (H*2+D)+sa*2, '里布×1（两侧切6×6缺口）（不对折）'],
       ['提手', 8, 25+sa*2, '×2'],
     ];
     fabricNeed=bw;
@@ -8107,7 +8107,7 @@ function calculate(){
       ['桶身侧片', Math.round(bodyW*10)/10, bodyH, '表布×1 铺棉×1'],
       ['桶身里布', Math.round(bodyW*10)/10, bodyH+2, '里布×1（预留调整）'],
       ['抽绳内胆布', Math.round(bodyW*10)/10, 12+sa*2, '×2（包口抽绳）'],
-      ['手提带', 6, 24+sa*2, '×2（对折）'],
+      ['手提带', 6, 24+sa*2, '×2（对折）（横对折）'],
     ];
     fabricNeed=bodyW;
     notes='抽绳圆筒水桶包：桶身周长=π×底直径（'+circ.toFixed(1)+'cm），改直径时桶身自动重算。来自模板库。';
@@ -8135,18 +8135,18 @@ function calculate(){
 
   } else if(curBag==='unlinedbox'){
     // 尼龙方包单层(模板16)：沿用尼龙方包已验证的尺寸公式，去掉里布；侧片拆成2片，在底端(半圆记号端)拼接，
-    // 每片长度=原侧底围条长度的一半+拼接端1个缝份。
+    // 2026-09-26 Bedi：尼龙方包单层与尼龙方包纸样完全相同，只是没有里布——裁片、尺寸、对折位置全部与 boxtote 一致。
     const bw=W+sa*2, bh=H+sa*2;
-    const sw=D+sa*2, slHalf=Math.round(((H+D-2)/2+sa*2)*10)/10;
-    const pkw=Math.round((W*0.76))+sa*2, pkh=bh;
+    const sw=D+sa*2, sl=Math.round((H+D+sa*2)*10)/10; // 侧边完整裁片9.5×34.5，纸样沿底边对折只画一半
+    const pkw=Math.round((W+sa*2)*0.76), pkh=bh;
     pieces=[
-      ['前后片表布', bw, bh, '表布×2（前片、后片各1片，无里布）'],
-      ['侧片', sw, slHalf, '表布×2（两片在底端拼接成一条完整侧片）'],
-      ['前口袋', pkw, pkh, '表布×1'],
-      ['提手', 8, 25+sa*2, '表布×2（四折压明线）'],
+      ['前后片表布', bw, bh, '表布×2（竖对折）'],
+      ['侧片', sw, sl, '表布×1（横对折）'],
+      ['前口袋', pkw, pkh, '表布×1（不对折）'],
+      ['提手', 8, 25, '表布×2（四折压明线）'],
     ];
     fabricNeed=bw*2;
-    notes='尼龙方包单层：尺寸公式沿用已验证的尼龙方包，去掉里布与烫衬；侧片为2片，先在底端拼接再与前后片缝合。包口向内折两次(约2cm)卷边，内部缝份用Z字线迹锁边。';
+    notes='尼龙方包单层：纸样与尼龙方包完全相同，只是不裁里布、不烫衬；侧片为一整条(对折裁)。包口向内折两次(约2cm)卷边，内部缝份用Z字线迹锁边。';
 
   } else if(curBag==='unlinedpouch'){
     // 笔袋(模板15)：与三角笔袋同一张手绘纸样轮廓(POUCH)，只是没有里布
@@ -8210,9 +8210,9 @@ function calculate(){
     pieces=[
       ['前后片(主体)', 27.0, 27.0, '表布×2 里布×2（正圆，源图真实圆弧半径，沿折边对折镜像复原成完整圆，2片各自单独镜像，不共用同一份裁剪）'],
       ['前贴袋(外袋)', 13.7, 24.0, '表布×2 里布×2（源图标注数量，扇形，顶边浅弧+底边大圆弧，均为源图真实曲线，沿折边对折镜像）'],
-      ['拉链侧围条(侧片上)', 10.1, 18.3, '表布×1 里布×1（矩形，含拉链止口标记，与包底侧围条为同一条环形围条的上下两段）'],
-      ['包底侧围条(侧片底)', 10.0, 23.0, '表布×1 里布×1（矩形，与拉链侧围条拼接成完整环形围条）'],
-      ['背带(肩带)', 14.5, 32.0, '表布×2（矩形，内夹铺棉，源图2页拼接，本计算器按通用对折规则自动出1张对位图）'],
+      ['拉链侧围条(侧片上)', 10.1, 18.3, '表布×1 里布×1（矩形，含拉链止口标记，与包底侧围条为同一条环形围条的上下两段）（折边顶）'],
+      ['包底侧围条(侧片底)', 10.0, 23.0, '表布×1 里布×1（矩形，与拉链侧围条拼接成完整环形围条）（折边顶）'],
+      ['背带(肩带)', 14.5, 32.0, '表布×2（矩形，内夹铺棉，源图2页拼接，按纸样上下2页拼接）（不对折）'],
     ];
     fabricNeed=27.0;
     notes='立体圆饼双肩背包：⚠️此纸样轮廓取自项目SVG结构数据库"儿童圆背包"真实图纸(与模板文档11粗略文字描述同一包型，细节更完整，非 Bedi 手绘/实物验证)。正圆主体、前贴袋均为源图真实圆弧/曲线坐标直接绘制；侧围两段、背带经核对是纯矩形，交给通用排版引擎自动分页对折。正式裁剪前务必先打小样核对，尤其侧围与主体的缝合关系建议先用便宜布料试拼一次。';
@@ -8232,15 +8232,15 @@ function calculate(){
       ['表布主片(后片)', 23.1, 28.1, '表布×2 里布×2（拱形，源图独立测量，形状与前片差<1%属正常描线误差，不共用同一份数据）'],
       ['兜盖布', 14.6, 9.4, '表布×1 里布×1 铺棉×1（弧形，顶边直线+底边大弧，源图真实曲线，已是完整整片）'],
       ['前兜布', 18.3, 17.8, '表布×1 里布×1 铺棉×1（直角切口矩形，两下角各切一个直角缺口，用于打底角/抠角做立体直角底）'],
-      ['表布侧底片', 23.7, 11.5, '表布×1 里布×1 铺棉×1（矩形，右侧边缝纫线与裁剪线重合/无缝份，源图如此标注，非折边）'],
-      ['拉链片布(大片)', 20.3, 7.9, '表布×1 里布×1 铺棉×1（矩形，与小片同源不同宽，右侧边同上无缝份）'],
-      ['拉链片布(小片)', 20.3, 4.7, '表布×1 里布×1 铺棉×1（矩形，与大片拼成完整拉链片，右侧边同上无缝份）'],
-      ['背带布', 16.1, 27.0, '表布×2（矩形，四折缉线成背带，底边缝纫线与裁剪线重合/无缝份）'],
-      ['提手布', 12.0, 23.0, '表布×1（矩形，净尺寸10×22cm，四折成提手，底边无缝份，本片是全套换算的校准基准）'],
+      ['表布侧底片', 23.7, 11.5, '表布×1 里布×1 铺棉×1（矩形，右侧边缝纫线与裁剪线重合/无缝份，源图画一半，右边为对折边）（折边右）'],
+      ['拉链片布(大片)', 20.3, 7.9, '表布×1 里布×1 铺棉×1（矩形，与小片同源不同宽，右侧边为对折边）（折边右）'],
+      ['拉链片布(小片)', 20.3, 4.7, '表布×1 里布×1 铺棉×1（矩形，与大片拼成完整拉链片，右侧边为对折边）（折边右）'],
+      ['背带布', 16.1, 27.0, '表布×2（矩形，四折缉线成背带，底边为对折边）（折边底）'],
+      ['提手布', 12.0, 23.0, '表布×1（矩形，净尺寸10×22cm，四折成提手，底边为对折边，本片是全套换算的校准基准）（折边底）'],
       ['背带袢布(三角接片)', 9.5, 9.5, '表布×1（正方形整料，源图标注"背带袢布"，四边均有缝份，制作时对角剪开成2个三角形，见教程步骤）'],
-      ['内拉链袋(上片)', 14.0, 14.0, '表布×1 里布×1 铺棉×1（矩形，右侧边无缝份，与下片搭配25cm内袋拉链）'],
-      ['内拉链袋(下片)', 14.0, 24.0, '表布×1 里布×1 铺棉×1（矩形，右侧边无缝份，与上片拼成完整内拉链袋）'],
-      ['内贴袋布', 15.5, 27.1, '里布×1（矩形，右侧边无缝份，对折做双分栏贴袋）'],
+      ['内拉链袋(上片)', 14.0, 14.0, '表布×1 里布×1 铺棉×1（矩形，右侧边为对折边，与下片搭配25cm内袋拉链）（折边右）'],
+      ['内拉链袋(下片)', 14.0, 24.0, '表布×1 里布×1 铺棉×1（矩形，右侧边为对折边，与上片拼成完整内拉链袋）（折边右）'],
+      ['内贴袋布', 15.5, 27.1, '里布×1（矩形，右侧边为对折边，对折做双分栏贴袋）（折边右）'],
     ];
     fabricNeed=28.2;
     notes='经典拉链立体双肩背包：⚠️此纸样轮廓取自项目SVG结构数据库"大小双肩包"真实图纸(非 Bedi 手绘/实物验证，模板文档本身也标注"待验证")。表布主片(前/后片)、兜盖为源图真实曲线坐标直接绘制；前兜布是直角切口矩形，按精确顶点多边形绘制；其余8个矩形片交给通用排版引擎自动出图。⚠️多数矩形片有一条边(通常右侧/底侧)缝纫线与裁剪线重合、无额外缝份，这是源图统一的真实构造，不是绘制遗漏，裁剪时请按标注方向对齐，不要四边都留缝份。零件较多(13类)，正式裁剪前务必先按纸样清单核对一遍数量，再对照制作教程步骤4大组件预合的顺序小样试拼一次。';
@@ -8263,7 +8263,7 @@ function calculate(){
       ['边骨条皮', 37.7, 1.7, '皮革×2（矩形，⚠️长度采用教程文档标注的37.7cm，与源图裁片模板量出的约16.6cm单段长度未能完全核实对上，如实标注；宽度取源图真实测量值；净尺寸=裁剪线，包裹2.5~3mm骨芯后缝于侧围边缘）'],
       ['前后身贴皮', 1.8, 14.8, '皮革×4（矩形，净尺寸=裁剪线，顶端搭15mm穿方形扣）'],
       ['侧贴皮', 1.4, 11.6, '皮革×2（矩形，净尺寸=裁剪线，⚠️源图文字标注"入方扣复搭位"，但教程文档裁片清单归为穿D字扣用途，源图与文档文字不一致，如实两处并存标注，不擅自二选一）'],
-      ['手提面皮', 1.8, 27.1, '皮革×2（矩形，净尺寸=裁剪线，两端搭方形扣复搭位，比底皮长约7cm）'],
+      ['手提面皮', 1.8, 27.1, '皮革×2（矩形，净尺寸=裁剪线，两端搭方形扣复搭位，比底皮长约7cm）（不对折）'],
       ['手提底皮', 1.8, 20.0, '皮革×2（矩形，净尺寸=裁剪线，与面皮对粘，两端削边）'],
     ];
     fabricNeed=37.7;
@@ -8713,7 +8713,9 @@ async function downloadPattern(dryRun,prepareOnly){
   const BS2=50, bx2=M, by2=y+1;
   rect(pg,bx2,by2,BS2,BS2,0.6,ink);
   mk(pg,'校验框',bx2+BS2/2-labelTextWidthMM('校验框',11)/2,by2+BS2/2+1.5,11,gray);
-  mk(pg,'5×5cm',bx2+BS2/2-labelTextWidthMM('5×5cm',7)/2,by2+BS2/2+7,7,gray);
+  { const L1='此框为5×5cm，测量相符', L2='则表明打印尺寸正确';
+    mk(pg,L1,bx2+BS2/2-labelTextWidthMM(L1,7)/2,by2+BS2/2+7,7,gray);
+    mk(pg,L2,bx2+BS2/2-labelTextWidthMM(L2,7)/2,by2+BS2/2+11,7,gray); }
   y+=boxH+6;
   // 纸样说明
   const sav=P.sa||1;
@@ -8765,18 +8767,25 @@ async function downloadPattern(dryRun,prepareOnly){
     if(cur)lines.push(cur);
     return lines;
   }
+  // 2026-09-26 清单改成三栏同一行：裁片｜尺寸｜数量/说明(说明在第三栏内按宽度换行)，不再另起一行串到裁片名下面；
+  // 表头和第一行放不下时一起挪到下一页，避免表头孤零零留在上一页。
+  const COL3=M+128, noteMaxWidth=210-M-COL3;
+  const noteOf=pc=>wrapTextToWidth(((/折边(右|底|顶|左)|竖对折|横对折/.test(String(pc[3]))?'对折裁 · ':'')+String(pc[3]).replace(/（[^）]*）|\([^)]*\)/g,'').trim()),noteMaxWidth,8.5);
+  const rowH=pc=>Math.max(1,noteOf(pc).length)*4.6+4.4;
+  const tableHead=(title,note)=>{ secTitle(pg,title,y,note); y+=8;
+    mk(pg,'裁片',M+2,y,10,gray); mk(pg,'尺寸(cm)',M+72,y,10,gray); mk(pg,'数量/说明',COL3,y,10,gray);
+    y+=2; line(pg,M,y,210-M,y,0.3,rgb(0.9,0.9,0.88)); y+=7; };
   y+=10;
-  secTitle(pg,'裁片清单',y,'尺寸已含缝份'); y+=8;
-  mk(pg,'裁片',M+2,y,10,gray); mk(pg,'尺寸(cm)',M+72,y,10,gray); mk(pg,'数量/说明',M+128,y,10,gray);
-  y+=2; line(pg,M,y,210-M,y,0.3,rgb(0.9,0.9,0.88)); y+=7;
-  const noteMaxWidth=210-M*2-2; // 说明另起一行、占满页面可用宽度，不再挤在窄栏里
+  if(P.pieces.length && y+17+rowH(P.pieces[0])>285){ pg=doc.addPage(A4); listPages.add(pg); y=20; }
+  tableHead('裁片清单','尺寸已含缝份');
   P.pieces.forEach(pc=>{
-    const noteLinesPre=wrapTextToWidth(String(pc[3]).replace(/（[^）]*）|\([^)]*\)/g,'').trim(),noteMaxWidth,8.5);
-    if(y+5.5+noteLinesPre.length*4.4>285){ pg=doc.addPage(A4); listPages.add(pg); y=20; secTitle(pg,'裁片清单（续）',14); }
-    mk(pg,pc[0],M+2,y,10,ink); mk(pg,`${pc[1]} × ${pc[2]}`,M+72,y,10,ink); y+=5.5;
-    const noteLines=noteLinesPre;
-    noteLines.forEach(ln=>{ mk(pg,ln,M+4,y,8.5,gray); y+=4.4; });
-    y+=3;
+    const nl=noteOf(pc);
+    if(y+rowH(pc)>285){ pg=doc.addPage(A4); listPages.add(pg); y=20; tableHead('裁片清单（续）'); }
+    // 清单一律写整片尺寸：纸样只画半片(折边X)的，这里换算回展开后的完整尺寸
+    const dW=pc[1], dH=pc[2]; // 清单尺寸就是完整裁片尺寸
+    mk(pg,pc[0],M+2,y,10,ink); mk(pg,`${dW} × ${dH}`,M+72,y,10,ink);
+    nl.forEach((ln,i)=>mk(pg,ln,COL3,y+i*4.6,8.5,gray));
+    y+=Math.max(1,nl.length)*4.6+4.4;
   });
   y+=5;
 
@@ -8785,8 +8794,9 @@ async function downloadPattern(dryRun,prepareOnly){
   const FW=210-M*2, FH=297-30;
   const PADX=8, PADY=10, GAP=6;
   const FITW=FW-PADX, FITH=FH-PADY;
-  function fits1(w,h){ return (w<=FITW&&h<=FITH)||(h<=FITW&&w<=FITH); }
-  function rotNeeded(w,h){ return !(w<=FITW&&h<=FITH); }
+  const FITHT=297-14; // 2026-09-26 单独占一页、上下居中时最高可放 28.3cm(照手绘纸样：27cm 高的裁片一页放下，不拆页)
+  function fits1(w,h){ return (w<=FITW&&h<=FITHT)||(h<=FITW&&w<=FITHT); }
+  function rotNeeded(w,h){ return !(w<=FITW&&h<=FITHT); }
   function isStrip(name,w,h){
     return (name.indexOf('带')>=0||name.indexOf('条')>=0||name.indexOf('提手')>=0||name.indexOf('滚边')>=0) && (Math.max(w,h)/Math.min(w,h)>=3);
   }
@@ -8819,8 +8829,10 @@ async function downloadPattern(dryRun,prepareOnly){
     genericPieces.push(pc);
     const name=pc[0], qty=pc[3];
     const grain=needGrain(qty,name); const bias=needBias(name);
-    if(fits1(W,H)){ blocks.push({name,w:W,h:H,qty,rot:rotNeeded(W,H),grain,bias}); return; }
-    if(isStrip(name,W,H)){
+    const qflag=/折边(右|底|顶|左)|竖对折|横对折/.test(String(qty));
+    if(fits1(W,H)&&!qflag){ blocks.push({name,w:W,h:H,qty,rot:rotNeeded(W,H),grain,bias}); return; }
+    const qs=String(qty); // 2026-09-26 说明里可带排版提示：分段(按长条分段打印)、竖对折(折边在右)、不对折(整片按网格分页)
+    if(!qflag&&(isStrip(name,W,H)||(qs.indexOf('分段')>=0&&!fits1(W,H)))){ // 纸样上标了对折的，优先按对折画，不按长条分段
       const long=Math.max(W,H), short=Math.min(W,H);
       const segs=Math.ceil(long/FITH), segLen=long/segs;
       const L=stripLetters[stripLetterIdx++];
@@ -8837,21 +8849,29 @@ async function downloadPattern(dryRun,prepareOnly){
     // 规则1:对称大片 → 沿最长边中点对折,画一半,折叠符号
     // 矩形片天然对称。对折后一半若能放进A4,则一张;否则再切
     let fw=W, fh=H, foldEdge=null;
-    if(H>=W){ fh=H/2; foldEdge='bottom'; }   // 高更长→横对折,折边在底
+    const fe=(qs.match(/折边(右|底|顶|左)/)||[])[1];
+    if(fe){ foldEdge={右:'right',底:'bottom',顶:'top',左:'left'}[fe]; if(fe==='右'||fe==='左') fw=W/2; else fh=H/2; }   // 2026-09-26 Bedi：清单尺寸一律是完整裁片尺寸；纸样沿手绘图标的那条对折边只画一半
+    else if(qs.indexOf('竖对折')>=0){ fw=W/2; foldEdge='right'; }
+    else if(qs.indexOf('横对折')>=0){ fh=H/2; foldEdge='bottom'; }
+    else if(qs.indexOf('不对折')>=0){ foldEdge=null; }
+    else if(H>=W){ fh=H/2; foldEdge='bottom'; }   // 高更长→横对折,折边在底
     else    { fw=W/2; foldEdge='right'; }     // 宽更长→竖对折,折边在右
-    if(fits1(fw,fh)){
+    if(foldEdge&&fits1(fw,fh)){
       blocks.push({name,w:fw,h:fh,qty,fold:true,foldEdge,grain,bias,rot:rotNeeded(fw,fh)});
       return;
     }
     // 对折后仍超A4 → 对这一半做网格切分(带折叠符号的那半)
-    const cols=Math.ceil(fw/FITW), rows=Math.ceil(fh/FITH), cw=fw/cols, ch=fh/rows;
-    overviews.push({name,W:fw,H:fh,qty,rows,cols,folded:true});
+    const cols=fw<=FW?1:Math.ceil(fw/FITW), rows=Math.ceil(fh/FITHT), cw=fw/cols, ch=fh/rows;
+    overviews.push({name,W:fw,H:fh,qty,rows,cols,folded:!!foldEdge});
+    const GL=(cols===1&&rows>1)?stripLetters[stripLetterIdx++]:null; // 2026-09-26 上下分页时在分页边标对位字母
+    const gLabel=j=>rows-1<=1?GL:(GL+j);
     for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
       // 折叠边所在的那一行/列的块,标折叠符号
-      const onFold = (foldEdge==='bottom' && r===rows-1) || (foldEdge==='right' && c===cols-1);
+      const onFold = (foldEdge==='bottom' && r===rows-1) || (foldEdge==='right' && c===cols-1) || (foldEdge==='top' && r===0) || (foldEdge==='left' && c===0);
       blocks.push({name,w:cw,h:ch,qty,grid:true,r,c,rows,cols,seq:r*cols+c+1,grain,bias,
-        fold:onFold, foldEdge:onFold?foldEdge:null, rot:rotNeeded(cw,ch),
-        edgeT:r===0,edgeB:r===rows-1,edgeL:c===0,edgeR:c===cols-1});
+        fold:onFold, foldEdge:onFold?foldEdge:null, rot:!(cw<=FW&&ch<=FITHT),
+        edgeT:r===0,edgeB:r===rows-1,edgeL:c===0,edgeR:c===cols-1,
+        letterTop:(GL&&r>0)?gLabel(r):null, letterBot:(GL&&r<rows-1)?gLabel(r+1):null});
     }
   });
   // 对位口:裁剪线边缘的 V 形缺口(尖朝内),字母在缺口正中。edge: 'top'|'bottom'
@@ -8866,8 +8886,15 @@ async function downloadPattern(dryRun,prepareOnly){
     mk(page,letter, cx-1, edgeY + dir*(depth*0.42), 8, ink);
   }
   function drawBlk(page,ox,oy,w,h,bl){
-    rect(page,ox,oy,w,h,0.6,ink);
-    const nx=ox+sa_mm2,ny=oy+sa_mm2,nw=w-sa_mm2*2,nh=h-sa_mm2*2;
+    const FE=(bl.fold&&bl.foldEdge)?bl.foldEdge:null;
+    if(!FE) rect(page,ox,oy,w,h,0.6,ink);
+    else { // 2026-09-26 照手绘纸样：对折边不画裁剪实线(画成虚线)，且对折边没有缝份，缝纫线直接到对折边
+      const C=[[ox,oy],[ox+w,oy],[ox+w,oy+h],[ox,oy+h]], E={top:[0,1],right:[1,2],bottom:[2,3],left:[3,0]}[FE];
+      const start=E[1], pts=[]; for(let k=0;k<4;k++) pts.push(C[(start+k)%4]);
+      strokePath(page,pts,0.6,ink); line(page,C[E[0]][0],C[E[0]][1],C[E[1]][0],C[E[1]][1],0.3,ink,[2,2]);
+    }
+    const sT=FE==='top'?0:sa_mm2, sB=FE==='bottom'?0:sa_mm2, sL=FE==='left'?0:sa_mm2, sR=FE==='right'?0:sa_mm2;
+    const nx=ox+sL,ny=oy+sT,nw=w-sL-sR,nh=h-sT-sB;
     if(nw>0&&nh>0){
       rect(page,nx,ny,nw,nh,0.3,ink,[2,2]);   // 缝纫线:完整内框(四边)
     }
@@ -8886,7 +8913,7 @@ async function downloadPattern(dryRun,prepareOnly){
     if(fabricMatches){
       fabricMatches.forEach(fm=>{
         const m=fm.match(/(\u8868\u5e03|\u91cc\u5e03|\u94fa\u68c9|\u8877\u5e03|\u76ae\u9769|\u5e03\u6599)[\u00d7xX*]?(\d+)/);
-        lines.push(bl.name+m[1]+'×'+m[2]+segSuffix);
+        lines.push((bl.name.endsWith(m[1])?bl.name:bl.name+m[1])+'×'+m[2]+segSuffix);
       });
     } else {
       const nm=qtyStr.match(/[\u00d7xX*](\d+)/);
@@ -8912,12 +8939,14 @@ async function downloadPattern(dryRun,prepareOnly){
     // \u6253\u5305\u65f6\u4f1a\u88ab\u6f0f\u6389)\uff0cPDF\u91cc\u4f1a\u663e\u793a\u6210\u4e00\u4e2a\u65b9\u5757(\u7f3a\u5b57\u7b26\u5360\u4f4d\u7b26)\u3002\u6839\u6cbb:\u6539\u7528\u7eaf\u6587\u5b57\u63d0\u793a\uff0c\u548c\u9879\u76ee\u91cc\u5176\u4f59\u7b26\u53f7(\u6298\u53e0/\u5bf9\u4f4d/
     // \u5e03\u7eb9\u7bad\u5934)\u7edf\u4e00\u8d70"\u77e2\u91cf\u7ebf\u6761\u6216\u5df2\u786e\u8ba4\u8986\u76d6\u7684\u6c49\u5b57"\u8fd9\u4e24\u79cd\u5b89\u5168\u753b\u6cd5\uff0c\u4e0d\u518d\u4f9d\u8d56\u5355\u4e2a\u4e0d\u5e38\u7528 Unicode \u7b26\u53f7\u5b57\u7b26\u3002
     if(bl.rot) mk(page,'\u5df2\u8f6c90\u00b0',nx+2,ny+4,7,gray);
-    if(bl.strip){
+    if(bl.strip||bl.grid){
       if(bl.letterTop) triLabel(page,cx,oy,bl.letterTop,'top');
       if(bl.letterBot) triLabel(page,cx,oy+h,bl.letterBot,'bottom');
     }
     if(bl.fold && bl.foldEdge){
       if(bl.foldEdge==='bottom'){ foldArc(page,cx,oy+h,'h'); mk(page,'\u5bf9\u6298',cx-2.5,oy+h-5.5,7,gray); }
+      else if(bl.foldEdge==='top'){ foldArc(page,cx,oy,'ht'); mk(page,'\u5bf9\u6298',cx-2.5,oy+8,7,gray); }
+      else if(bl.foldEdge==='left'){ foldArc(page,ox,cy,'vl'); mk(page,'\u5bf9\u6298',ox+1.5,cy-2.5,7,gray); }
       else if(bl.foldEdge==='right'){ foldArc(page,ox+w,cy,'v'); mk(page,'\u5bf9\u6298',ox+w-5,cy-2.5,7,gray); }
     }
     if(bl.grain && nh>26){
@@ -8962,9 +8991,13 @@ async function downloadPattern(dryRun,prepareOnly){
         if(i%2===1) continue;   // 隔段跳过 → 虚线效果
         const a1=Math.PI*(i/seg), a2=Math.PI*((i+1)/seg);
         let x1,y1,x2,y2;
-        if(dir==='h'){
-          x1=cx-r*Math.cos(a1); y1=cy-r*Math.sin(a1);
-          x2=cx-r*Math.cos(a2); y2=cy-r*Math.sin(a2);
+        if(dir==='h'||dir==='ht'){
+          const sg=dir==='ht'?-1:1;
+          x1=cx-r*Math.cos(a1); y1=cy-sg*r*Math.sin(a1);
+          x2=cx-r*Math.cos(a2); y2=cy-sg*r*Math.sin(a2);
+        } else if(dir==='vl'){
+          x1=cx+r*Math.sin(a1); y1=cy-r*Math.cos(a1);
+          x2=cx+r*Math.sin(a2); y2=cy-r*Math.cos(a2);
         } else {
           x1=cx-r*Math.sin(a1); y1=cy-r*Math.cos(a1);
           x2=cx-r*Math.sin(a2); y2=cy-r*Math.cos(a2);
@@ -9562,6 +9595,45 @@ async function downloadPattern(dryRun,prepareOnly){
   // ===== 挎包·手绘纸样原样输出(2026-09-23) =====
   // Bedi 手绘的 3 张 A4 纸样(SVG 画布 595×842 = A4 印刷点，1:1)，路径数据原样嵌入 SLING_PAGES，
   // 每页按原比例画到一张 A4 上：实线=裁剪线，虚线=缝纫线/拼接边，文字与 A、B 对位口、镜像符号都来自原图。
+  // ===== 尼龙方包单层：照手绘纸样(尼龙方包单层.svg/-1/-2/-3)逐片单页绘制 =====
+  // 前后片表布：画一半，右边为对折线；侧片：画一半，底边为对折线；提手、前口袋：整片。每片一页、居中，1:1。
+  function drawUnlinedBoxPages(){
+    const get=n=>P.pieces.find(pc=>pc[0]===n);
+    const s=sa_mm2, lw9=t=>labelTextWidthMM(t,9.5);
+    const lbl=(page,t,cx,cy)=>mk(page,t,cx-lw9(t)/2,cy,9.5,ink);
+    const top=h=>Math.max(16,(297-h)/2+3);
+    // 1) 前后片表布(右侧对折)
+    { const pc=get('前后片表布'); if(pc){ const W=pc[1]*10, H=pc[2]*10, hw=W/2;
+      const page=doc.addPage(A4); mk(page,'裁片：前后片表布（对折裁）',M,10,9,gray);
+      const foldPX=(210+hw)/2, oy=top(H);
+      drawHalfSet(page,[[0,0],[hw,0],[hw,H],[0,H]],foldPX,oy,0.6,ink);
+      drawHalfSet(page,[[0,s],[hw-s,s],[hw-s,H-s],[0,H-s]],foldPX,oy,0.3,ink,[2,2]);
+      line(page,foldPX,oy,foldPX,oy+H,0.3,ink,[2,2]);
+      foldArc(page,foldPX,oy+H/2,'v'); mk(page,'对折',foldPX-5,oy+H/2-8,7,gray);
+      lbl(page,'前后片表布×2',foldPX-hw/2,oy+H/2);
+      grainArrow(page,foldPX-hw+s+6,oy+s+10,oy+s+60); } }
+    // 2) 侧片(底边对折)
+    { const pc=get('侧片'); if(pc){ const W=pc[1]*10, H=pc[2]*10/2;
+      const page=doc.addPage(A4); mk(page,'裁片：侧片（对折裁）',M,10,9,gray);
+      const ox=(210-W)/2, oy=top(H);
+      const cut=[[0,H],[0,0],[W,0],[W,H]], sew=[[s,H],[s,s],[W-s,s],[W-s,H]];
+      drawPathSet(page,cut,ox,oy,0.6,ink);
+      recPiece(cut.map(q=>[q[0],2*H-q[1]]));
+      drawPathSet(page,sew,ox,oy,0.3,ink,[2,2]);
+      line(page,ox,oy+H,ox+W,oy+H,0.3,ink,[2,2]);
+      foldArc(page,ox+W/2,oy+H,'h'); mk(page,'对折',ox+W/2-2.5,oy+H-7,7,gray);
+      lbl(page,'侧片表布×2',ox+W/2,oy+H/2);
+      grainArrow(page,ox+s+6,oy+s+8,oy+s+48); } }
+    // 3) 提手、4) 前口袋(整片)
+    [['提手','提手表布×2'],['前口袋','前口袋表布×1']].forEach(([n,t])=>{ const pc=get(n); if(!pc) return;
+      const W=pc[1]*10, H=pc[2]*10;
+      const page=doc.addPage(A4); mk(page,'裁片：'+n,M,10,9,gray);
+      const ox=(210-W)/2, oy=top(H);
+      drawPathSet(page,[[0,0],[W,0],[W,H],[0,H],[0,0]],ox,oy,0.6,ink);
+      drawPathSet(page,[[s,s],[W-s,s],[W-s,H-s],[s,H-s],[s,s]],ox,oy,0.3,ink,[2,2]);
+      lbl(page,t,ox+W/2,oy+H/2);
+      grainArrow(page,ox+s+Math.min(6,W/2-s-1),oy+s+8,oy+s+Math.min(50,H-2*s-16)); });
+  }
   function drawSlingPages(){
     const sc=(210*MM)/595, black=rgb(0,0,0);
     { // 首页轮廓预览：3 页按 A、B 对位拼成整片(pt→mm)，并沿底边对折线镜像
@@ -10105,8 +10177,8 @@ async function downloadPattern(dryRun,prepareOnly){
   }
   let pages=[{sh:[]}];
   function place(bl){
-    const fw=bl.w+PADX,fh=bl.h+PADY, rw=bl.h+PADX,rh=bl.w+PADY;
-    const opts=bl.rot?[[rw,rh,true],[fw,fh,false]]:[[fw,fh,false],[rw,rh,true]];
+    const fw=(bl.w<=FW)?Math.min(bl.w+PADX,FW):bl.w+PADX,fh=bl.h+PADY, rw=bl.h+PADX,rh=bl.w+PADY; // 宽度略超排版余量但仍在页内时不必转90°
+    const opts=bl.rot?[[rw,rh,true],[fw,fh,false]]:((bl.letterTop||bl.letterBot||bl.foldEdge)?[[fw,fh,false]]:[[fw,fh,false],[rw,rh,true]]); // 带对位字母/对折边的块不随意转90°，免得字母和折边落到错的边上
     for(const pg of pages){
       for(const o of opts){
         const bw=o[0],bh=o[1],rot=o[2];
@@ -10117,7 +10189,7 @@ async function downloadPattern(dryRun,prepareOnly){
       }
     }
     const o=opts[0];
-    pages.push({sh:[{y:0,h:o[1],x:o[0]+GAP,items:[{bl,x:0,rot:o[2]}]}]});
+    pages.push({tall:o[1]>FH, sh:[{y:0,h:o[1],x:o[0]+GAP,items:[{bl,x:0,rot:o[2]}]}]});
   }
   // ===== 拼版总览(被拆分的大片如何拼接) =====
   if(overviews.length>0){
@@ -10160,10 +10232,12 @@ async function downloadPattern(dryRun,prepareOnly){
     const page=doc.addPage(A4);
     mk(page,'\u7eb8\u6837\uff1a\u5916\u5b9e\u7ebf=\u88c1\u526a\u7ebf(\u526a) \u00b7 \u5185\u865a\u7ebf=\u7f1d\u7eab\u7ebf(\u7f1d) \u00b7 \u25b3\u5b57\u6bcd=\u62fc\u5408\u5bf9\u4f4d',M,8,8.5,gray);
     pgo.sh.forEach(s=>s.items.forEach(m=>{
-      const ox=M+m.x+PADX/2, oy=19+s.y+PADY/2;
       const w=m.rot?m.bl.h:m.bl.w, h=m.rot?m.bl.w:m.bl.h;
+      const ox=pgo.tall?(210-w)/2:M+m.x+PADX/2, oy=pgo.tall?(297-h)/2:19+s.y+PADY/2; // 高裁片独占一页、居中
       if(m.bl.strip||m.bl.grid) joinPagesMark(page);
-      drawBlk(page,ox,oy,w,h,Object.assign({},m.bl,{rot:m.rot}));
+      // 2026-09-26 修正：块被旋转90°摆放时，对折边也要跟着转(原来底边对折转完还画在底边，折线落在了短边上)
+      const fe=m.rot&&m.bl.foldEdge?({bottom:'right',right:'bottom',top:'left',left:'top'}[m.bl.foldEdge]):m.bl.foldEdge;
+      drawBlk(page,ox,oy,w,h,Object.assign({},m.bl,{rot:m.rot,foldEdge:fe}));
     }));
     mk(page,'\u7b2c '+(pi+1)+'/'+nonEmptyPages.length+' \u9875',M,292,8,gray);
   });
@@ -10216,7 +10290,7 @@ async function downloadPattern(dryRun,prepareOnly){
     });
     // 矩形裁片：按裁片清单尺寸画矩形；跨页(窄长切段/网格)的标出分段位置
     genericPieces.forEach(pc=>{
-      const w=parseFloat(pc[1])*10, h=parseFloat(pc[2])*10;
+      let w=parseFloat(pc[1])*10, h=parseFloat(pc[2])*10;
       const segs=blocks.filter(b=>b.name===pc[0]&&(b.strip||b.grid));
       const nseg=segs.length?(segs[0].total||(segs[0].rows*segs[0].cols)||segs.length):0;
       items.push({name:pc[0],w,h,rectPiece:true,join:nseg>1,nseg,qty:qtyOf(pc[3])});
@@ -10284,8 +10358,6 @@ async function downloadPattern(dryRun,prepareOnly){
         if(it.join){ const tg='需拼合'+(it.nseg?'·分'+it.nseg+'段':it.npg?'·共'+it.npg+'页':(it.seam?'·共'+it.seam.pages.filter((v,i,a)=>a.indexOf(v)===i).length+'页':'')); mk(coverPage,tg,X0+r.x+(r.cellW-labelTextWidthMM(tg,5.2))/2,Y0+r.y+rowH+6.2,5.2,orange); }
       });
     });
-    const note='比例约 1:'+Math.round(1/s);
-    mk(coverPage,note,M+(210-M*2)-labelTextWidthMM(note,5.5)-1.5,PREVIEW_Y+PREVIEW_H+0.8,5.5,gray);
     geomOn=true;
   })();
   // ===== 每页左上角符号图例(2026-09-24)：只列本页出现过的符号 =====
