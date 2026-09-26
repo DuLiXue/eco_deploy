@@ -8698,12 +8698,67 @@ async function downloadPattern(dryRun,prepareOnly){
       line(page,x-1.2,y+1.5,x,y+3,0.35,ink); line(page,x+1.2,y+1.5,x,y+3,0.35,ink);
     }
   }
+  // ===== 首页成品线稿(含缝纫线编号) =====
+  // 形状用局部坐标(mm，左上原点)描述；outer=外轮廓，seams=[{n,pts|d,type}]，legend=编号说明(与制作步骤对应)。
+  function _cub(p0,p1,p2,p3,n){const r=[];for(let i=0;i<=n;i++){const t=i/n,u=1-t;r.push([u*u*u*p0[0]+3*u*u*t*p1[0]+3*u*t*t*p2[0]+t*t*t*p3[0],u*u*u*p0[1]+3*u*u*t*p1[1]+3*u*t*t*p2[1]+t*t*t*p3[1]]);}return r;}
+  function _chain(start,segs,n){let pts=[start],cur=start;segs.forEach(s=>{const q=_cub(cur,s[0],s[1],s[2],n||14);q.shift();pts=pts.concat(q);cur=s[2];});return pts;}
+  function _offset(pts,d){return pts.map((p,i)=>{const a=pts[Math.max(0,i-1)],b=pts[Math.min(pts.length-1,i+1)];let dx=b[0]-a[0],dy=b[1]-a[1];const L=Math.hypot(dx,dy)||1;return [p[0]-dy/L*d,p[1]+dx/L*d];});}
+  function _mirror(pts,cx){return pts.map(p=>[2*cx-p[0],p[1]]).reverse();}
+  const COVER_LINEART={
+    unlinedsling:(()=>{
+      // 挎包正面：左半边(中线 x=25)，再镜像；两条提手在顶部中间相接，U 形包口上窄下宽，底在 y=24
+      const outerL=_chain([25,0],[[[20,0],[15,4],[12.5,11]],[[10,18],[1,23],[1,33]],[[1,43],[12,48],[25,48]]]);
+      const innerL=_chain([25,2.4],[[[21.5,2.4],[17.5,6],[15.2,12.5]],[[13,18.5],[14.5,24],[25,24]]]);
+      const outer=outerL.concat(_mirror(outerL,25).slice(1));
+      const inner=innerL.concat(_mirror(innerL,25).slice(1));
+      const sideStart=outerL.findIndex(p=>p[1]>=17);
+      const sideL=outerL.slice(sideStart);
+      const bodySeam=sideL.concat(_mirror(sideL,25).slice(1));
+      const handleOuterL=outerL.slice(0,sideStart+1), handleOuterR=_mirror(handleOuterL,25);
+      return {w:50,h:48,outer:[outer,inner],
+        seams:[
+          {n:1,lines:[[[5.6,45.2],[8.6,40.6]]],lab:[1.8,47]},
+          {n:2,lines:[[[25,0],[25,2.4]]],lab:[28.4,-1.6]},
+          {n:3,lines:[_offset(inner,0.7),_offset(handleOuterL,-0.7),_offset(handleOuterR,-0.7)],lab:[25,27.2]},
+          {n:4,lines:[_offset(bodySeam,-0.9)],lab:[52.8,31]}],
+        legend:['底角缝（每片左右各1个）','提手中缝（每片1道，不连前后片）','包口和提手折边明线','包身合缝（两侧+底边一圈）']};
+    })()
+  };
+  function drawCoverLineArt(page,X,Y,W,H){
+    const A=COVER_LINEART[P.bagType]; if(!A) return;
+    const PH=page.getHeight(), org=rgb(0.88,0.41,0.17);
+    const artH=H-9, sc=artH/A.h, ox=X+2, oy=Y+7;
+    const T=p=>[ox+p[0]*sc,oy+p[1]*sc];
+    const path=(pts,close)=>pts.map((p,i)=>{const q=T(p);return (i?'L ':'M ')+(q[0]*MM).toFixed(2)+' '+(q[1]*MM).toFixed(2);}).join(' ')+(close?' Z':'');
+    const secG=rgb(0.231,0.545,0.408);
+    mk(page,'成品线稿 · 缝纫线',X,Y+3,9,secG); mk(page,'成品线稿 · 缝纫线',X+0.14,Y+3,9,secG);
+    A.outer.forEach(o=>page.drawSvgPath(path(o,true),{x:0,y:PH,borderColor:ink,borderWidth:0.45*MM}));
+    A.seams.forEach(s=>s.lines.forEach(l=>page.drawSvgPath(path(l,false),{x:0,y:PH,borderColor:org,borderWidth:0.35*MM,borderDashArray:[1.2*MM,0.9*MM]})));
+    const badge=(cx,cy,n)=>{ page.drawCircle({x:cx*MM,y:(PH/MM-cy)*MM,size:1.9*MM,color:org}); mk(page,String(n),cx-0.75,cy+1.05,6.5,rgb(1,1,1)); };
+    A.seams.forEach(s=>{const q=T(s.lab); badge(q[0],q[1],s.n);});
+    // 右侧编号说明
+    const lx=ox+A.w*sc+10; let ly=oy+6;
+    mk(page,'虚线 = 缝纫线',lx,ly,7.5,gray); ly+=7;
+    A.legend.forEach((t,i)=>{ badge(lx+1.9,ly-1.1,i+1); mk(page,t,lx+5.5,ly,8,ink); ly+=6.5; });
+  }
   let pg=doc.addPage(A4); const M=12; const coverPage=pg; const listPages=new Set(); const joinPages=new Set();
   mk(pg,'EcoStitch 裁剪纸样',M,M+6,20,ink);
   mk(pg,`包型：${P.bagName}   成品 ${P.W}×${P.H}${P.D?('×'+P.D):''}cm   缝份 ${P.sa}cm（可按布料调整）`,M,M+14,11,gray);
 
+  // 2026-09-26 Bedi：成品尺寸下方加裁剪注意(字体子集里没有"优"，用"先裁剪")；括号里用小图标表示对位三角和对折弧形符号
+  { const OR=rgb(0.88,0.41,0.17), FS=9, Y1=M+21, Y2=M+26, phMM=pg.getHeight()/MM;
+    const L=(x1,y1,x2,y2,w,dash)=>pg.drawLine({start:{x:x1*MM,y:(phMM-y1)*MM},end:{x:x2*MM,y:(phMM-y2)*MM},thickness:w*MM,color:ink,dashArray:dash?dash.map(v=>v*MM):undefined});
+    const tri=(x,yb)=>{ const ey=yb-3.3; L(x,ey,x+7,ey,0.3,[0.9,0.6]); L(x+1.2,ey,x+3.5,ey+3.3,0.4); L(x+5.8,ey,x+3.5,ey+3.3,0.4); return 7; };
+    const arc=(x,yb)=>{ const by=yb+0.2, cx=x+3.5; L(x,by,x+7,by,0.3,[0.9,0.6]);
+      [[1.6,5],[3,7]].forEach(([r,n])=>{ for(let k=0;k<n;k+=2){ for(let q=0;q<5;q++){ const a1=Math.PI*(k+q/5)/n,a2=Math.PI*(k+(q+1)/5)/n; L(cx-r*Math.cos(a1),by-r*Math.sin(a1),cx-r*Math.cos(a2),by-r*Math.sin(a2),0.35); } } }); return 7; };
+    const t0='注意：'; mk(pg,t0,M,Y1,FS,OR); mk(pg,t0,M+0.14,Y1,FS,OR);
+    let x=M+labelTextWidthMM(t0,FS);
+    const put=t=>{ mk(pg,t,x,Y1,FS,ink); x+=labelTextWidthMM(t,FS); };
+    put('裁剪过程中先裁剪大裁片（如带有 '); x+=tri(x,Y1)+0.8; put(' 和 '); x+=arc(x,Y1)+0.8;
+    put(' 符号的裁片），如果裁片较大无法裁出一整块裁片时，');
+    mk(pg,'可以裁2份一半大小再缝合成一整片裁片',M+labelTextWidthMM(t0,FS),Y2,FS,ink); }
   // 打印必读 + 5×5cm 校验方框(方框放右侧,保持真实50mm)
-  let y=M+24;
+  let y=M+32;
   const boxH=52; // 2026-09-24 去掉绿框和打印提示，只保留 5×5cm 校验框
   // ⚠️2026-08-28(排查笔袋主体缺字问题、重建字体子集验证时顺带发现,与"裁片名称居中"无关的另一个独立问题):
   // "⚑"(黑旗符号,U+2691)不在 Noto Sans SC 源字体里(不是子集化时漏选,是这个字体本身就没画这个符号),
@@ -8716,6 +8771,9 @@ async function downloadPattern(dryRun,prepareOnly){
   { const L1='此框为5×5cm，测量相符', L2='则表明打印尺寸正确';
     mk(pg,L1,bx2+BS2/2-labelTextWidthMM(L1,7)/2,by2+BS2/2+7,7,gray);
     mk(pg,L2,bx2+BS2/2-labelTextWidthMM(L2,7)/2,by2+BS2/2+11,7,gray); }
+  // 2026-09-26 Bedi：校验框右边放这款包的成品线稿，并标出所有缝纫线(编号与制作步骤一致)。
+  // 直接用 drawSvgPath 画，不走 line/strokePath，避免被当成纸样符号统计进"纸样符号说明"。
+  try{ drawCoverLineArt(pg,bx2+BS2+8,by2,210-M-(bx2+BS2+8),BS2); }catch(e){ console.warn('lineart',e); }
   y+=boxH+6;
   // 纸样说明
   const sav=P.sa||1;
@@ -8735,8 +8793,9 @@ async function downloadPattern(dryRun,prepareOnly){
   y+=3; secTitle(pg,'纸样符号说明',y); y+=4;
   const SYM_Y=y, SYM_RH=19; y+=Math.ceil(nSym/2)*SYM_RH+5;
   secTitle(pg,'纸样说明',y); y+=7;
-  mk(pg,`1. 纸样已含 ${sav}cm 缝份，沿实线剪下即可。`,M+2,y,9.5,ink); y+=5.5;
-  mk(pg,'2. 标「需拼合」的裁片跨页打印，按相同字母对齐拼好后再画线裁剪。',M+2,y,9.5,ink); y+=9;
+  mk(pg,'1. 纸样名称：如「表布x2  -1」，x2 表示这块布要裁2片，-1 表示这张纸样需要拼合，是第1部分。',M+2,y,9.5,ink); y+=5.5;
+  mk(pg,`2. 纸样已含 ${sav}cm 缝份，沿实线剪下即可。`,M+2,y,9.5,ink); y+=5.5;
+  mk(pg,'3. 标「需拼合」的裁片跨页打印，按相同字母对齐拼好后再画线裁剪。',M+2,y,9.5,ink); y+=9;
 
   // 2026-09-24 裁片等比预览：先在首页留出位置，等下面算完哪些裁片需要跨页拼合后再画(见 drawCoverPreview)
   y+=3;
@@ -9662,6 +9721,8 @@ async function downloadPattern(dryRun,prepareOnly){
       });
       { const k2=25.4/72, O={1:[0,7],2:[524.5,0],3:[1063.5,0]}[pgd.n]||[0,0]; pageFrame.set(page,{piece:'包身（整片）',ox:-O[0]*k2,oy:8-O[1]*k2}); }
       markSym(page,'cut'); markSym(page,'sew'); markSym(page,'notch'); if(pgd.n>1) markSym(page,'fold');
+      { // 2026-09-26 Bedi：对折符号旁写"对折"(不改手绘纸样本身，只在输出页上补字)；坐标=手绘图里双半圆的圆心x、外圆顶y(pt)
+        const FA={2:[441,748],3:[298,745]}[pgd.n]; if(FA){ const k=sc/MM, t='对折'; mk(page,t,FA[0]*k-labelTextWidthMM(t,8)/2,FA[1]*k+8-2,8,ink); } }
       { // 2026-09-24 "表布×2 - n" 标签下方注明需拼合：取本页最长的填充路径(就是这行标签文字)的外框定位
         let best=null; pgd.els.forEach(e=>{ if(e[2]&&(!best||e[0].length>best.length)) best=e[0]; });
         if(best){ const nums=(best.match(/-?\d*\.?\d+(?:e-?\d+)?/gi)||[]).map(Number), k=sc/MM; let x0=1e9,x1=-1e9,y1=-1e9;
@@ -10258,7 +10319,7 @@ async function downloadPattern(dryRun,prepareOnly){
   // ===== 首页裁片轮廓预览(2026-09-24 第三版)：每个裁片的真实裁剪轮廓按同一比例缩小，跨页裁片拼成整片后显示 =====
   (function drawCoverPreview(){
     const orange=rgb(0.88,0.41,0.17);
-    const qtyOf=s=>{ const m=String(s).match(/[×xX*](\d+)/g)||[]; return m.reduce((a,x)=>a+parseInt(x.slice(1)),0)||1; };
+    const qtyOf=s=>{ const m=String(s).match(/(?<![\d.])[×xX*](\d+)(?!\s*(cm|mm|厘米))/g)||[]; return m.reduce((a,x)=>a+parseInt(x.slice(1)),0)||1; };
     const qtyByName={}; P.pieces.forEach(pc=>{ qtyByName[pc[0]]=qtyOf(pc[3]); });
     const items=[];
     // 曲线/异形裁片：用记录下来的真实轮廓
@@ -10268,9 +10329,10 @@ async function downloadPattern(dryRun,prepareOnly){
       if(!isFinite(x0)) return;
       const nm=name==='挎包包身'?'包身（整片）':name;
       if(joinPieceSet.has(name)){ // 跨页裁片：把各页纸样按拼接位置合成一张拼接示意图(和纸样页上画的一模一样，只是等比缩小)
-        const ops=[]; let a0=Infinity,b0=Infinity,a1=-Infinity,b1=-Infinity;
-        const ext=(x,y)=>{ a0=Math.min(a0,x);b0=Math.min(b0,y);a1=Math.max(a1,x);b1=Math.max(b1,y); };
+        const ops=[]; let a0=Infinity,b0=Infinity,a1=-Infinity,b1=-Infinity; const segBox=[];
+        let sb=null; const ext=(x,y)=>{ a0=Math.min(a0,x);b0=Math.min(b0,y);a1=Math.max(a1,x);b1=Math.max(b1,y); if(sb){ sb[0]=Math.min(sb[0],x);sb[1]=Math.min(sb[1],y);sb[2]=Math.max(sb[2],x);sb[3]=Math.max(sb[3],y);} };
         doc.getPages().forEach(pg2=>{ const f=pageFrame.get(pg2); if(!f||f.piece!==name) return;
+          sb=[Infinity,Infinity,-Infinity,-Infinity]; segBox.push(sb);
           (pageOps.get(pg2)||[]).forEach(o=>{
             if(o.t==='l'){ const q=[o.a[0]-f.ox,o.a[1]-f.oy,o.a[2]-f.ox,o.a[3]-f.oy]; ops.push({...o,a:q}); ext(q[0],q[1]); ext(q[2],q[3]); }
             else if(o.t==='p'){ const q=o.pts.map(([x,y])=>[x-f.ox,y-f.oy]); ops.push({...o,pts:q}); q.forEach(([x,y])=>ext(x,y)); }
@@ -10281,7 +10343,7 @@ async function downloadPattern(dryRun,prepareOnly){
           }); });
         if(ops.length && isFinite(a0)){
           const nm2=name==='挎包包身'?'包身（整片）':name;
-          items.push({name:nm2,w:a1-a0,h:b1-b0,comp:{ops,a0,b0},join:true,npg:doc.getPages().filter(pg2=>(pageFrame.get(pg2)||{}).piece===name).length,qty:qtyByName[nm2]||qtyByName[name]||1});
+          items.push({name:nm2,w:a1-a0,h:b1-b0,comp:{ops,a0,b0,segBox:segBox.filter(b=>isFinite(b[0]))},join:true,npg:doc.getPages().filter(pg2=>(pageFrame.get(pg2)||{}).piece===name).length,qty:qtyByName[nm2]||qtyByName[name]||1});
           return;
         }
       }
@@ -10296,12 +10358,12 @@ async function downloadPattern(dryRun,prepareOnly){
       items.push({name:pc[0],w,h,rectPiece:true,join:nseg>1,nseg,qty:qtyOf(pc[3])});
     });
     if(!items.length) return;
-    const AW=210-M*2-4, AH=PREVIEW_H-2, GAPX=6, LABELH=8;
+    const AW=210-M*2-4, AH=PREVIEW_H-2, GAPX=6, LABELH=11;
     function layout(s){
       let x=0,y=0,rowH=0,rows=[[]];
       for(const it of items){
         const w=Math.max(it.w*s,3), h=Math.max(it.h*s,3);
-        const cellW=Math.max(w,labelTextWidthMM(it.name,6)+2);
+        const cellW=Math.max(w,labelTextWidthMM(it.name+(it.qty>1?' ×'+it.qty:''),8.5)+2);
         if(x>0&&x+cellW>AW){ x=0; y+=rowH+LABELH+2; rowH=0; rows.push([]); }
         rows[rows.length-1].push({it,x,y,w,h,cellW}); x+=cellW+GAPX; rowH=Math.max(rowH,h);
       }
@@ -10324,12 +10386,17 @@ async function downloadPattern(dryRun,prepareOnly){
           ops.forEach(o=>{
             if(o.t==='l') line(coverPage,TX(o.a[0]),TY(o.a[1]),TX(o.a[2]),TY(o.a[3]),Math.max(o.w*s*1.6,0.12),o.color||ink,o.dash?o.dash.map(v=>Math.max(v*s,0.45)):undefined);
             else if(o.t==='p') strokePath(coverPage,o.pts.map(([x,y])=>[TX(x),TY(y)]),Math.max(o.w*s*1.6,0.14),o.color||ink);
-            else if(o.t==='x'){ const fs=o.size*s*1.5; if(fs>=1.6) coverPage.drawText(o.txt,{x:TX(o.x)*MM,y:PH0-TY(o.y)*MM,size:fs,font,color:o.color||ink}); }
+            else if(o.t==='x'){ // 2026-09-26 Bedi：预览里的裁片名称放大到能看清，不跟图等比缩小(以原位置为中心放大)；"纸样需拼合"小字在下方已有说明，预览里省掉
+              // 纸样页内的小字(表布×2 -1、纸样需拼合等)缩小后看不清也会互相重叠，预览里不画；只保留对位字母，另在每段中心画清晰的页码圆标
+              const fs=o.size*s*1.5; if(/^[A-Z]\d?$/.test(o.txt.trim())&&fs>=1.6) coverPage.drawText(o.txt,{x:TX(o.x)*MM,y:PH0-TY(o.y)*MM,size:fs,font,color:o.color||ink}); }
             else if(o.t==='s'){ const opt={x:TX(o.ox)*MM,y:PH0-TY(o.oy)*MM,scale:o.sc*s};
               if(o.fill) opt.color=ink;
               if(o.stroke){ opt.borderColor=ink; opt.borderWidth=Math.max(0.9*s*1.6,0.35); if(o.dash) opt.borderDashArray=[Math.max(4*o.sc*s,1.3),Math.max(4*o.sc*s,1.3)]; }
               coverPage.drawSvgPath(o.d,opt); }
           });
+          if(it.comp.segBox.length>1) it.comp.segBox.forEach((b,k)=>{ const cx=TX((b[0]+b[2])/2), cy=TY((b[1]+b[3])/2), t=String(k+1);
+            coverPage.drawCircle({x:cx*MM,y:PH0-cy*MM,size:2.4*MM,color:orange});
+            mk(coverPage,t,cx-labelTextWidthMM(t,7)/2+0.1,cy+0.95,7,rgb(1,1,1)); });
         } else if(it.rectPiece){
           rect(coverPage,px,py,r.w,r.h,it.join?0.5:0.35,col);
           for(let k=1;k<(it.nseg||0);k++){ if(r.h>=r.w){ const yy=py+r.h*k/it.nseg; line(coverPage,px,yy,px+r.w,yy,0.3,orange,[1,0.8]); } else { const xx=px+r.w*k/it.nseg; line(coverPage,xx,py,xx,py+r.h,0.3,orange,[1,0.8]); } }
@@ -10349,13 +10416,13 @@ async function downloadPattern(dryRun,prepareOnly){
             const bnd=[0,...it.seam.cuts,span];
             it.seam.pages.forEach((pgN,i)=>{ const m=(bnd[i]+bnd[i+1])/2, h=hits(m); if(h.length<2) return;
               const c=P2(m,(Math.min(...h)+Math.max(...h))/2);
-              coverPage.drawCircle({x:c[0]*MM,y:coverPage.getHeight()-c[1]*MM,size:1.9*MM,color:orange});
-              mk(coverPage,pgN,c[0]-labelTextWidthMM(pgN,5.5)/2+0.15,c[1]+0.7,5.5,rgb(1,1,1)); });
+              coverPage.drawCircle({x:c[0]*MM,y:coverPage.getHeight()-c[1]*MM,size:2.4*MM,color:orange});
+              mk(coverPage,pgN,c[0]-labelTextWidthMM(pgN,7)/2+0.1,c[1]+0.95,7,rgb(1,1,1)); });
           }
         }
         const nm=it.name+(it.qty>1?' ×'+it.qty:'');
-        mk(coverPage,nm,X0+r.x+(r.cellW-labelTextWidthMM(nm,6))/2,Y0+r.y+rowH+3.2,6,it.join?orange:ink);
-        if(it.join){ const tg='需拼合'+(it.nseg?'·分'+it.nseg+'段':it.npg?'·共'+it.npg+'页':(it.seam?'·共'+it.seam.pages.filter((v,i,a)=>a.indexOf(v)===i).length+'页':'')); mk(coverPage,tg,X0+r.x+(r.cellW-labelTextWidthMM(tg,5.2))/2,Y0+r.y+rowH+6.2,5.2,orange); }
+        mk(coverPage,nm,X0+r.x+(r.cellW-labelTextWidthMM(nm,8.5))/2,Y0+r.y+rowH+4.4,8.5,it.join?orange:ink);
+        if(it.join){ const tg='需拼合'+(it.nseg?'·分'+it.nseg+'段':it.npg?'·共'+it.npg+'页':(it.seam?'·共'+it.seam.pages.filter((v,i,a)=>a.indexOf(v)===i).length+'页':'')); mk(coverPage,tg,X0+r.x+(r.cellW-labelTextWidthMM(tg,6.8))/2,Y0+r.y+rowH+8.6,6.8,orange); }
       });
     });
     geomOn=true;
@@ -10365,14 +10432,17 @@ async function downloadPattern(dryRun,prepareOnly){
     // 2026-09-24 每页左上角图例：只放本页出现的符号 + 名称；符号的线宽/尺寸与纸样上画的完全一致
     const ORDER=['cut','sew','fold','notch','grain','bias'];
     const TEXT={cut:'裁剪线',sew:'缝纫线',fold:'对折边',notch:'对位口',grain:'布纹方向',bias:'45°斜裁'};
-    const GW={cut:10,sew:10,fold:9,notch:11,grain:3,bias:9};  // 符号宽度(mm)
+    const GW={cut:10,sew:10,fold:9,notch:15,grain:3,bias:9};  // 符号宽度(mm)
     const RH=10, FS=8;                                          // 行高(mm)、文字字号
     function glyph(page,t,x,cy){  // x=符号左边，cy=行中线
       const st=pageLineStyle.get(page)||{};
       if(t==='cut'){ const c=st.cut||{w:0.6}; line(page,x,cy,x+GW.cut,cy,c.w,ink); }
       else if(t==='sew'){ const c=st.sew||{w:0.3,dash:[2,2]}; line(page,x,cy,x+GW.sew,cy,c.w,ink,c.dash); }
       else if(t==='fold'){ const by=cy+2; line(page,x,by,x+GW.fold,by,0.3,ink,[2,2]); foldArc(page,x+GW.fold/2,by,'h'); }
-      else if(t==='notch'){ triLabel(page,x+GW.notch/2,cy-3,'A','top'); }
+      else if(t==='notch'){ // 2026-09-26 Bedi：三角上方加一条虚线(纸样边/拼接边)，直接 drawLine 画，不计入符号统计
+        const ey=cy-3, phMM=page.getHeight()/MM;
+        page.drawLine({start:{x:x*MM,y:(phMM-ey)*MM},end:{x:(x+GW.notch)*MM,y:(phMM-ey)*MM},thickness:0.3*MM,color:ink,dashArray:[1.6*MM,1.2*MM]});
+        triLabel(page,x+GW.notch/2,ey,'A','top'); }
       else if(t==='grain'){ const gx=x+1.5, y1=cy-4.5, y2=cy+4.5;
         line(page,gx,y1,gx,y2,0.4,gray);
         line(page,gx-1.3,y1+2,gx,y1,0.4,gray); line(page,gx+1.3,y1+2,gx,y1,0.4,gray);
