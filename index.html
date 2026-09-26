@@ -278,31 +278,155 @@ let openTutStep=-1; // 2026-09-13 Bedi 反馈："制作步骤页面...所有制�
 let toolsCardOpen=true;
 let accCardOpen=false; let glossCardOpen=false; let heroView='photo'; // 2026-09-26 制作教程页展示图：效果图 / 缝纫线图 切换
 // 2026-09-26 Bedi：把纸样首页的"成品线稿·缝纫线"放到制作教程页展示图上。形状与 calculator.html 的 COVER_LINEART 保持一致，编号=制作步骤序号。
-const SEAM_ART=(()=>{
+function buildSeamArt(){
   const cub=(p0,p1,p2,p3,n)=>{const r=[];for(let i=0;i<=n;i++){const t=i/n,u=1-t;r.push([u*u*u*p0[0]+3*u*u*t*p1[0]+3*u*t*t*p2[0]+t*t*t*p3[0],u*u*u*p0[1]+3*u*u*t*p1[1]+3*u*t*t*p2[1]+t*t*t*p3[1]]);}return r;};
-  const chain=(st,segs)=>{let pts=[st],cur=st;segs.forEach(g=>{const q=cub(cur,g[0],g[1],g[2],16);q.shift();pts=pts.concat(q);cur=g[2];});return pts;};
+  const ch=(st,segs)=>{let pts=[st],cur=st;segs.forEach(g=>{if(g.length===1){pts.push(g[0]);cur=g[0];return;}const q=cub(cur,g[0],g[1],g[2],16);q.shift();pts=pts.concat(q);cur=g[2];});return pts;};
   const off=(pts,d)=>pts.map((p,i)=>{const a=pts[Math.max(0,i-1)],b=pts[Math.min(pts.length-1,i+1)];let dx=b[0]-a[0],dy=b[1]-a[1];const L=Math.hypot(dx,dy)||1;return [p[0]-dy/L*d,p[1]+dx/L*d];});
   const mir=(pts,cx)=>pts.map(p=>[2*cx-p[0],p[1]]).reverse();
-  const outerL=chain([25,0],[[[20,0],[15,4],[12.5,11]],[[10,18],[1,23],[1,33]],[[1,43],[12,48],[25,48]]]);
-  const innerL=chain([25,2.4],[[[21.5,2.4],[17.5,6],[15.2,12.5]],[[13,18.5],[14.5,24],[25,24]]]);
-  const outer=outerL.concat(mir(outerL,25).slice(1)), inner=innerL.concat(mir(innerL,25).slice(1));
-  const si=outerL.findIndex(p=>p[1]>=17), sideL=outerL.slice(si), body=sideL.concat(mir(sideL,25).slice(1));
-  const hL=outerL.slice(0,si+1), hR=mir(hL,25);
-  return {unlinedsling:{w:50,h:48,outer:[outer,inner],seams:[
-    {n:1,lines:[[[5.6,45.2],[8.6,40.6]]],lab:[1.6,47.4]},
-    {n:2,lines:[[[25,0],[25,2.4]]],lab:[28.6,-1.8]},
-    {n:3,lines:[off(inner,0.7),off(hL,-0.7),off(hR,-0.7)],lab:[25,27.4]},
-    {n:4,lines:[off(body,-0.9)],lab:[53,31]}],
-    legend:['底角缝（每片左右各1个）','提手中缝（每片1道，不连前后片）','包口和提手折边明线','包身合缝（两侧+底边一圈）']}};
-})();
+  const sym=(half,cx)=>half.concat(mir(half,cx).slice(1));
+  const R=(x,y,w,h)=>[[x,y],[x+w,y],[x+w,y+h],[x,y+h],[x,y]];
+  const L=(...p)=>p;
+  const ell=(cx,cy,rx,ry,a0,a1,n)=>{n=n||40;const r=[];for(let i=0;i<=n;i++){const a=a0+(a1-a0)*i/n;r.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]);}return r;};
+  const PI=Math.PI;
+  const strap=(x1,x2,yb,top,w)=>{ // 拱形提手：外弧+内弧
+    const m=(x1+x2)/2; const o=ch([x1,yb],[[[x1,yb-(yb-top)*0.9],[m-(x2-x1)*0.35,top],[m,top]],[[m+(x2-x1)*0.35,top],[x2,yb-(yb-top)*0.9],[x2,yb]]]);
+    const i=ch([x1+w,yb],[[[x1+w,yb-(yb-top-w)*0.9],[m-(x2-x1-2*w)*0.35,top+w],[m,top+w]],[[m+(x2-x1-2*w)*0.35,top+w],[x2-w,yb-(yb-top-w)*0.9],[x2-w,yb]]]);
+    return {o,i,c:ch([x1+w/2,yb],[[[x1+w/2,yb-(yb-top-w/2)*0.9],[m-(x2-x1-w)*0.35,top+w/2],[m,top+w/2]],[[m+(x2-x1-w)*0.35,top+w/2],[x2-w/2,yb-(yb-top-w/2)*0.9],[x2-w/2,yb]]])};
+  };
+  const A={};
+  // ---------- 挎包 ----------
+  { const outerL=ch([25,0],[[[20,0],[15,4],[12.5,11]],[[10,18],[1,23],[1,33]],[[1,43],[12,48],[25,48]]]);
+    const innerL=ch([25,2.4],[[[21.5,2.4],[17.5,6],[15.2,12.5]],[[13,18.5],[14.5,24],[25,24]]]);
+    const outer=sym(outerL,25), inner=sym(innerL,25);
+    const si=outerL.findIndex(p=>p[1]>=17), body=sym(outerL.slice(si),25), hL=outerL.slice(0,si+1);
+    A.unlinedsling={lines:[outer,inner],seams:[
+      {n:1,l:[[[5.6,45.2],[8.6,40.6]]],lab:[1.6,47.4],t:'底角缝（每片左右各1个）'},
+      {n:2,l:[[[25,0],[25,2.4]]],lab:[28.6,-1.8],t:'提手中缝（每片1道，不连前后片）'},
+      {n:3,l:[off(inner,0.7),off(hL,-0.7),off(mir(hL,25),-0.7)],lab:[25,27.4],t:'包口和提手折边明线'},
+      {n:4,l:[off(body,-0.9)],lab:[53,31],t:'包身合缝（两侧+底边一圈）'}]}; }
+  // ---------- 方包(单层/双层)：正面+右侧片 ----------
+  const boxBase=()=>{ const h=strap(8,28,16,2,2.2);
+    return {front:R(0,16,36,32),side:[[36,16],[44,11],[44,43],[36,48]],top:[[0,16],[8,11],[44,11]],h}; };
+  { const b=boxBase();
+    A.unlinedbox={lines:[b.front,b.side,b.top,b.h.o,b.h.i,R(7,29,22,15)],seams:[
+      {n:1,l:[[[7.8,29],[7.8,43.2],[28.2,43.2],[28.2,29]],[[7,30.6],[29,30.6]]],lab:[4.2,37],t:'前口袋：口袋口折边+三边缝在前片上'},
+      {n:2,l:[b.h.c],lab:[18,-0.6],t:'提手四折压明线，两端缝在包口'},
+      {n:4,l:[[[0.9,17],[0.9,47.1],[35.1,47.1],[35.1,17]]],lab:[40,50.5],t:'前后片与侧片缝合（U形一圈）'},
+      {n:7,l:[[[0,18.6],[36,18.6]],[[36,18.6],[44,13.6]]],lab:[-3.4,18.6],t:'包口向内折两次，压一圈明线'}]}; }
+  { const b=boxBase();
+    A.boxtote={lines:[b.front,b.side,b.top,b.h.o,b.h.i,[[5,48],[5,31],[31,31],[31,48]]],seams:[
+      {n:1,l:[[[5,32.6],[31,32.6]]],lab:[18,35.4],t:'前口袋口压明线'},
+      {n:3,l:[b.h.c],lab:[18,-0.6],t:'提手两侧压明线'},
+      {n:4,l:[[[0.9,17],[0.9,47.1],[35.1,47.1],[35.1,17]]],lab:[40,50.5],t:'前后片与侧底围条缝合（口袋一起缝入）'},
+      {n:9,l:[[[0,17.6],[36,17.6]],[[36,17.6],[44,12.6]]],lab:[-3.4,17.6],t:'包口一圈压明线'}]}; }
+  // ---------- 月牙单肩包 ----------
+  { const top=ch([0,16],[[[14,22],[36,22],[50,16]]]);
+    const bot=ch([0,16],[[[2,36],[14,42],[25,42]],[[36,42],[48,36],[50,16]]]);
+    const gus=ch([-1.6,17],[[[0.4,39],[13,45],[25,45]],[[37,45],[49.6,39],[51.6,17]]]);
+    const strapL=ch([1,14],[[[4,-2],[46,-2],[49,14]]]), strapL2=ch([3,14],[[[6,1],[44,1],[47,14]]]);
+    A.crescent={lines:[top,bot,gus,strapL,strapL2,R(-0.5,12.5,4.5,4),R(46,12.5,4.5,4)],seams:[
+      {n:1,l:[off(top,0.9),off(top,-0.9)],lab:[25,24.8],t:'顶部拉链（表布、里布夹缝）'},
+      {n:2,l:[off(bot,-0.8)],lab:[25,38.6],t:'前后片与侧弧片拼接'},
+      {n:5,l:[R(0.3,13.3,2.9,2.4)],lab:[-3.8,11],t:'肩带连接片压明线，连接包带'}]}; }
+  // ---------- 三角笔袋 ----------
+  { const face=R(0,14,46,16), end=[[46,14],[53,22],[46,30]], ridge=[[0,14],[7,6],[53,6],[46,14]], endTop=[[53,6],[53,22]];
+    A.trianglepouch={lines:[face,end,ridge,endTop],seams:[
+      {n:1,l:[[[1,14.9],[45,14.9]]],lab:[23,17.8],t:'拉链第一侧明线'},
+      {n:2,l:[[[6.8,7.2],[52,7.2]]],lab:[29,4],t:'拉链另一侧明线'},
+      {n:3,l:[[[46.8,14.8],[52.2,21.2]],[[52.2,22.8],[46.8,29.2]],[[0.8,29.2],[45.2,29.2]]],lab:[57,26],t:'两端斜边+底边缝合'}]}; }
+  // ---------- 笔袋(单层) ----------
+  { const out=ch([0,12],[[[0,30]],[[0,35],[3,36],[7,36]],[[43,36]],[[47,36],[50,35],[50,30]],[[50,12]]]);
+    A.unlinedpouch={lines:[out,[[0,12],[50,12]],[[0,10],[50,10]],[[0,10],[0,12]],[[50,10],[50,12]]],seams:[
+      {n:1,l:[[[0.8,13.4],[49.2,13.4]]],lab:[25,16.4],t:'布边折1cm，压在拉链上缉明线'},
+      {n:2,l:[[[2.6,31.5],[5.5,34.6]]],lab:[-2.6,33],t:'底角缺口缝合（每片左右各1个）'},
+      {n:3,l:[off(out,-0.8)],lab:[53,24],t:'两侧+底边缝合一圈'}]}; }
+  // ---------- 三段拼接托特 ----------
+  { const h=strap(9,31,14,1,2);
+    A.beartote={lines:[R(0,14,40,34),[[0,20],[40,20]],[[0,42],[40,42]],h.o,h.i],seams:[
+      {n:1,l:[[[0,21.2],[40,21.2]],[[0,40.8],[40,40.8]]],lab:[-3.4,21.2],t:'口沿布+主体花布+包底三段拼接压明线'},
+      {n:2,l:[[[39.1,22],[39.1,47.1]]],lab:[43.4,33],t:'两侧边+底边缝合'},
+      {n:3,l:[[[1.5,44.5],[5.5,47.8]]],lab:[-3,46.5],t:'底角对齐车缝（左右各1个）'},
+      {n:6,l:[[[0,15.4],[40,15.4]]],lab:[20,17.8],t:'包口一圈压明线'},
+      {n:7,l:[ell(10,16.6,0.6,0.6,0,2*PI,12),ell(30,16.6,0.6,0.6,0,2*PI,12)],lab:[13.4,12],t:'提手两端打孔固定'}]}; }
+  // ---------- 拼接底托特 ----------
+  { const h=strap(9,31,14,0,3);
+    A.jointote={lines:[R(0,14,40,34),[[0,33],[40,33]],h.o,h.i,[[9,14],[9,33]],[[12,14],[12,33]],[[28,14],[28,33]],[[31,14],[31,33]]],seams:[
+      {n:2,l:[[[9.6,14],[9.6,33]],[[11.4,14],[11.4,33]]],lab:[5.4,26],t:'背带压缝在外布上（下端距底1.5cm）'},
+      {n:3,l:[[[0,34.2],[40,34.2]]],lab:[20,31.4],t:'底布折边压缝，背带下端在底布下面'},
+      {n:5,l:[[[39.1,15],[39.1,47.1]],[[35,47.8],[39,44.2]]],lab:[43.4,32],t:'两侧缝合+打底角'},
+      {n:8,l:[[[0,15.4],[40,15.4]]],lab:[20,17.8],t:'包口一圈压明线'}]}; }
+  // ---------- 抽绳水桶包 ----------
+  { const topE=ell(18,14,18,4,0,2*PI,48), botF=ell(18,46,18,4,0,PI,30);
+    const bag=[[0,14],[0,46]].concat([]), bagR=[[36,14],[36,46]];
+    const lin=ch([2,13],[[[4,4],[8,2],[18,2]],[[28,2],[32,4],[34,13]]]);
+    const hL=ch([5,17],[[[5,6],[13,6],[13,17]]]), hL2=ch([7,17],[[[7,9],[11,9],[11,17]]]);
+    A.bucket={lines:[topE,botF,bag,bagR,lin,hL,hL2,[[4,3.5],[6,5.5],[8,3],[10,5.2],[12,2.6]],[[24,2.6],[26,5.2],[28,3],[30,5.5],[32,3.5]]],seams:[
+      {n:1,l:[[[29,18.2],[29,49.8]]],lab:[32.4,30],t:'桶身侧缝（缝成圆筒）'},
+      {n:2,l:[off(ell(18,46,18,4,0,PI,30),0.9)],lab:[18,53.6],t:'桶身与圆底缝合一圈'},
+      {n:3,l:[ch([6,17],[[[6,7.5],[12,7.5],[12,17]]])],lab:[3,9],t:'提手带两侧压明线'},
+      {n:6,l:[off(ell(18,14,18,4,0,PI,30),-1.2)],lab:[18,21.8],t:'包口一圈压明线'}]}; }
+  // ---------- 马鞍包 ----------
+  { const u=ch([0,10],[[[0,34]],[[0,42],[8,48],[20,48]],[[32,48],[40,42],[40,34]],[[40,10]]]);
+    const flap=ch([1,10],[[[1,24]],[[1,29],[6,32],[20,32]],[[34,32],[39,29],[39,24]],[[39,10]]]);
+    A.saddle={lines:[u,off(u,1.3),[[0,10],[40,10]],flap,R(18.6,10,2.8,24),R(15,34,10,4)],seams:[
+      {n:4,l:[off(u,-0.8)],lab:[-3.6,40],t:'滚边条缝在前/后包身U形弧边'},
+      {n:3,l:[off(flap,-0.9)],lab:[8,30.2],t:'翻盖表里布缝合，装饰皮条压线'},
+      {n:6,l:[off(u,2.3)],lab:[44.6,40],t:'前后包身与侧底围条缝合'},
+      {n:9,l:[[[0,8.8],[40,8.8]]],lab:[20,6.4],t:'包口一圈压明线'}]}; }
+  // ---------- 圆饼双肩包 ----------
+  { const c=ell(25,27,19,19,0,2*PI,72), ring=ell(25,27,22.5,22.5,0,2*PI,72);
+    const pocket=ch([7.5,33],[[[14,29],[36,29],[42.5,33]]]).concat(ell(25,27,19,19,Math.atan2(6,17.5),PI-Math.atan2(6,17.5),40));
+    const loop=ch([21,5],[[[21,-2],[29,-2],[29,5]]]);
+    A.roundbp={lines:[c,ring,ch([7.5,33],[[[14,29],[36,29],[42.5,33]]]),loop],seams:[
+      {n:1,l:[off(ch([7.5,33],[[[14,29],[36,29],[42.5,33]]]),-1)],lab:[25,34.6],t:'前贴袋口压明线，叠在前片上'},
+      {n:3,l:[ell(25,27,24,24,PI*1.1,PI*1.9,40)],lab:[5.5,8.5],t:'侧围拉链（上半圈）'},
+      {n:4,l:[ell(25,27,18.1,18.1,0,2*PI,72)],lab:[48.8,20],t:'前片与环形侧围缝合一圈'}]}; }
+  // ---------- 拉链双肩包 ----------
+  { const arch=ch([0,48],[[[0,14]],[[0,4],[8,0],[18,0]],[[28,0],[36,4],[36,14]],[[36,48]]]);
+    const band=ch([-3,48],[[[-3,13]],[[-3,1.5],[6,-3],[18,-3]],[[30,-3],[39,1.5],[39,13]],[[39,48]]]);
+    const flap=ch([7,28],[[[29,28]],[[29,34],[25,36],[18,36]],[[11,36],[7,34],[7,28]]]);
+    A.zipbp={lines:[arch,band,[[0,48],[36,48]],R(7,28,22,17),flap,ch([13,-3],[[[13,-8],[23,-8],[23,-3]]])],seams:[
+      {n:1,l:[off(flap,-0.9)],lab:[18,39.2],t:'前兜（抠角）与兜盖缝合，固定在前片'},
+      {n:4,l:[ch([-1.5,20],[[[-1.5,2.6],[7,-1.5],[18,-1.5]],[[29,-1.5],[37.5,2.6],[37.5,20]]])],lab:[42,6],t:'顶部主拉链片（三层夹缝）'},
+      {n:6,l:[off(arch,-0.9).slice(0)],lab:[-4.6,30],t:'前片与侧底片立体总装'}]}; }
+  // ---------- 波士顿枕头包 ----------
+  { const body=ch([6,14],[[[50,14]],[[54,14],[56,20],[56,28]],[[56,36],[54,42],[50,42]],[[6,42]],[[2,42],[0,36],[0,28]],[[0,20],[2,14],[6,14]]]);
+    const hA=strap(14,42,20,-2,2.2);
+    A.boston={lines:[body,R(14,18,2.2,24),R(39.8,18,2.2,24),hA.o,hA.i,[[6,37],[50,37]],ell(6,28,4,12,PI/2,PI*1.5,24),ell(50,28,4,12,-PI/2,PI/2,24)],seams:[
+      {n:1,l:[[[14.6,19],[14.6,41]],[[15.6,19],[15.6,41]]],lab:[11,31],t:'前后身贴皮压线（装方形扣）'},
+      {n:2,l:[ell(50,28,3,11,-PI/2,PI/2,24)],lab:[59.6,28],t:'侧围外圈车边骨条'},
+      {n:3,l:[[[6,15.4],[50,15.4]],[[6,38.2],[50,38.2]]],lab:[28,12.2],t:'顶部拉链+袋底皮料拼接'},
+      {n:5,l:[hA.c],lab:[28,-4.4],t:'手提皮带车边，连接方形扣'}]}; }
+  // ---------- 折叠购物袋 ----------
+  { const h=strap(10,30,14,0,2.4);
+    A.foldtote={lines:[R(0,14,40,34),[[0,18],[40,18]],h.o,h.i],seams:[
+      {n:3,l:[h.c],lab:[20,-2.4],t:'提手四折压明线'},
+      {n:4,l:[[[39.1,19],[39.1,47.1]],[[35,47.8],[39,44.2]]],lab:[43.4,33],t:'两侧缝合+打底角（底部是折线，无底缝）'},
+      {n:5,l:[[[0,17.2],[40,17.2]],[[0,15.2],[40,15.2]]],lab:[-3.4,16.2],t:'包口折两次压明线，提手翻上再压一道'}]}; }
+  // ---------- 饺子包 ----------
+  { const top=ch([0,24],[[[8,8],[42,8],[50,24]]]), bot=ch([0,24],[[[4,34],[14,38],[25,38]],[[36,38],[46,34],[50,24]]]);
+    A.jiaozi={lines:[top,bot,R(-3.5,19,4,4),ell(-4.5,21,1.8,1.8,0,2*PI,16)],seams:[
+      {n:1,l:[[[-2.8,19.8],[-2.8,22.2]]],lab:[-6,15.8],t:'D环带压线，固定在侧边'},
+      {n:2,l:[off(top,-1)],lab:[25,16.4],t:'拉链两侧（表里布夹缝，第2、3步）'},
+      {n:4,l:[off(bot,-0.8)],lab:[25,34.2],t:'四周外轮廓缝合'},
+      {n:5,l:[[[9,33],[12,37]]],lab:[6.4,38.6],t:'底部缺口对齐缝合，做出立体底'}]}; }
+  // 自动计算范围
+  Object.values(A).forEach(a=>a.seams.sort((p,q)=>p.n-q.n));
+  Object.values(A).forEach(a=>{ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; const e=p=>{x0=Math.min(x0,p[0]);y0=Math.min(y0,p[1]);x1=Math.max(x1,p[0]);y1=Math.max(y1,p[1]);};
+    a.lines.forEach(l=>l.forEach(e)); a.seams.forEach(s=>{ s.l.forEach(l=>l.forEach(e)); e([s.lab[0]-2.4,s.lab[1]-2.4]); e([s.lab[0]+2.4,s.lab[1]+2.4]); });
+    a.box=[x0,y0,x1-x0,y1-y0]; });
+  return A;
+}
+const SEAM_ART=buildSeamArt();
 function seamArtHtml(bag){
   const A=SEAM_ART[bag]; if(!A) return '';
-  const pd=(pts,z)=>pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(2)+' '+p[1].toFixed(2)).join(' ')+(z?' Z':'');
-  const OR='#E0692B';
-  const svg=`<svg viewBox="-5 -6 62 58" style="width:100%;max-width:300px;display:block;margin:0 auto">${A.outer.map(o=>`<path d="${pd(o,true)}" fill="none" stroke="#25332c" stroke-width="0.55"/>`).join('')}${A.seams.map(sm=>sm.lines.map(l=>`<path d="${pd(l,false)}" fill="none" stroke="${OR}" stroke-width="0.45" stroke-dasharray="1.3 0.9"/>`).join('')).join('')}${A.seams.map(sm=>`<circle cx="${sm.lab[0]}" cy="${sm.lab[1]}" r="2.1" fill="${OR}"/><text x="${sm.lab[0]}" y="${sm.lab[1]+1.05}" font-size="2.9" font-weight="700" fill="#fff" text-anchor="middle">${sm.n}</text>`).join('')}</svg>`;
-  const leg=A.legend.map((t,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span style="flex:0 0 auto;width:18px;height:18px;border-radius:50%;background:${OR};color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center">${i+1}</span><span style="font-size:12.5px;color:#3d4640">${t}</span></div>`).join('');
-  return `<div style="background:#fff;padding:14px 16px 16px">${svg}<div style="font-size:11.5px;color:#8a938d;margin:8px 0 2px">橙色虚线 = 缝纫线，编号对应下方制作步骤</div>${leg}</div>`;
-} // 2026-09-24 制作教程页"名词解释"卡片，默认收起
+  const pd=pts=>pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(2)+' '+p[1].toFixed(2)).join(' ');
+  const OR='#E0692B', b=A.box;
+  const svg=`<svg viewBox="${b[0]-1} ${b[1]-1} ${b[2]+2} ${b[3]+2}" style="width:100%;max-width:300px;max-height:300px;display:block;margin:0 auto">${A.lines.map(l=>`<path d="${pd(l)}" fill="none" stroke="#25332c" stroke-width="0.55" stroke-linejoin="round"/>`).join('')}${A.seams.map(sm=>sm.l.map(l=>`<path d="${pd(l)}" fill="none" stroke="${OR}" stroke-width="0.45" stroke-dasharray="1.3 0.9"/>`).join('')).join('')}${A.seams.map(sm=>`<circle cx="${sm.lab[0]}" cy="${sm.lab[1]}" r="2.1" fill="${OR}"/><text x="${sm.lab[0]}" y="${sm.lab[1]+1.05}" font-size="2.9" font-weight="700" fill="#fff" text-anchor="middle">${sm.n}</text>`).join('')}</svg>`;
+  const leg=A.seams.map(sm=>`<div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span style="flex:0 0 auto;width:18px;height:18px;border-radius:50%;background:${OR};color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center">${sm.n}</span><span style="font-size:12.5px;color:#3d4640">${sm.t}</span></div>`).join('');
+  return `<div style="background:#fff;padding:14px 16px 16px">${svg}<div style="font-size:11.5px;color:#8a938d;margin:8px 0 2px">橙色虚线 = 缝纫线，编号 = 下方制作步骤序号</div>${leg}</div>`;
+}
+ // 2026-09-24 制作教程页"名词解释"卡片，默认收起
 let pendingPublishTitle=null;
 let pendingPublishDesc=null;
 let patternDownloaded=false; let patternDownloadedBag=null; // 2026-09-26 记下已下载的是哪款包的纸样；换了包型要重新显示下载按钮
