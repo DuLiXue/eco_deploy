@@ -768,16 +768,32 @@ function resizePhotoDataUrl(file,maxDim=1280,quality=0.85){
 // 2026-09-12 改为支持多件旧衣：uploadedPhotos 里每一张照片都各自调用一次 identify-garment 接口(并发)，
 // 第一张的结果仍然存进 identifyResult(决定测量/方向/纸样/教程等后续流程，和原来完全一样)，其余几张的
 // 结果存进 extraIdentifyResults，只用于屏06各自的识别卡片展示，不影响后续流程。
+// 2026-09-26 Bedi 反馈识别报"TypeError: Load failed"(手机没连上接口，属于网络层失败，不是 HTTP 错误)：
+// ①照片体积过大(比如压缩失败退回了原图)时，Vercel 会在网关直接拒绝、且不带跨域头，Safari 只会报 Load failed——
+//   发送前如果超过约 2.5MB 先再压缩一次；②网络层失败自动等 1.5 秒重试一次(部署刚更新/网络抖动时常见)。
+function shrinkDataUrl(dataUrl,maxDim,quality){
+  return new Promise(res=>{ const img=new Image(); img.onload=()=>{ let w=img.naturalWidth,h=img.naturalHeight; const k=Math.min(1,maxDim/Math.max(w,h)); w=Math.round(w*k); h=Math.round(h*k);
+    const c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); try{res(c.toDataURL('image/jpeg',quality));}catch(e){res(dataUrl);} };
+    img.onerror=()=>res(dataUrl); img.src=dataUrl; });
+}
 async function identifyOnePhoto(photoUrl){
-  try{
-    const r=await fetch(API_BASE+'/api/identify-garment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photoDataUrl:photoUrl})});
-    if(r.ok)return {ok:true,data:await r.json()};
-    let bodyText='';
-    try{bodyText=await r.text();}catch(e2){}
-    return {ok:false,error:'HTTP '+r.status+(bodyText?('：'+bodyText.slice(0,300)):'')};
-  }catch(e){
-    return {ok:false,error:(e&&e.name?e.name+': ':'')+(e&&e.message?e.message:String(e))};
+  // 识别只需要看衣物类型/材质：恢复成改动前的 1280px/0.85 发送(主图为了生图面料还原提到了 1600px，但识别接口不需要这么大，大图会让识别变慢甚至超时)
+  if(photoUrl) photoUrl=await shrinkDataUrl(photoUrl,1280,0.85);
+  let lastErr=null;
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const r=await fetch(API_BASE+'/api/identify-garment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photoDataUrl:photoUrl})});
+      if(r.ok)return {ok:true,data:await r.json()};
+      let bodyText='';
+      try{bodyText=await r.text();}catch(e2){}
+      return {ok:false,error:'HTTP '+r.status+(bodyText?('：'+bodyText.slice(0,300)):'')};
+    }catch(e){
+      lastErr=e;
+      if(attempt===0){ await new Promise(r=>setTimeout(r,1500)); if(photoUrl.length>1500000) photoUrl=await shrinkDataUrl(photoUrl,1280,0.8); }
+    }
   }
+  const e=lastErr;
+  return {ok:false,error:(e&&e.name?e.name+': ':'')+(e&&e.message?e.message:String(e))+'（网络没有连上识别服务，请检查网络后返回上一步重新上传再试）'};
 }
 async function runIdentify(){
   identifying=true;
