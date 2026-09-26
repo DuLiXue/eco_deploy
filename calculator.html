@@ -8847,7 +8847,7 @@ async function downloadPattern(dryRun,prepareOnly){
   function drawCoverLineArt(page,X,Y,W,H){
     const A=COVER_LINEART[P.bagType]; if(!A) return;
     const PH=page.getHeight(), org=rgb(0.88,0.41,0.17), b=A.box;
-    const artH=H-8, artW=Math.min(66,W*0.48), sc=Math.min(artH/b[3],artW/b[2]), ox=X+(artW-b[2]*sc)/2, oy=Y+6+(artH-b[3]*sc)/2;
+    const artH=H-8, artW=Math.min(52,W*0.42), sc=Math.min(artH/b[3],artW/b[2]), ox=X+(artW-b[2]*sc)/2, oy=Y+6+(artH-b[3]*sc)/2;
     const T=p=>[ox+(p[0]-b[0])*sc,oy+(p[1]-b[1])*sc];
     const path=pts=>pts.map((p,i)=>{const q=T(p);return (i?'L ':'M ')+(q[0]*MM).toFixed(2)+' '+(q[1]*MM).toFixed(2);}).join(' ');
     const secG=rgb(0.231,0.545,0.408);
@@ -8866,7 +8866,7 @@ async function downloadPattern(dryRun,prepareOnly){
   mk(pg,`包型：${P.bagName}   成品 ${P.W}×${P.H}${P.D?('×'+P.D):''}cm   缝份 ${P.sa}cm（可按布料调整）`,M,M+14,11,gray);
 
   // 2026-09-26 Bedi：成品尺寸下方加裁剪注意(字体子集里没有"优"，用"先裁剪")；括号里用小图标表示对位三角和对折弧形符号
-  { const OR=rgb(0.88,0.41,0.17), FS=9, Y1=M+21, Y2=M+26, phMM=pg.getHeight()/MM;
+  { const OR=rgb(0.88,0.41,0.17), FS=9, Y1=M+30, Y2=M+36.5, Y3=M+43, phMM=pg.getHeight()/MM; // 2026-09-26 注意文字放在校验框左侧
     const L=(x1,y1,x2,y2,w,dash)=>pg.drawLine({start:{x:x1*MM,y:(phMM-y1)*MM},end:{x:x2*MM,y:(phMM-y2)*MM},thickness:w*MM,color:ink,dashArray:dash?dash.map(v=>v*MM):undefined});
     const tri=(x,yb)=>{ const ey=yb-3.3; L(x,ey,x+7,ey,0.3,[0.9,0.6]); L(x+1.2,ey,x+3.5,ey+3.3,0.4); L(x+5.8,ey,x+3.5,ey+3.3,0.4); return 7; };
     const arc=(x,yb)=>{ const by=yb+0.2, cx=x+3.5; L(x,by,x+7,by,0.3,[0.9,0.6]);
@@ -8875,25 +8875,22 @@ async function downloadPattern(dryRun,prepareOnly){
     let x=M+labelTextWidthMM(t0,FS);
     const put=t=>{ mk(pg,t,x,Y1,FS,ink); x+=labelTextWidthMM(t,FS); };
     put('裁剪过程中先裁剪大裁片（如带有 '); x+=tri(x,Y1)+0.8; put(' 和 '); x+=arc(x,Y1)+0.8;
-    put(' 符号的裁片），如果裁片较大无法裁出一整块裁片时，');
-    mk(pg,'可以裁2份一半大小再缝合成一整片裁片',M+labelTextWidthMM(t0,FS),Y2,FS,ink); }
-  // 打印必读 + 5×5cm 校验方框(方框放右侧,保持真实50mm)
-  let y=M+32;
-  const boxH=52; // 2026-09-24 去掉绿框和打印提示，只保留 5×5cm 校验框
+    put(' 符号的裁片），');
+    mk(pg,'如果裁片较大无法裁出一整块裁片时，',M+labelTextWidthMM(t0,FS),Y2,FS,ink);
+    mk(pg,'可以裁2份一半大小再缝合成一整片裁片',M+labelTextWidthMM(t0,FS),Y3,FS,ink); }
+  // 打印必读 + 3×3cm 校验方框(方框放右侧,保持真实30mm)
+  let y=M+20;
+  const boxH=32; // 2026-09-24 去掉绿框和打印提示，只保留 5×5cm 校验框
   // ⚠️2026-08-28(排查笔袋主体缺字问题、重建字体子集验证时顺带发现,与"裁片名称居中"无关的另一个独立问题):
   // "⚑"(黑旗符号,U+2691)不在 Noto Sans SC 源字体里(不是子集化时漏选,是这个字体本身就没画这个符号),
   // 之前不管子集怎么选都会缺字,渲染成一个方框(.notdef)——旧版本这里其实已经是坏的,只是没被注意到。
   // 换成同样表达"提醒/注意"、且已确认在字体里存在的"⚠",不影响文字含义，规避跨字体拼接字形的额外风险。
   // 2026-09-24 精简：左侧只留一句打印提示，右侧 5×5cm 框内写"校验框"
-  const BS2=50, bx2=M, by2=y+1;
+  const BS2=30, bx2=210-M-BS2, by2=y+1; // 2026-09-26 Bedi：校验框改 3×3cm，右对齐放右侧(上下居中)，线稿文字放左侧
   rect(pg,bx2,by2,BS2,BS2,0.6,ink);
-  mk(pg,'校验框',bx2+BS2/2-labelTextWidthMM('校验框',11)/2,by2+BS2/2+1.5,11,gray);
-  { const L1='此框为5×5cm，测量相符', L2='则表明打印尺寸正确';
-    mk(pg,L1,bx2+BS2/2-labelTextWidthMM(L1,7)/2,by2+BS2/2+7,7,gray);
-    mk(pg,L2,bx2+BS2/2-labelTextWidthMM(L2,7)/2,by2+BS2/2+11,7,gray); }
-  // 2026-09-26 Bedi：校验框右边放这款包的成品线稿，并标出所有缝纫线(编号与制作步骤一致)。
-  // 直接用 drawSvgPath 画，不走 line/strokePath，避免被当成纸样符号统计进"纸样符号说明"。
-  try{ drawCoverLineArt(pg,bx2+BS2+8,by2,210-M-(bx2+BS2+8),BS2); }catch(e){ console.warn('lineart',e); }
+  mk(pg,'校验框',bx2+BS2/2-labelTextWidthMM('校验框',9)/2,by2+10.5,9,gray);
+  ['此框为3×3cm，','测量相符则表明','打印尺寸正确'].forEach((t,i)=>mk(pg,t,bx2+BS2/2-labelTextWidthMM(t,6)/2,by2+16.5+i*3.4,6,gray));
+  // 2026-09-26 Bedi：成品线稿·缝纫线已放在制作教程页，纸样首页不再画
   y+=boxH+6;
   // 纸样说明
   const sav=P.sa||1;
