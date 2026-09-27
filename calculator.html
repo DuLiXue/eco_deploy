@@ -8621,6 +8621,7 @@ async function downloadPattern(dryRun,prepareOnly){
   // 2026-09-24 首页"裁片轮廓预览"用：按裁片记录它自己坐标系下的裁剪线(不含页面偏移)，跨页的裁片各页记录的是同一坐标系，
   // 拼起来就是完整裁片；半片+对折画法的同时记一份镜像，得到展开后的整片轮廓。
   let curPiece=null; const pageOps=new Map(), pageFrame=new Map(); const opsOf=pg=>{ if(!pageOps.has(pg)) pageOps.set(pg,[]); return pageOps.get(pg); }; const pieceSeams=new Map(); const pieceGeom=new Map(); const joinPieceSet=new Set(); const genericPieces=[];
+  const pieceFold=new Map(); // 裁片名 → 对折轴(裁片自身坐标)
   function recPiece(pts){ if(!curPiece||!pts||pts.length<2) return; if(!pieceGeom.has(curPiece)) pieceGeom.set(curPiece,[]); pieceGeom.get(curPiece).push(pts.map(q=>[q[0],q[1]])); }
   function geomOf(page){ if(!pageGeom.has(page))pageGeom.set(page,{segs:[],boxes:[]}); return pageGeom.get(page); }
   function recSeg(page,x1,y1,x2,y2){ if(geomOn&&page) geomOf(page).segs.push([x1,y1,x2,y2]); }
@@ -8953,22 +8954,24 @@ async function downloadPattern(dryRun,prepareOnly){
     if(note){ mk(pg,note,x,y-0.2,8,gray); x+=labelTextWidthMM(note,8)+2.5; }
     line(pg,x,y-1.5,210-M,y-1.5,0.2,rgb(0.86,0.88,0.86));
   }
-  y+=3; secTitle(pg,'纸样符号说明',y); y+=4;
+  const SHOW_SYM=false; // 2026-09-27 Bedi：纸样首页不再放"纸样符号说明"(符号示意已放到 App 裁剪页)
+  if(SHOW_SYM){ y+=3; secTitle(pg,'纸样符号说明',y); y+=4; }
   // 2026-09-27 Bedi：对折边、拼合符号单独占整行，右侧配 3 步示意图(对折=半片纸样放对折布上，展开是整片；拼合=纸样先拼好再放布上裁)
   const SYM_Y=y, SYM_RH=19, SYM_WH=27;
   const symList=(window._patSymList||{})[patternKey()];
   const nWide=symList?symList.filter(t=>t==='fold'||t==='notch').length:0;
-  y+=Math.ceil((symList?symList.length-nWide:nSym)/2)*SYM_RH+nWide*SYM_WH+5;
+  if(SHOW_SYM) y+=Math.ceil((symList?symList.length-nWide:nSym)/2)*SYM_RH+nWide*SYM_WH+5;
   secTitle(pg,'纸样说明',y); y+=7;
   // 2026-09-26 Bedi：原第3条(需拼合)并入第1条；字体子集里没有"将"，用"把"
   mk(pg,'1. 纸样名称：如「表布x2  -1」，x2 表示这块布要裁2片，-1 表示这张纸样需要拼合，是第1部分，',M+2,y,9.5,ink); y+=5.2;
   mk(pg,'需将所有部分按相同字母对齐拼合后再画线裁剪。',M+2+labelTextWidthMM('1. ',9.5),y,9.5,ink); y+=5.5;
-  mk(pg,`2. 纸样已含 ${sav}cm 缝份，沿实线剪下即可。`,M+2,y,9.5,ink); y+=9;
+  mk(pg,`2. 纸样已含 ${sav}cm 缝份。`,M+2,y,9.5,ink); y+=9;
 
   // 2026-09-24 裁片等比预览：先在首页留出位置，等下面算完哪些裁片需要跨页拼合后再画(见 drawCoverPreview)
   // 2026-09-26 Bedi：改为"裁片拼合预览"，只显示需要拼合的裁片；整套纸样没有需要拼合的裁片时整栏不显示
-  const showJoinPreview=nJoin==null||nJoin>0;
-  let PREVIEW_Y=null; const PREVIEW_H=58;
+  // 2026-09-27 Bedi：拼合/对折预览改放到 App 裁剪页，纸样里不再画；window._PREV_EXPORT=true 时仅供离线导出预览图用
+  const showJoinPreview=!!window._PREV_EXPORT&&(nJoin==null||nJoin>0);
+  let PREVIEW_Y=null; const PREVIEW_H=window._PREV_EXPORT?100:58;
   if(showJoinPreview){ y+=3;
     secTitle(pg,'裁片拼合预览',y,'先按图示拼合纸样，再画线裁剪布片'); y+=4;
     PREVIEW_Y=y; y+=PREVIEW_H+2; }
@@ -9215,6 +9218,7 @@ async function downloadPattern(dryRun,prepareOnly){
   }
   function foldArc(page,cx,cy,dir){
     markSym(page,'fold');
+    if(geomOn&&curPiece&&!pieceFold.has(curPiece)){ const f=pageFrame.get(page); if(f&&f.piece===curPiece) pieceFold.set(curPiece,(dir==='h'||dir==='ht')?{ax:'y',v:cy-f.oy}:{ax:'x',v:Math.abs(cx-f.ox)<0.01?0:cx-f.ox}); }
     // 两条嵌套半圆弧(照纸样,虚线),开口朝折边,弧朝片内
     const radii=[2.2,3.6], seg=14;
     radii.forEach(r=>{
@@ -9520,7 +9524,7 @@ async function downloadPattern(dryRun,prepareOnly){
   }
   function drawHalfSet(page, pts, foldPX, topPY, w, color, dash){
     if(geomOn && curPiece && !pageFrame.has(page)) pageFrame.set(page,{piece:curPiece,ox:foldPX,oy:topPY});
-    if(!dash){ recPiece(pts.map(q=>[-q[0],q[1]])); recPiece(pts); }
+    if(!dash){ recPiece(pts.map(q=>[-q[0],q[1]])); recPiece(pts); if(geomOn&&curPiece&&!pieceFold.has(curPiece)) pieceFold.set(curPiece,{ax:'x',v:0}); }
     const tp = pts.map(p=>[foldPX-p[0], topPY+p[1]]);
     if(dash){ drawDashedPath(page, tp, w, color, dash); return; }
     strokePath(page, tp, w, color);
@@ -10574,23 +10578,24 @@ async function downloadPattern(dryRun,prepareOnly){
     const joinItems=items.filter(it=>it.join); items.length=0; joinItems.forEach(it=>items.push(it));
     window._patJoins=window._patJoins||{}; window._patJoins[patternKey()]=items.length;
     if(!items.length||PREVIEW_Y==null) return;
-    const AW=210-M*2-4, AH=PREVIEW_H-2, GAPX=6, LABELH=11;
+    const EXP=!!window._PREV_EXPORT, LF=EXP?15:8.5, TF=EXP?11:6.8, LWK=EXP?2.6:1; // 导出预览图时字号/线宽放大，缩到手机宽度仍看得清
+    const AW=210-M*2-4, AH=PREVIEW_H-2, GAPX=6, LABELH=EXP?19:11;
     function layout(s){
       let x=0,y=0,rowH=0,rows=[[]];
       for(const it of items){
         const w=Math.max(it.w*s,3), h=Math.max(it.h*s,3);
-        const cellW=Math.max(w,labelTextWidthMM(it.name+(it.qty>1?' ×'+it.qty:''),8.5)+2);
+        const cellW=Math.max(w,labelTextWidthMM(it.name+(it.qty>1?' ×'+it.qty:''),LF)+2,it.join?labelTextWidthMM('需拼合·共2页',TF)+3:0);
         if(x>0&&x+cellW>AW){ x=0; y+=rowH+LABELH+2; rowH=0; rows.push([]); }
         rows[rows.length-1].push({it,x,y,w,h,cellW}); x+=cellW+GAPX; rowH=Math.max(rowH,h);
       }
-      return {rows,height:y+rowH+LABELH};
+      return {rows,height:y+rowH+LABELH,maxW:Math.max(...rows.map(r=>r.length?r[r.length-1].x+r[r.length-1].cellW:0))};
     }
     let lo=0.01, hi=0.6;
-    for(let k=0;k<30;k++){ const mid=(lo+hi)/2; if(layout(mid).height<=AH) lo=mid; else hi=mid; }
+    for(let k=0;k<30;k++){ const mid=(lo+hi)/2, Lm=layout(mid); if(Lm.height<=AH&&Lm.maxW<=AW) lo=mid; else hi=mid; }
     const s=lo, L=layout(s);
     const totalW=Math.max(...L.rows.map(r=>r.length?r[r.length-1].x+r[r.length-1].cellW:0));
     const X0=M+2+(AW-totalW)/2, Y0=PREVIEW_Y+2;
-    rect(coverPage,M,PREVIEW_Y,210-M*2,PREVIEW_H+2,0.25,rgb(0.85,0.85,0.83));
+    rect(coverPage,M,PREVIEW_Y,210-M*2,PREVIEW_H+2,0.25,rgb(0.85,0.85,0.83)); window._joinBox={x:M,y:PREVIEW_Y,w:210-M*2,h:PREVIEW_H+2};
     geomOn=false;
     L.rows.forEach(row=>{
       const rowH=Math.max(...row.map(r=>r.h));
@@ -10600,28 +10605,28 @@ async function downloadPattern(dryRun,prepareOnly){
         if(it.comp){
           const {ops,a0,b0}=it.comp, TX=x=>px+(x-a0)*s, TY=y=>py+(y-b0)*s, PH0=coverPage.getHeight();
           ops.forEach(o=>{
-            if(o.t==='l') line(coverPage,TX(o.a[0]),TY(o.a[1]),TX(o.a[2]),TY(o.a[3]),Math.max(o.w*s*1.6,0.12),o.color||ink,o.dash?o.dash.map(v=>Math.max(v*s,0.45)):undefined);
-            else if(o.t==='p') strokePath(coverPage,o.pts.map(([x,y])=>[TX(x),TY(y)]),Math.max(o.w*s*1.6,0.14),o.color||ink);
+            if(o.t==='l') line(coverPage,TX(o.a[0]),TY(o.a[1]),TX(o.a[2]),TY(o.a[3]),Math.max(o.w*s*1.6,0.12)*LWK,o.color||ink,o.dash?o.dash.map(v=>Math.max(v*s,0.45)):undefined);
+            else if(o.t==='p') strokePath(coverPage,o.pts.map(([x,y])=>[TX(x),TY(y)]),Math.max(o.w*s*1.6,0.14)*LWK,o.color||ink);
             else if(o.t==='x'){ // 2026-09-26 Bedi：预览里的裁片名称放大到能看清，不跟图等比缩小(以原位置为中心放大)；"纸样需拼合"小字在下方已有说明，预览里省掉
               // 纸样页内的小字(表布×2 -1、纸样需拼合等)缩小后看不清也会互相重叠，预览里不画；只保留对位字母，另在每段中心画清晰的页码圆标
               const fs=o.size*s*1.5; if(/^[A-Z]\d?$/.test(o.txt.trim())&&fs>=1.6) coverPage.drawText(o.txt,{x:TX(o.x)*MM,y:PH0-TY(o.y)*MM,size:fs,font,color:o.color||ink}); }
             else if(o.t==='s'){ const opt={x:TX(o.ox)*MM,y:PH0-TY(o.oy)*MM,scale:o.sc*s};
               if(o.fill) opt.color=ink;
-              if(o.stroke){ opt.borderColor=ink; opt.borderWidth=Math.max(0.9*s*1.6,0.35); if(o.dash) opt.borderDashArray=[Math.max(4*o.sc*s,1.3),Math.max(4*o.sc*s,1.3)]; }
+              if(o.stroke){ opt.borderColor=ink; opt.borderWidth=Math.max(0.9*s*1.6,0.35)*LWK; if(o.dash) opt.borderDashArray=[Math.max(4*o.sc*s,1.3),Math.max(4*o.sc*s,1.3)]; }
               coverPage.drawSvgPath(o.d,opt); }
           });
           if(it.comp.segBox.length>1) it.comp.segBox.forEach((b,k)=>{ const cx=TX((b[0]+b[2])/2), cy=TY((b[1]+b[3])/2), t=String(k+1);
-            coverPage.drawCircle({x:cx*MM,y:PH0-cy*MM,size:2.4*MM,color:orange});
-            mk(coverPage,t,cx-labelTextWidthMM(t,7)/2+0.1,cy+0.95,7,rgb(1,1,1)); });
+            coverPage.drawCircle({x:cx*MM,y:PH0-cy*MM,size:(EXP?4.2:2.4)*MM,color:orange});
+            mk(coverPage,t,cx-labelTextWidthMM(t,EXP?12:7)/2+0.1,cy+(EXP?1.6:0.95),EXP?12:7,rgb(1,1,1)); });
         } else if(it.rectPiece){
-          rect(coverPage,px,py,r.w,r.h,it.join?0.5:0.35,col);
-          for(let k=1;k<(it.nseg||0);k++){ if(r.h>=r.w){ const yy=py+r.h*k/it.nseg; line(coverPage,px,yy,px+r.w,yy,0.3,orange,[1,0.8]); } else { const xx=px+r.w*k/it.nseg; line(coverPage,xx,py,xx,py+r.h,0.3,orange,[1,0.8]); } }
+          rect(coverPage,px,py,r.w,r.h,(it.join?0.5:0.35)*LWK,col);
+          for(let k=1;k<(it.nseg||0);k++){ if(r.h>=r.w){ const yy=py+r.h*k/it.nseg; line(coverPage,px,yy,px+r.w,yy,0.3*LWK,orange,[1,0.8]); } else { const xx=px+r.w*k/it.nseg; line(coverPage,xx,py,xx,py+r.h,0.3*LWK,orange,[1,0.8]); } }
           if(it.nseg>1){ const vert=r.h>=r.w, segL=(vert?r.h:r.w)/it.nseg, rad=Math.min(1.9,segL/2-0.3,(vert?r.w:r.h)/2-0.2);
             if(rad>=1.1) for(let k=0;k<it.nseg;k++){ const cx=vert?px+r.w/2:px+segL*(k+0.5), cy=vert?py+segL*(k+0.5):py+r.h/2, t=String(k+1);
               coverPage.drawCircle({x:cx*MM,y:coverPage.getHeight()-cy*MM,size:rad*MM,color:orange});
               mk(coverPage,t,cx-labelTextWidthMM(t,rad*2.9)/2+0.1,cy+rad*0.37,rad*2.9,rgb(1,1,1)); } }
         } else {
-          it.polys.forEach(pl=>{ strokePath(coverPage,pl.map(([x,y])=>[px+x*s,py+y*s]),it.join?0.45:0.3,col); });
+          it.polys.forEach(pl=>{ strokePath(coverPage,pl.map(([x,y])=>[px+x*s,py+y*s]),(it.join?0.45:0.3)*LWK,col); });
           if(it.seam){ // 拼接示意：页与页的拼接线(虚线) + 每段标页码
             const ax=it.seam.axis, span=ax==='x'?it.w:it.h;
             const hits=c=>{ const r=[]; it.polys.forEach(pl=>{ for(let i=0;i<pl.length-1;i++){ const a=pl[i],b=pl[i+1];
@@ -10632,17 +10637,53 @@ async function downloadPattern(dryRun,prepareOnly){
             const bnd=[0,...it.seam.cuts,span];
             it.seam.pages.forEach((pgN,i)=>{ const m=(bnd[i]+bnd[i+1])/2, h=hits(m); if(h.length<2) return;
               const c=P2(m,(Math.min(...h)+Math.max(...h))/2);
-              coverPage.drawCircle({x:c[0]*MM,y:coverPage.getHeight()-c[1]*MM,size:2.4*MM,color:orange});
-              mk(coverPage,pgN,c[0]-labelTextWidthMM(pgN,7)/2+0.1,c[1]+0.95,7,rgb(1,1,1)); });
+              coverPage.drawCircle({x:c[0]*MM,y:coverPage.getHeight()-c[1]*MM,size:(EXP?4.2:2.4)*MM,color:orange});
+              mk(coverPage,pgN,c[0]-labelTextWidthMM(pgN,EXP?12:7)/2+0.1,c[1]+(EXP?1.6:0.95),EXP?12:7,rgb(1,1,1)); });
           }
         }
         const nm=it.name+(it.qty>1?' ×'+it.qty:'');
-        mk(coverPage,nm,X0+r.x+(r.cellW-labelTextWidthMM(nm,8.5))/2,Y0+r.y+rowH+4.4,8.5,it.join?orange:ink);
-        if(it.join){ const tg='需拼合'+(it.nseg?'·分'+it.nseg+'段':it.npg?'·共'+it.npg+'页':(it.seam?'·共'+it.seam.pages.filter((v,i,a)=>a.indexOf(v)===i).length+'页':'')); mk(coverPage,tg,X0+r.x+(r.cellW-labelTextWidthMM(tg,6.8))/2,Y0+r.y+rowH+8.6,6.8,orange); }
+        mk(coverPage,nm,X0+r.x+(r.cellW-labelTextWidthMM(nm,LF))/2,Y0+r.y+rowH+(EXP?7:4.4),LF,it.join?orange:ink);
+        if(it.join){ const tg='需拼合'+(it.nseg?'·分'+it.nseg+'段':it.npg?'·共'+it.npg+'页':(it.seam?'·共'+it.seam.pages.filter((v,i,a)=>a.indexOf(v)===i).length+'页':'')); mk(coverPage,tg,X0+r.x+(r.cellW-labelTextWidthMM(tg,TF))/2,Y0+r.y+rowH+(EXP?13.5:8.6),TF,orange); }
       });
     });
     geomOn=true;
   })();
+  // 2026-09-27 Bedi：对折预览(仅离线导出用)：对折裁片展开后的整片轮廓 + 对折线
+  window._prevBoxes=null;
+  if(window._PREV_EXPORT){ (function drawFoldPreview(){
+    const orange=rgb(0.88,0.41,0.17);
+    const qtyOf=s=>{ const m=String(s).match(/(?<![\d.])[×xX*](\d+)(?!\s*(cm|mm|厘米))/g)||[]; return m.reduce((a,x)=>a+parseInt(x.slice(1)),0)||1; };
+    const items=[], seen=new Set();
+    pieceFold.forEach((fa,name)=>{ if(joinPieceSet.has(name)) return; const polys=pieceGeom.get(name); if(!polys) return;
+      let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity; polys.forEach(pl=>pl.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}));
+      if(!isFinite(x0)) return; const pc=P.pieces.find(q=>q[0]===name);
+      items.push({name,w:x1-x0,h:y1-y0,polys:polys.map(pl=>pl.map(([x,y])=>[x-x0,y-y0])),ax:fa.ax,v:fa.ax==='x'?fa.v-x0:fa.v-y0,qty:pc?qtyOf(pc[3]):1}); seen.add(name); });
+    const fb={}; blocks.forEach(b=>{ if(b.fold&&b.foldEdge) fb[b.name]=b.foldEdge; });
+    P.pieces.forEach(pc=>{ const m=String(pc[3]).match(/（折边(右|左|底|顶)）/); const fe=fb[pc[0]]||(m?{右:'right',左:'left',底:'bottom',顶:'top'}[m[1]]:null);
+      if(!fe||seen.has(pc[0])||joinPieceSet.has(pc[0])) return;
+      const w=parseFloat(pc[1])*10, h=parseFloat(pc[2])*10, ax=(fe==='right'||fe==='left')?'x':'y';
+      items.push({name:pc[0],w,h,polys:[[[0,0],[w,0],[w,h],[0,h],[0,0]]],ax,v:ax==='x'?w/2:h/2,qty:qtyOf(pc[3])}); });
+    if(!items.length) return;
+    const page=doc.addPage(A4), AW=186, AH=150, GAPX=10, LABELH=12, X00=12, Y00=20, LF=15;
+    function layout(s){ let x=0,y=0,rowH=0,rows=[[]];
+      for(const it of items){ const w=it.w*s,h=it.h*s, cellW=Math.max(w,labelTextWidthMM(it.name,LF)+2);
+        if(x>0&&x+cellW>AW){ x=0; y+=rowH+LABELH+3; rowH=0; rows.push([]); }
+        rows[rows.length-1].push({it,x,y,w,h,cellW}); x+=cellW+GAPX; rowH=Math.max(rowH,h); }
+      return {rows,height:y+rowH+LABELH}; }
+    let lo=0.01,hi=0.5; for(let k=0;k<30;k++){ const mid=(lo+hi)/2; if(layout(mid).height<=AH) lo=mid; else hi=mid; }
+    const sc=lo, L=layout(sc), totalW=Math.max(...L.rows.map(r=>r.length?r[r.length-1].x+r[r.length-1].cellW:0));
+    const X0=X00+(AW-totalW)/2;
+    geomOn=false;
+    L.rows.forEach(row=>{ const rowH=Math.max(...row.map(r=>r.h)); row.forEach(r=>{ const it=r.it;
+      const px=X0+r.x+(r.cellW-r.w)/2, py=Y00+r.y+(rowH-r.h);
+      it.polys.forEach(pl=>strokePath(page,pl.map(([x,y])=>[px+x*sc,py+y*sc]),1,ink));
+      if(it.ax==='x'){ const fx=px+it.v*sc; line(page,fx,py,fx,py+r.h,1,orange,[3,2]); }
+      else { const fy=py+it.v*sc; line(page,px,fy,px+r.w,fy,1,orange,[3,2]); }
+      const nm=it.name;
+      mk(page,nm,X0+r.x+(r.cellW-labelTextWidthMM(nm,LF))/2,Y00+r.y+rowH+7,LF,ink); }); });
+    geomOn=true;
+    window._prevBoxes={fold:{page:doc.getPageCount(),x:X00,y:Y00-3,w:AW,h:L.height+5}};
+  })(); }
   // ===== 每页左上角符号图例(2026-09-24)：只列本页出现过的符号 =====
   (function drawPageLegends(){
     // 2026-09-24 每页左上角图例：只放本页出现的符号 + 名称；符号的线宽/尺寸与纸样上画的完全一致
@@ -10669,7 +10710,7 @@ async function downloadPattern(dryRun,prepareOnly){
         line(page,bx+L-3,by+L,bx+L,by+L,0.4,gray); line(page,bx+L,by+L-3,bx+L,by+L,0.4,gray); }
     }
     geomOn=false; // 画图例本身不再记录
-    { // ---- 首页：纸样符号图文说明(只含本套纸样出现的符号) ----
+    symCover: { // ---- 首页：纸样符号图文说明(只含本套纸样出现的符号) ----
       const union=new Set();
       doc.getPages().forEach(pg2=>{ if(pg2===coverPage||listPages.has(pg2)) return; const st=pageSyms.get(pg2); if(st) st.forEach(t=>union.add(t)); });
       const cs=ORDER.filter(t=>union.has(t));
@@ -10702,6 +10743,7 @@ async function downloadPattern(dryRun,prepareOnly){
         else if(t==='bias'){ rect(pc,fx,fy,fw,fh,0.4,ink); const a=Math.min(fw,fh)-3.6, bx=fx+fw/2-a/2, by=fy+fh/2-a/2;
           line(pc,bx,by,bx+a,by+a,0.35,gray); line(pc,bx,by+1.8,bx,by,0.35,gray); line(pc,bx+1.8,by,bx,by,0.35,gray); line(pc,bx+a-1.8,by+a,bx+a,by+a,0.35,gray); line(pc,bx+a,by+a-1.8,bx+a,by+a,0.35,gray); }
       }
+      if(!SHOW_SYM) break symCover;
       const colW=(210-2*M-8)/2, BW=18, BH=15;
       const csN=cs.filter(t=>t!=='fold'&&t!=='notch'), csW=cs.filter(t=>t==='fold'||t==='notch');
       csN.forEach((t,i)=>{
