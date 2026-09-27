@@ -8,33 +8,63 @@
 // generativelanguage.googleapis.com，所以这份代码同样没能在写代码这台机器上真实调用验证过，只用本地 mock
 // 测试确认了请求体拼接/响应解析逻辑没写错。generate-creative-image.js 那条链路已经被 Bedi 部署后真实验证成功，
 // 这个函数用的是同一个 Gemini API key、同一个 generateContent 端点、同样的 inline_data 请求结构，原理上应该
-// 一样能跑通，但"识别结果准不准"这件事本身，需要 Bedi 部署后拿真实旧衣照片测几次才能确认。
+// 一样能跑通，但"识别结果准不准"这件事本身），需要 Bedi 部署后拿真实旧衣照片测几次才能确认。
+//
+// 2026-09-11 Bedi 反馈修复：她上传了一张商品图(网店里拍的成品牛仔月牙包照片，不是她自己的旧衣牨)，AI 却
+// 很自信地判成"长裤/牛仔裤"。根因是下面这份 prompt 原来只给5个"衣物类型"选项，模型被逼着无论看到什么
+// 都要硬选一个最接近的类别(牛仔月牙包整体是蓝色牛仔布，颜色/材质纹理和牛仔裤接近，就被误判了)——没有
+// "这张照片根本不像一件旧衣物本身"这个退路。改法：新增第6个选项 unclear，prompt 里明确说清楚"成品商品图/
+// 网店宣传图/包包配饰等非衣物本身的照片"应该选它，不要因为颜色材质像就硬套到某个衣物类型上；前端(见
+// index.html 的 GARMENT_LABELS/screen 06)拿到 unclear 时会展示一条提示，引导用户重新拍旧衣照片或手动选类型，
+// 而不是把这个"不确定"结果当成正常识别结果悄悄用下去。
 //
 // 模型选择：分类任务不需要用生成图片的那个贵模型，用更便宜更快的 Flash-Lite 系列文字/多模态模型即可
 // (2026-09-01 查询 ai.google.dev/gemini-api/docs/models 确认当前是 gemini-3.5-flash-lite，如果调用报"模型不存在"，
 // 去这个页面查最新的 Flash-Lite 型号 ID 替换下面的 MODEL_ID)。
 //
 // 输出格式：没有依赖 Gemini 的 responseSchema/structured output 功能(这个功能的请求字段大小写在不同文档版本里
-// 不完全一致，没能在这个环境里实测确认)，改用更保险的做法——直接在 prompt 里要求模型只回复一段 JSON 文本，
+// 不完全一致，没能在这个环境里实测确认)，改用更保险的做法——直接在 prompt 釖要求模型只回复一段 JSON 文本，
 // 拿到文字后自己解析，容错处理了模型可能把 JSON 包在 ```json 代码块里的情况。这是已经很成熟的做法，风险比
 // 依赖一个没验证过的字段名要低。
 const MODEL_ID = 'gemini-3.5-flash-lite';
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent`;
 
-const VALID_TYPES = ['pants', 'shirt', 'skirt', 'jacket', 'flat'];
+const VALID_TYPES = ['pants', 'shirt', 'skirt', 'jacket', 'flat', 'unclear'];
 
-const PROMPT = `你是一个旧衣改造 App 的辅助识别工具。请看这张旧衣照片，判断这件衣物属于下面哪一类，并猜测大致材质。
-分类只能从这5个里选一个（用括号里的英文 id 作答）：
+const PROMPT = `你是一个旧衣改造 App 的辅助识别工具。请仔细看这张照片，先判断它是不是一张"用户自己拥有的旧衣物"的照片
+（比如平铺或挂着拍摄的一件衣服本身），再判断具体类别。
+
+分类只能从下面6个里选一个（用括号里的英文 id 作答）：
 - 长裤/牛仔裤 (pants)
 - 衬衫/T恤 (shirt)
 - 裙装 (skirt)
 - 外套/夹克 (jacket)
 - 已经是一块平整布料，看不出原本是什么衣物 (flat)
+- 这张照片看起来不是旧衣物本身的照片——比如是网店商品图/宣传图、一个已经做好的包包或配饰，或者完全不相关的
+  物体 (unclear)
+
+⚠️重要：请优先看"这是不是一件衣物本身"，不要只看颜色或材质像不像就硬套。比如一张蓝色牛仔布做的成品包包/
+配饰照片，材质颜色可能很像牛仔裤，但它不是一件衣物，应该选 unclear，不能因为"看起来像牛仔布"就答 pants。
+
+说明：很多人拍摄自己真实拥有的旧衣物时，会特意把衣物铺平在干净的白色/浅色背景上、打匀光线，只是为了拍清楚——
+这种情况完全正常，不能仅凭"背景干净整洁"就判成 unclear。只有在有具体证据表明这不是一件正在被拍摄、用于本次
+改造的真实旧衣物本身时，才应该选 unclear，比如：这个物品的形状明显不是一件可穿的衣物(而是一个已经做好的包包/
+收纳袋/鞋子/其他配饰)，图片里出现了价格标签、品牌水印或网店界面元素，或者是模特/人体模型穿着展示的专业广告图，
+而不是单独铺开或挂着拍摄的一件衣物本身。一件铺平或挂着拍摄的旧衣物，只要没有出现上述这些额外的干扰因素，
+不管背景拍得多干净整洁，都应该被归到长裤/衬衫/裙装/外套/平整布料这5个衣物类别之一，而不是 unclear。
 
 只回复一段 JSON，不要任何其他文字、不要markdown代码块标记，格式严格如下：
-{"garmentType":"pants","material":"牛仔布","confidence":"high"}
+{"garmentType":"pants","material":"牛仔布","materialDesc":"浅蓝色水洗牛仔布，表面有细密斜纹和自然磨白痕迹，金属拉链五金偏银色","confidence":"high"}
 
-其中 garmentType 必须是上面5个英文id之一；material 用中文简短描述你猜测的材质(比如"牛仔布"/"棉布"/"涤纶"/"麻"/"羊毛"/"皮革"/"看不清楚材质"这类，不确定就写"看不清楚材质")；confidence 是你对这次分类判断的把握程度，只能是 "high"/"medium"/"low" 之一。`;
+其中 garmentType 必须是上面6个英文id之一；material 用中文简短描述你猜测的材质类别(比如"牛仔布"/"棉布"/"涤纶"/
+"麻"/"羊毛"/"皮革"/"看不清楚材质"这类，不确定就写"看不清楚材质")；materialDesc 是新增字段，要求比 material 更
+具体——用一句话描述这块面料真实的颜色(具体色调，不要只写"蓝色"，尽量写"浅蓝/藏青/卡其"这种更精确的说法)、
+表面纹理(比如斜纹/横纹/起球/光滑)、磨损或做旧痕迹(比如磨白/破洞/污渍/褪色)、以及五金或配件的颜色和材质(比如
+"银色金属拉链"/"黑色塑料纽扣")，这几点各写一点即可，不用非常长；这个字段是专门给后面"AI生成改造效果图"那个
+模型用的更精确的文字锚点，用来让生成图更贴近这张照片里的这块具体面料，而不是随便一块"看起来像牛仔布"的面料
+——如果实在看不真切，也要给出一个合理的最佳猜测，不要留空；如果 garmentType 是 unclear，material 和
+materialDesc 都可以简短说明你觉得这张图实际是什么(比如"这看起来是一个已经做好的包包，不是旧衣物照片")；
+confidence 是你对这次判断的把握程度，只能是 "high"/"medium"/"low" 之一。`;
 
 function extractJson(text) {
   if (!text) return null;
@@ -114,9 +144,14 @@ export default async function handler(req, res) {
       return;
     }
 
+    const materialOut = typeof parsed.material === 'string' ? parsed.material : '看不清楚材质';
     res.status(200).json({
       garmentType: parsed.garmentType,
-      material: typeof parsed.material === 'string' ? parsed.material : '看不清楚材质',
+      material: materialOut,
+      // 2026-09-15 新增：materialDesc 是给"生成改造效果图"那个接口用的更详细的面料描述(颜色/纹理/磨损/五金)，
+      // 前端 index.html 拼生成 prompt 时会优先用这个字段做更具体的文字锚点，材质保真度不够只靠 material
+      // 这个简短分类词是不够的。如果模型没给这个字段(比如用了旧版本的返回)，兜底用 material 顶上，不报错。
+      materialDesc: typeof parsed.materialDesc === 'string' && parsed.materialDesc ? parsed.materialDesc : materialOut,
       confidence: ['high', 'medium', 'low'].includes(parsed.confidence) ? parsed.confidence : 'low',
     });
   } catch (err) {
