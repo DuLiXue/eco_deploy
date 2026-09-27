@@ -8915,18 +8915,15 @@ async function downloadPattern(dryRun,prepareOnly){
   mk(pg,`包型：${P.bagName}   成品 ${P.W}×${P.H}${P.D?('×'+P.D):''}cm   缝份 ${P.sa}cm（可按布料调整）`,M,M+14,11,gray);
 
   // 2026-09-26 Bedi：成品尺寸下方加裁剪注意(字体子集已补入"优/将/巾"等字)；括号里用小图标表示对位三角和对折弧形符号
-  { const OR=rgb(0.88,0.41,0.17), FS=9, Y1=M+30, Y2=M+36.5, Y3=M+43, phMM=pg.getHeight()/MM; // 2026-09-26 注意文字放在校验框左侧
+  { const OR=rgb(0.88,0.41,0.17), FS=9, Y0=M+28, Y1=M+35.2, Y2=M+41.4, Y3=M+47.6, X0=M+5.5, phMM=pg.getHeight()/MM; // 2026-09-27 注意框：浅橙底+左侧橙条+标题单独一行，与右侧校验框等高
     const L=(x1,y1,x2,y2,w,dash)=>pg.drawLine({start:{x:x1*MM,y:(phMM-y1)*MM},end:{x:x2*MM,y:(phMM-y2)*MM},thickness:w*MM,color:ink,dashArray:dash?dash.map(v=>v*MM):undefined});
     const tri=(x,yb)=>{ const ey=yb-3.3; L(x,ey,x+7,ey,0.3,[0.9,0.6]); L(x+1.2,ey,x+3.5,ey+3.3,0.4); L(x+5.8,ey,x+3.5,ey+3.3,0.4); return 7; };
     const arc=(x,yb)=>{ const by=yb+0.2, cx=x+3.5; L(x,by,x+7,by,0.3,[0.9,0.6]);
       [[1.6,5],[3,7]].forEach(([r,n])=>{ for(let k=0;k<n;k+=2){ for(let q=0;q<5;q++){ const a1=Math.PI*(k+q/5)/n,a2=Math.PI*(k+(q+1)/5)/n; L(cx-r*Math.cos(a1),by-r*Math.sin(a1),cx-r*Math.cos(a2),by-r*Math.sin(a2),0.35); } } }); return 7; };
-    const t0='注意：'; mk(pg,t0,M,Y1,FS,OR); mk(pg,t0,M+0.14,Y1,FS,OR);
-    let x=M+labelTextWidthMM(t0,FS);
-    const put=t=>{ mk(pg,t,x,Y1,FS,ink); x+=labelTextWidthMM(t,FS); };
-    put('裁剪过程中优先裁剪大裁片（如带有 '); x+=tri(x,Y1)+0.8; put(' 和 '); x+=arc(x,Y1)+0.8;
-    put(' 符号的裁片），');
-    mk(pg,'如果裁片较大无法裁出一整块裁片时，',M+labelTextWidthMM(t0,FS),Y2,FS,ink);
-    mk(pg,'可以裁2份一半大小再缝合成一整片裁片',M+labelTextWidthMM(t0,FS),Y3,FS,ink); }
+    const BW=210-M-30-8-M; pg.drawRectangle({x:M*MM,y:(phMM-(M+51))*MM,width:BW*MM,height:30*MM,color:rgb(1,0.953,0.918)}); pg.drawRectangle({x:M*MM,y:(phMM-(M+51))*MM,width:1.4*MM,height:30*MM,color:OR});
+    // 2026-09-27 Bedi：注意框只写一句"沿外轮廓裁剪"；原"优先裁大裁片/裁2份一半"移到 App 裁剪纸样页
+    const t0='注意'; mk(pg,t0,X0,M+33,10.5,OR); mk(pg,t0,X0+0.16,M+33,10.5,OR);
+    const t1='将所有纸样沿外轮廓裁剪，不需区分虚线和实线。'; mk(pg,t1,X0,M+41.5,10,ink); mk(pg,t1,X0+0.08,M+41.5,10,ink); }
   // 打印必读 + 3×3cm 校验方框(方框放右侧,保持真实30mm)
   let y=M+20;
   const boxH=32; // 2026-09-24 去掉绿框和打印提示，只保留 5×5cm 校验框
@@ -8957,7 +8954,11 @@ async function downloadPattern(dryRun,prepareOnly){
     line(pg,x,y-1.5,210-M,y-1.5,0.2,rgb(0.86,0.88,0.86));
   }
   y+=3; secTitle(pg,'纸样符号说明',y); y+=4;
-  const SYM_Y=y, SYM_RH=19; y+=Math.ceil(nSym/2)*SYM_RH+5;
+  // 2026-09-27 Bedi：对折边、拼合符号单独占整行，右侧配 3 步示意图(对折=半片纸样放对折布上，展开是整片；拼合=纸样先拼好再放布上裁)
+  const SYM_Y=y, SYM_RH=19, SYM_WH=27;
+  const symList=(window._patSymList||{})[patternKey()];
+  const nWide=symList?symList.filter(t=>t==='fold'||t==='notch').length:0;
+  y+=Math.ceil((symList?symList.length-nWide:nSym)/2)*SYM_RH+nWide*SYM_WH+5;
   secTitle(pg,'纸样说明',y); y+=7;
   // 2026-09-26 Bedi：原第3条(需拼合)并入第1条；字体子集里没有"将"，用"把"
   mk(pg,'1. 纸样名称：如「表布x2  -1」，x2 表示这块布要裁2片，-1 表示这张纸样需要拼合，是第1部分，',M+2,y,9.5,ink); y+=5.2;
@@ -10646,7 +10647,7 @@ async function downloadPattern(dryRun,prepareOnly){
   (function drawPageLegends(){
     // 2026-09-24 每页左上角图例：只放本页出现的符号 + 名称；符号的线宽/尺寸与纸样上画的完全一致
     const ORDER=['cut','sew','fold','notch','grain','bias'];
-    const TEXT={cut:'裁剪线',sew:'缝纫线',fold:'对折边',notch:'对位口',grain:'布纹方向',bias:'45°斜裁'};
+    const TEXT={cut:'裁剪线',sew:'缝纫线',fold:'对折边',notch:'拼合符号(纸样拼合)',grain:'布纹方向',bias:'45°斜裁'};
     const GW={cut:10,sew:10,fold:9,notch:15,grain:3,bias:9};  // 符号宽度(mm)
     const RH=10, FS=8;                                          // 行高(mm)、文字字号
     function glyph(page,t,x,cy){  // x=符号左边，cy=行中线
@@ -10672,12 +10673,12 @@ async function downloadPattern(dryRun,prepareOnly){
       const union=new Set();
       doc.getPages().forEach(pg2=>{ if(pg2===coverPage||listPages.has(pg2)) return; const st=pageSyms.get(pg2); if(st) st.forEach(t=>union.add(t)); });
       const cs=ORDER.filter(t=>union.has(t));
-      window._patSyms=window._patSyms||{}; window._patSyms[patternKey()]=cs.length;
+      window._patSyms=window._patSyms||{}; window._patSyms[patternKey()]=cs.length; window._patSymList=window._patSymList||{}; window._patSymList[patternKey()]=cs.slice();
       const DESC={
         cut:['实线 = 裁剪线','沿着实线剪，','剪下来的布片已含缝份。'],
         sew:['虚线 = 缝纫线','沿着虚线缝，','它和实线之间就是缝份。'],
-        fold:['双弧线 = 对折边','布先对折，这条边贴着对折处，','剪完展开就是完整一片。'],
-        notch:['小三角 = 对位口','字母相同的小三角对在一起，','拼纸样、缝布片都靠它对齐。'],
+        fold:['双弧线 = 对折边','布料先对折，把半片纸样的双弧边','贴着对折处放，剪完展开是完整一片。'],
+        notch:['小三角 = 拼合符号','先把字母相同的小三角对齐，','纸样拼成整片后再放到布上裁剪。','(纸样拼合)'],
         grain:['双箭头 = 布纹方向','箭头和布边保持平行，','裁出的布片才不容易变形。'],
         bias:['斜箭头 = 45°斜裁','箭头和布边成45°摆放，','斜裁的布更有伸缩性，适合包边。']};
       const tan=rgb(0.72,0.58,0.45), soft=rgb(0.84,0.79,0.73), faint=rgb(0.7,0.7,0.7);
@@ -10702,7 +10703,8 @@ async function downloadPattern(dryRun,prepareOnly){
           line(pc,bx,by,bx+a,by+a,0.35,gray); line(pc,bx,by+1.8,bx,by,0.35,gray); line(pc,bx+1.8,by,bx,by,0.35,gray); line(pc,bx+a-1.8,by+a,bx+a,by+a,0.35,gray); line(pc,bx+a,by+a-1.8,bx+a,by+a,0.35,gray); }
       }
       const colW=(210-2*M-8)/2, BW=18, BH=15;
-      cs.forEach((t,i)=>{
+      const csN=cs.filter(t=>t!=='fold'&&t!=='notch'), csW=cs.filter(t=>t==='fold'||t==='notch');
+      csN.forEach((t,i)=>{
         const col=i%2, row=Math.floor(i/2), x0=M+col*(colW+8), y0=SYM_Y+row*SYM_RH;
         pc.drawCircle({x:(x0+3.8)*MM,y:PH-(y0+5.2)*MM,size:3.6*MM,color:tan});
         const num=String(i+1).padStart(2,'0');
@@ -10714,7 +10716,62 @@ async function downloadPattern(dryRun,prepareOnly){
         rrect(bx,by,BW,BH,2,soft,0.3);
         glyph(pc,t,bx+BW/2-GW[t]/2,by+BH/2);
         example(t,x0+colW-BW,by,BW,BH);
-        if(row<Math.ceil(cs.length/2)-1) line(pc,x0,y0+SYM_RH-1.2,x0+colW,y0+SYM_RH-1.2,0.2,soft);
+        if(row<Math.ceil(csN.length/2)-1||csW.length) line(pc,x0,y0+SYM_RH-1.2,x0+colW,y0+SYM_RH-1.2,0.2,soft);
+      });
+      // ---- 对折边 / 拼合符号：整行 + 3 步示意 ----
+      const ORG=rgb(0.88,0.41,0.17), FAB=rgb(0.93,0.89,0.84), WHITE=rgb(1,1,1);
+      const fillR=(x,y,w,h,col)=>pc.drawRectangle({x:x*MM,y:PH-(y+h)*MM,width:w*MM,height:h*MM,color:col});
+      const arrowR=(x1,x2,y)=>{ line(pc,x1,y,x2,y,0.4,ORG); line(pc,x2-1.4,y-1,x2,y,0.4,ORG); line(pc,x2-1.4,y+1,x2,y,0.4,ORG); };
+      const arrowL=(x1,x2,y)=>{ line(pc,x1,y,x2,y,0.4,ORG); line(pc,x2+1.4,y-1,x2,y,0.4,ORG); line(pc,x2+1.4,y+1,x2,y,0.4,ORG); };
+      const tri=(x,y,dir)=>{ const s2=1.3, d2=dir*1.8; line(pc,x,y-s2,x+d2,y,0.35,ink); line(pc,x,y+s2,x+d2,y,0.35,ink); }; // 小三角：底边在 x，尖朝 dir
+      const PW2=28, PH2=16, GAP=6;
+      function panelsFold(px,py){
+        // ① 布料对折：左边粗线=折边
+        let x=px; fillR(x+6,py+1,16,14,FAB); rect(pc,x+6,py+1,16,14,0.25,gray); line(pc,x+6,py+1,x+6,py+15,0.8,ink);
+        mk(pc,'折边',x+0.6,py+8.8,5.5,gray);
+        arrowR(x+PW2+0.6,x+PW2+GAP-0.6,py+8);
+        // ② 半片纸样双弧边贴折痕
+        x=px+PW2+GAP; fillR(x+6,py+1,16,14,FAB); rect(pc,x+6,py+1,16,14,0.25,gray); line(pc,x+6,py+1,x+6,py+15,0.8,ink);
+        fillR(x+6,py+3.5,10,9,WHITE); line(pc,x+6,py+3.5,x+16,py+3.5,0.4,ink); line(pc,x+16,py+3.5,x+16,py+12.5,0.4,ink); line(pc,x+6,py+12.5,x+16,py+12.5,0.4,ink);
+        foldArc(pc,x+6,py+8,'vl');
+        mk(pc,'纸样',x+10.2,py+11.6,4.8,gray);
+        arrowR(x+PW2+0.6,x+PW2+GAP-0.6,py+8);
+        // ③ 剪下展开=整片
+        x=px+2*(PW2+GAP); fillR(x+4,py+3.5,20,9,FAB); rect(pc,x+4,py+3.5,20,9,0.4,ink); line(pc,x+14,py+3.5,x+14,py+12.5,0.3,gray,[1,0.8]);
+        arrowL(x+12.6,x+8.5,py+1.8); arrowR(x+15.4,x+19.5,py+1.8);
+      }
+      function panelsJoin(px,py){
+        // ① 纸样按相同字母对齐拼合
+        let x=px; fillR(x+1,py+3.5,11,9,WHITE); rect(pc,x+1,py+3.5,11,9,0.4,ink); fillR(x+16,py+3.5,11,9,WHITE); rect(pc,x+16,py+3.5,11,9,0.4,ink);
+        tri(x+12,py+8,-1); tri(x+16,py+8,1); mk(pc,'A',x+9.1,py+7.4,4.5,ink); mk(pc,'A',x+17.9,py+7.4,4.5,ink);
+        mk(pc,'-1',x+2.2,py+11.5,4.8,gray); mk(pc,'-2',x+24,py+11.5,4.8,gray);
+        arrowR(x+PW2+0.6,x+PW2+GAP-0.6,py+8);
+        // ② 拼好放在布上画线
+        x=px+PW2+GAP; fillR(x+1,py+1,26,14,FAB); rect(pc,x+1,py+1,26,14,0.25,gray);
+        fillR(x+3.5,py+3.5,21,9,WHITE); rect(pc,x+3.5,py+3.5,21,9,0.4,ink); line(pc,x+14,py+3.5,x+14,py+12.5,0.3,gray,[1,0.8]);
+        tri(x+14,py+8,-1); tri(x+14,py+8,1);
+        arrowR(x+PW2+0.6,x+PW2+GAP-0.6,py+8);
+        // ③ 剪下是整片
+        x=px+2*(PW2+GAP); fillR(x+3.5,py+3.5,21,9,FAB); rect(pc,x+3.5,py+3.5,21,9,0.4,ink);
+      }
+      const CAP={fold:['布料对折','半片纸样贴折边','剪下展开是整片'],notch:['按相同字母拼合','拼好放在布上画线','剪下是整片']};
+      const yW0=SYM_Y+Math.ceil(csN.length/2)*SYM_RH;
+      csW.forEach((t,k)=>{
+        const i=csN.length+k, x0=M, y0=yW0+k*SYM_WH, W=210-2*M;
+        pc.drawCircle({x:(x0+3.8)*MM,y:PH-(y0+5.2)*MM,size:3.6*MM,color:tan});
+        const num=String(i+1).padStart(2,'0');
+        mk(pc,num,x0+3.8-labelTextWidthMM(num,8)/2+0.3,y0+6.3,8,rgb(1,1,1));
+        const d=DESC[t];
+        mk(pc,d[0],x0+10,y0+6.4,10,ink);
+        if(d[3]) mk(pc,d[3],x0+10+labelTextWidthMM(d[0],10)+1,y0+6.2,8,ORG);
+        mk(pc,d[1],x0+10,y0+11.4,7,gray); mk(pc,d[2],x0+10,y0+15.2,7,gray);
+        const bx=x0+W-3*PW2-2*GAP-BW-4, by=y0+1;
+        rrect(bx,by,BW,BH,2,soft,0.3);
+        glyph(pc,t,bx+BW/2-GW[t]/2,by+BH/2);
+        const px=x0+W-3*PW2-2*GAP;
+        (t==='fold'?panelsFold:panelsJoin)(px,by);
+        CAP[t].forEach((c,j)=>{ const cx=px+j*(PW2+GAP)+PW2/2, lab=(j+1)+'. '+c; mk(pc,lab,cx-labelTextWidthMM(lab,6.5)/2,by+PH2+3.4,6.5,j===2?ORG:gray); });
+        if(k<csW.length-1) line(pc,x0,y0+SYM_WH-1.2,x0+W,y0+SYM_WH-1.2,0.2,soft);
       });
     }
     doc.getPages().forEach(page=>{
